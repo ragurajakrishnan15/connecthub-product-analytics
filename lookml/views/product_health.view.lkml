@@ -1,6 +1,6 @@
 view: product_health {
   # Built by dbt_project/models/gold/metrics_product_health.sql (one row per workspace).
-  # Health score, NPS and revenue are not in the warehouse yet.
+  # The health score itself is computed in analytics/health_scoring.py.
   sql_table_name: gold.metrics_product_health ;;
 
   dimension: workspace_id {
@@ -75,5 +75,33 @@ view: product_health {
   measure: support_tickets_last_30d {
     type: sum
     sql: ${TABLE}.support_tickets_last_30d ;;
+  }
+
+  measure: avg_pct_ai_calls_automated {
+    type: average
+    description: "Share of calls the AI agent resolved alone (trailing 30 days)"
+    sql: ${TABLE}.pct_ai_calls_automated ;;
+    value_format_name: percent_1
+  }
+
+  measure: avg_nps_score {
+    type: average
+    description: "Workspace NPS (-100 to 100, trailing 90 days); workspaces without responses are excluded"
+    sql: ${TABLE}.nps_score ;;
+    value_format_name: decimal_1
+  }
+
+  measure: total_mrr_usd {
+    type: sum
+    label: "MRR (USD)"
+    sql: ${TABLE}.mrr_usd ;;
+    value_format_name: usd_0
+  }
+
+  measure: total_mrr_change_usd {
+    type: sum
+    label: "MRR Change vs Previous Month (USD)"
+    sql: ${TABLE}.mrr_change_usd ;;
+    value_format_name: usd_0
   }
 }

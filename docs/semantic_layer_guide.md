@@ -89,5 +89,6 @@ Add the metric to this guide with:
 | activation_rate_14d | % of new users completing all 4 milestones in 14 days | Product |
 | weekly_retention_rate | % of cohort active in week N | Product |
 | ai_feature_adoption | % of workspaces using AI in trailing 30 days | AI Team |
-| revenue_per_workspace | Not defined yet: no revenue data in the warehouse | Finance |
-| health_score | Composite churn risk score (0-100), computed in `analytics/health_scoring.py` from `gold.metrics_product_health` | CS Team |
+| revenue_per_workspace | Average MRR per paying workspace, by month (`gold.fct_workspace_mrr`) | Finance |
+| mrr | Total monthly recurring revenue (per-active-seat billing) | Finance |
+| health_score | Composite churn risk score (0-100): weighted percentile ranks of the `gold.metrics_product_health` inputs, computed in `analytics/health_scoring.py` | CS Team |

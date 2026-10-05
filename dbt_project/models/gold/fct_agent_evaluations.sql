@@ -1,6 +1,7 @@
 -- Gold: AI agent performance metrics by call type
 SELECT
     eval_id,
+    workspace_id,
     call_date,
     call_type,
     resolved_by_ai,

@@ -76,6 +76,7 @@ def test_copy_into_postgres_with_correct_types(pg_engine):
     })
     evals_df = pd.DataFrame({
         'eval_id': ['e1'],
+        'workspace_id': ['w1'],
         'call_date': pd.to_datetime(['2025-06-01']),
         'call_type': ['inbound'],
         'resolved_by_ai': [True],
@@ -109,3 +110,47 @@ def test_copy_into_postgres_with_correct_types(pg_engine):
     assert eval_row.handle_time_seconds == 123
     assert float(eval_row.csat_score) == 4.5
     assert eval_row.resolved_by_ai is True
+
+
+@pytest.mark.integration
+def test_new_tables_and_composite_key(pg_engine):
+    engine, schema = pg_engine
+    subs, nps = f'{schema}.subscriptions', f'{schema}.nps_responses'
+    tables = {subs: ingest.TABLES['bronze.subscriptions'],
+              nps: ingest.TABLES['bronze.nps_responses']}
+    ingest.create_tables(engine, tables)
+    subs_df = pd.DataFrame({
+        'workspace_id': ['w1', 'w1'],
+        'month_start': pd.to_datetime(['2025-01-01', '2025-02-01']),
+        'plan_tier': ['Essentials', 'Essentials'],
+        'billed_seats': [3, 0],
+        'seat_price_usd': [15.0, 15.0],
+        'mrr_usd': [45.0, 0.0],
+    })
+    assert ingest.copy_frame(engine, subs_df, subs, tables[subs]['columns']) == 2
+    with pytest.raises(Exception, match='duplicate key'):
+        ingest.copy_frame(engine, pd.concat([subs_df, subs_df.iloc[:1]]), subs,
+                          tables[subs]['columns'])
+    bad_score = pd.DataFrame({'response_id': ['r1'], 'user_id': ['u1'], 'workspace_id': ['w1'],
+                              'response_date': pd.to_datetime(['2025-03-01']), 'score': [11]})
+    with pytest.raises(Exception, match='check constraint'):
+        ingest.copy_frame(engine, bad_score, nps, tables[nps]['columns'])
+    with engine.connect() as conn:
+        assert conn.execute(text(f'SELECT SUM(mrr_usd) FROM {subs}')).scalar() == 45
+
+
+@pytest.mark.integration
+def test_table_with_old_layout_is_recreated(pg_engine):
+    engine, schema = pg_engine
+    evals = f'{schema}.agent_evaluations'
+    with engine.begin() as conn:
+        conn.execute(text(f'CREATE SCHEMA {schema}'))
+        conn.execute(text(f'CREATE TABLE {evals} (eval_id TEXT, call_date DATE)'))
+    spec = {evals: ingest.TABLES['bronze.agent_evaluations']}
+    ingest.create_tables(engine, spec)
+    with engine.connect() as conn:
+        cols = conn.execute(text(
+            'SELECT column_name FROM information_schema.columns '
+            "WHERE table_schema = :s AND table_name = 'agent_evaluations' "
+            'ORDER BY ordinal_position'), {'s': schema}).scalars().all()
+    assert cols == list(spec[evals]['columns'])
