@@ -2,6 +2,7 @@
 #
 #   docker compose up -d postgres                 warehouse only (local dev)
 #   docker compose up -d                          + Airflow (builds docker/airflow)
+#   docker compose up -d postgres api-init api    + analytics API on 127.0.0.1:${API_PORT}
 #   docker compose --profile spark run --rm spark pytest tests/test_spark_jobs.py
 
 x-pipeline-env: &pipeline-env
@@ -96,6 +97,45 @@ services:
     depends_on:
       airflow-init:
         condition: service_completed_successfully
+
+  # One-shot: create/update the API's read-only role (owner credentials; idempotent).
+  api-init:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    image: connecthub-api:local
+    command: ["python", "-m", "api.provision"]
+    environment:
+      <<: *pipeline-env
+      API_DB_USER: ${API_DB_USER:-connecthub_api}
+      API_DB_PASSWORD: ${API_DB_PASSWORD:?Set API_DB_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # The API receives only the read-only role's credentials, never the owner's.
+  api:
+    image: connecthub-api:local
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-connecthub_analytics}
+      API_DB_USER: ${API_DB_USER:-connecthub_api}
+      API_DB_PASSWORD: ${API_DB_PASSWORD:?Set API_DB_PASSWORD in .env}
+      API_WORKERS: ${API_WORKERS:-2}
+      API_ENV: ${API_ENV:-development}
+      API_AUTH_MODE: ${API_AUTH_MODE:-none}
+      API_KEYS: ${API_KEYS:-}
+      API_CORS_ORIGINS: ${API_CORS_ORIGINS:-http://127.0.0.1:8000,http://localhost:8000}
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    depends_on:
+      # Not readiness: the API starts and reports not_ready until the pipeline
+      # has built the warehouse.
+      api-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
 
   spark:
     profiles: ["spark"]

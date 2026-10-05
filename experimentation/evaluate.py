@@ -129,6 +129,7 @@ def evaluate_user_metrics(users, experiment_id):
     t60 = treatment[treatment['window_60d_complete'].astype(bool)]
     guardrail_revenue = t_test_continuous(c60['revenue_60d'].astype(float).to_numpy(),
                                           t60['revenue_60d'].astype(float).to_numpy())
+    decision = _make_decision(primary, bayesian, srm, guardrail_revenue, guardrail_session)
 
     return {
         'experiment_id': experiment_id,
@@ -145,9 +146,21 @@ def evaluate_user_metrics(users, experiment_id):
             'control_60d_window': len(c60),
             'treatment_60d_window': len(t60),
         },
-        'decision': _make_decision(primary, bayesian, srm,
-                                   guardrail_revenue, guardrail_session)
+        'decision': decision,
+        # The verdict alone (SHIP / CONTINUE / HOLD / REVERT), for machine consumers.
+        'decision_code': decision_code(decision),
     }
+
+
+DECISION_CODES = ('SHIP', 'CONTINUE', 'HOLD', 'REVERT')
+
+
+def decision_code(decision):
+    """'SHIP - Significant lift ...' -> 'SHIP'."""
+    code = decision.split(' - ', 1)[0]
+    if code not in DECISION_CODES:
+        raise ValueError(f'unrecognized decision {decision!r}')
+    return code
 
 
 def _guardrail_failed(guardrail):

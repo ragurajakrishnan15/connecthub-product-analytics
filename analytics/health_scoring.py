@@ -207,6 +207,9 @@ def persist_scores(engine, scores):
                 health_score DOUBLE PRECISION, risk_tier TEXT,
                 PRIMARY KEY (snapshot_date, workspace_id)
             )"""))
+        # The API lists a snapshot's workspaces ordered by score.
+        conn.execute(text(f'CREATE INDEX IF NOT EXISTS workspace_health_scores_score_idx '
+                          f'ON {PERSIST_TABLE} (snapshot_date, health_score)'))
         conn.execute(text(f'DELETE FROM {PERSIST_TABLE} WHERE snapshot_date = ANY(:d)'),
                      {'d': snapshots})
         out.to_sql(PERSIST_TABLE.split('.')[1], conn, schema='analytics', if_exists='append',

@@ -1,5 +1,5 @@
 .PHONY: setup test test-fast lint pipeline pipeline-incremental verify-incremental validate \
-        bench up down airflow-test spark-test clean
+        bench up down airflow-test spark-test api api-role api-up api-test clean
 
 # Requires Python 3.11 (see .python-version). Configuration comes from the
 # environment: copy .env.example to .env and export its variables first.
@@ -39,6 +39,19 @@ airflow-test:
 
 spark-test:
 	docker compose --profile spark run --rm spark python -m pytest tests/test_spark_jobs.py -v
+
+# ==================== API ====================
+api:                      ## run the analytics API locally (127.0.0.1:$${API_PORT:-8000})
+	python -m api
+
+api-role:                 ## create/update the API's read-only database role (owner credentials)
+	python -m api.provision
+
+api-up:                   ## postgres + role provisioning + API container
+	docker compose up -d --build postgres api-init api
+
+api-test:
+	pytest tests/api
 
 # ==================== TESTS ====================
 test:                     ## everything, incl. the ~4 min end-to-end test

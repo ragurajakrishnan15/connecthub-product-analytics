@@ -25,6 +25,8 @@ class Experiment:
     num_variants: int = 2
     salt: str = 'v1'         # change to reshuffle arms without changing traffic
     description: str = ''
+    kind: str = 'ab'         # 'ab' | 'aa' (A/A check: arms are identical by design)
+    hypothesis: str = ''
 
     @property
     def start_ts(self):
@@ -41,13 +43,17 @@ EXPERIMENTS = {
             'exp_onboarding_v2', start='2025-01-01', end='2025-12-31',
             eligibility='new_signups', traffic_pct=1.0,
             description='New onboarding flow. Planted effect in the synthetic data: '
-                        'variant_1 is 1.3x as likely to use an AI feature after the first call.'),
+                        'variant_1 is 1.3x as likely to use an AI feature after the first call.',
+            hypothesis='The new onboarding flow increases the 14-day activation rate '
+                       'without lowering session duration or 60-day revenue.'),
         Experiment(
             'exp_ai_summary_v1', start='2025-07-01', end='2025-12-31',
             eligibility='active_users', traffic_pct=0.5,
             description='A/A check: half of active users enter and no effect is planted. '
                         'Any single A/A run is significant 5% of the time at alpha=0.05; '
-                        'tests check that rate across re-randomizations (salts).'),
+                        'tests check that rate across re-randomizations (salts).',
+            kind='aa',
+            hypothesis='No difference between arms: both receive the same experience.'),
     ]
 }
 

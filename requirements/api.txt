@@ -1,0 +1,11 @@
+# Analytics API runtime (api/, used by docker/api/Dockerfile). Only what the
+# API imports: no plotting, dbt or Great Expectations. Install with the lock file:
+#   pip install -r requirements/api.txt -c requirements/constraints-py311.txt
+fastapi==0.142.2
+uvicorn==0.54.0
+pydantic-settings==2.15.0
+SQLAlchemy==2.0.25
+psycopg2-binary==2.9.9
+# experiment registry and health-tier metadata import pandas/numpy
+pandas==2.2.0
+numpy==1.26.3
