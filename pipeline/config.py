@@ -16,17 +16,22 @@ DATA_START = '2025-01-01'
 DATA_END = '2025-12-31'
 
 
-def database_url(database=None):
-    """SQLAlchemy URL from POSTGRES_* environment variables."""
-    password = os.environ.get('POSTGRES_PASSWORD')
-    if not password:
-        raise RuntimeError(
-            'POSTGRES_PASSWORD is not set. Copy .env.example to .env and '
-            'export its variables (see README "Configuration").'
-        )
+def database_url(database=None, user=None, password=None):
+    """SQLAlchemy URL from POSTGRES_* environment variables.
+
+    user/password override POSTGRES_USER/POSTGRES_PASSWORD (the analytics API
+    connects as its own read-only role); host, port and database are shared.
+    """
+    if password is None:
+        password = os.environ.get('POSTGRES_PASSWORD')
+        if not password:
+            raise RuntimeError(
+                'POSTGRES_PASSWORD is not set. Copy .env.example to .env and '
+                'export its variables (see README "Configuration").'
+            )
     return URL.create(
         'postgresql+psycopg2',
-        username=os.environ.get('POSTGRES_USER', 'connecthub'),
+        username=user or os.environ.get('POSTGRES_USER', 'connecthub'),
         password=password,
         host=os.environ.get('POSTGRES_HOST', '127.0.0.1'),
         port=int(os.environ.get('POSTGRES_PORT', '5432')),

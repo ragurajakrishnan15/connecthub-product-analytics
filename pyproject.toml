@@ -17,6 +17,9 @@ filterwarnings = [
     # Third-party deprecation noise (matplotlib/pyparsing, great_expectations).
     "ignore::DeprecationWarning:matplotlib.*",
     "ignore::DeprecationWarning:great_expectations.*",
+    # Starlette 1.x recommends httpx2 for its TestClient; httpx (pinned) still works.
+    # (StarletteDeprecationWarning subclasses UserWarning.)
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:UserWarning",
 ]
 
 [tool.ruff]

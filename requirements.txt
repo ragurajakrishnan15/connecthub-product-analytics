@@ -3,4 +3,5 @@
 # Airflow and Spark live in separate files under requirements/ (their own
 # images, see docker/) because they conflict with or bloat this environment.
 -r requirements/pipeline.txt
+-r requirements/api.txt
 -r requirements/dev.txt

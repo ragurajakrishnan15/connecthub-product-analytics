@@ -9,14 +9,17 @@ Exit codes: 0 ok, 1 no data or error, 2 usage error.
 """
 import argparse
 import json
-import os
 import sys
 
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-SUMMARY_WEEKS = (1, 4, 8, 12)
+# The pure retention functions live in analytics/retention.py (no plotting
+# imports, so the API can use them); re-exported here for existing callers.
+from analytics.retention import (  # noqa: F401
+    SUMMARY_WEEKS, _week_start, as_of, load_retention, retention_table, summarize,
+)
 
 
 def generate_retention_matrix(conn, num_weeks=12):
@@ -54,42 +57,6 @@ def generate_retention_matrix(conn, num_weeks=12):
     return fig, matrix
 
 
-def retention_table(users, events, num_weeks=12):
-    """Weekly retention cells from user and event frames; mirrors gold.fct_retention_cohorts.
-
-    A user's cohort is the (Monday-start) week of their first_active_date; users
-    without one are excluded. Week N retention is the share of the cohort with
-    any event in the Nth week after the cohort week.
-    """
-    users = users.dropna(subset=['first_active_date'])
-    cohorts = pd.DataFrame({
-        'user_id': users['user_id'],
-        'cohort_week': _week_start(users['first_active_date']),
-    })
-    activity = pd.DataFrame({
-        'user_id': events['user_id'],
-        'activity_week': _week_start(events['event_date']),
-    }).drop_duplicates()
-
-    merged = activity.merge(cohorts, on='user_id')
-    merged['weeks_since_signup'] = (merged['activity_week'] - merged['cohort_week']).dt.days // 7
-    merged = merged[merged['weeks_since_signup'].between(0, num_weeks)]
-
-    retention = merged.groupby(['cohort_week', 'weeks_since_signup'])['user_id']         .nunique().rename('active_users').reset_index()
-    cohort_sizes = cohorts.groupby('cohort_week')['user_id'].nunique().rename('cohort_size')
-    retention = retention.merge(cohort_sizes, on='cohort_week')
-    retention['retention_rate'] = (
-        retention['active_users'] / retention['cohort_size'] * 100
-    ).round(2)
-    return retention.sort_values(['cohort_week', 'weeks_since_signup']).reset_index(drop=True)
-
-
-def _week_start(dates):
-    """Monday of each date's week (PostgreSQL DATE_TRUNC('week'))."""
-    dates = pd.to_datetime(dates).dt.normalize()
-    return dates - pd.to_timedelta(dates.dt.weekday, unit='D')
-
-
 def generate_retention_from_parquet(users_path, events_path, num_weeks=12):
     """Generate retention matrix from local parquet files (for local dev)."""
     users = pd.read_parquet(users_path, columns=['user_id', 'first_active_date'])
@@ -112,52 +79,6 @@ def generate_retention_from_parquet(users_path, events_path, num_weeks=12):
     ax.set_ylabel('Cohort Week')
     plt.tight_layout()
     return fig, matrix
-
-
-def as_of(table, date):
-    """Cells that are complete on `date`: the cohort week and week N have ended."""
-    date = pd.Timestamp(date)
-    cohort = pd.to_datetime(table['cohort_week'])
-    week_end = cohort + pd.to_timedelta(7 * (table['weeks_since_signup'] + 1) - 1, unit='D')
-    return table[week_end <= date].reset_index(drop=True)
-
-
-def summarize(table, date):
-    """Pooled week-N retention over cohorts whose week N is complete on `date`."""
-    date = pd.Timestamp(date)
-    sizes = table[table['weeks_since_signup'] == 0].set_index('cohort_week')['cohort_size']
-    sizes.index = pd.to_datetime(sizes.index)
-    pooled = {}
-    for week in SUMMARY_WEEKS:
-        eligible = sizes[sizes.index + pd.Timedelta(days=7 * (week + 1) - 1) <= date]
-        if eligible.empty:
-            continue
-        cells = table[(table['weeks_since_signup'] == week)
-                      & pd.to_datetime(table['cohort_week']).isin(eligible.index)]
-        pooled[f'week_{week}'] = round(100 * cells['active_users'].sum() / eligible.sum(), 2)
-    return {
-        'as_of': str(date.date()),
-        'cohorts': int(len(sizes)),
-        'users_in_cohorts': int(sizes.sum()),
-        'pooled_retention_pct': pooled,
-    }
-
-
-def load_retention(source='warehouse', data_dir='data', num_weeks=12, engine=None):
-    """All retention cells (cohort_week, weeks_since_signup, active_users, cohort_size, rate)."""
-    if source == 'parquet':
-        users = pd.read_parquet(os.path.join(data_dir, 'users.parquet'),
-                                columns=['user_id', 'first_active_date'])
-        events = pd.read_parquet(os.path.join(data_dir, 'events.parquet'),
-                                 columns=['user_id', 'event_date'])
-        return retention_table(users, events, num_weeks)
-    if engine is None:
-        from pipeline.config import create_engine
-        engine = create_engine()
-    return pd.read_sql(
-        'SELECT cohort_week, weeks_since_signup, active_users, cohort_size, retention_rate '
-        'FROM gold.fct_retention_cohorts WHERE weeks_since_signup <= %(w)s '
-        'ORDER BY cohort_week, weeks_since_signup', engine, params={'w': num_weeks})
 
 
 def main(argv=None):
