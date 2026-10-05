@@ -2,7 +2,6 @@ version: 2
 
 # dbt semantic layer (MetricFlow spec, dbt >= 1.6).
 # Ratio metrics reference other metrics, which reference measures on semantic models.
-# revenue_per_workspace is not defined yet: no revenue/MRR data exists in the warehouse.
 
 semantic_models:
   - name: activation_funnel
@@ -81,6 +80,35 @@ semantic_models:
         agg: count_distinct
         expr: "CASE WHEN feature_name IN ('ai_assist', 'ai_voice_agent') THEN workspace_id END"
 
+  - name: workspace_revenue
+    description: "Monthly recurring revenue per workspace (per-active-seat billing)"
+    model: ref('fct_workspace_mrr')
+    defaults:
+      agg_time_dimension: month_start
+    entities:
+      - name: workspace_month
+        type: primary
+        expr: "workspace_id || '-' || month_start"
+      - name: workspace
+        type: foreign
+        expr: workspace_id
+    dimensions:
+      - name: month_start
+        type: time
+        type_params:
+          time_granularity: month
+      - name: plan_tier
+        type: categorical
+      - name: mrr_movement
+        type: categorical
+    measures:
+      - name: mrr_usd
+        agg: sum
+        expr: mrr_usd
+      - name: paying_workspaces
+        agg: count_distinct
+        expr: "CASE WHEN mrr_usd > 0 THEN workspace_id END"
+
 metrics:
   - name: total_signups
     label: "Total Signups"
@@ -141,3 +169,23 @@ metrics:
     type_params:
       numerator: ai_active_workspaces
       denominator: total_active_workspaces
+
+  - name: mrr
+    label: "MRR (USD)"
+    type: simple
+    type_params:
+      measure: mrr_usd
+
+  - name: paying_workspaces
+    label: "Paying Workspaces"
+    type: simple
+    type_params:
+      measure: paying_workspaces
+
+  - name: revenue_per_workspace
+    label: "Revenue per Paying Workspace"
+    description: "Average MRR per workspace with non-zero MRR; query by month_start (monthly grain)"
+    type: ratio
+    type_params:
+      numerator: mrr
+      denominator: paying_workspaces

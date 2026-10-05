@@ -53,13 +53,20 @@ def assign_experiment_cohort(conn, experiment_id, start_date, end_date):
 
 
 def assign_from_parquet(users_path, experiment_id, num_variants=2):
-    """Assign variants from local parquet for testing."""
+    """Assign variants from local parquet for testing.
+
+    Users are assigned when they sign up (an onboarding experiment), so
+    assigned_at is the signup date and reruns produce identical output.
+    """
     users = pd.read_parquet(users_path)
     users['variant'] = users['user_id'].apply(
         lambda uid: assign_variant(uid, experiment_id, num_variants)
     )
     users['experiment_id'] = experiment_id
-    users['assigned_at'] = pd.Timestamp.now(tz='UTC')
+    if 'signup_date' in users.columns:
+        users['assigned_at'] = pd.to_datetime(users['signup_date']).dt.tz_localize('UTC')
+    else:
+        users['assigned_at'] = pd.Timestamp.now(tz='UTC')
 
     # Verify balance
     dist = users['variant'].value_counts()

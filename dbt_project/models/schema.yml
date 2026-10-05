@@ -1,0 +1,131 @@
+version: 2
+
+models:
+  # ---------------- staging ----------------
+  - name: stg_events
+    description: "Deduplicated, typed product events"
+    columns:
+      - name: event_id
+        tests: [unique, not_null]
+      - name: user_id
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_users'), field: user_id}
+      - name: workspace_id
+        tests:
+          - relationships: {to: ref('stg_workspaces'), field: workspace_id}
+
+  - name: stg_users
+    columns:
+      - name: user_id
+        tests: [unique, not_null]
+      - name: workspace_id
+        tests:
+          - relationships: {to: ref('stg_workspaces'), field: workspace_id}
+      - name: plan_tier
+        tests:
+          - accepted_values: {values: ['Free', 'Essentials', 'Professional', 'Enterprise']}
+
+  - name: stg_workspaces
+    columns:
+      - name: workspace_id
+        tests: [unique, not_null]
+      - name: plan_tier
+        tests:
+          - accepted_values: {values: ['Free', 'Essentials', 'Professional', 'Enterprise']}
+
+  - name: stg_subscriptions
+    description: "One row per workspace per month since the workspace was created"
+    tests:
+      - unique_combination_of_columns:
+          columns: [workspace_id, month_start]
+    columns:
+      - name: workspace_id
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_workspaces'), field: workspace_id}
+      - name: plan_tier
+        tests:
+          - accepted_values: {values: ['Free', 'Essentials', 'Professional', 'Enterprise']}
+
+  - name: stg_nps_responses
+    columns:
+      - name: response_id
+        tests: [unique, not_null]
+      - name: user_id
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_users'), field: user_id}
+      - name: nps_category
+        tests:
+          - accepted_values: {values: ['promoter', 'passive', 'detractor']}
+
+  # ---------------- intermediate ----------------
+  - name: int_activation_funnel
+    description: "One row per user with 14-day activation milestones"
+    columns:
+      - name: user_id
+        tests: [unique, not_null]
+      - name: activation_stage
+        tests:
+          - accepted_values:
+              values: ['fully_activated', 'ai_activated', 'call_activated', 'signed_up_only']
+
+  - name: int_sessions
+    columns:
+      - name: session_id
+        tests: [unique, not_null]
+
+  # ---------------- gold ----------------
+  - name: fct_daily_active_users
+    columns:
+      - name: event_date
+        tests: [unique, not_null]
+
+  - name: fct_agent_evaluations
+    columns:
+      - name: eval_id
+        tests: [unique, not_null]
+      - name: workspace_id
+        tests:
+          - relationships: {to: ref('stg_workspaces'), field: workspace_id}
+      - name: resolution_path
+        tests:
+          - accepted_values: {values: ['ai_resolved', 'escalated', 'human_handled']}
+
+  - name: fct_experiment_assignments
+    columns:
+      - name: variant
+        tests:
+          - not_null
+          - accepted_values: {values: ['variant_0', 'variant_1', 'holdout']}
+
+  - name: fct_experiment_user_metrics
+    description: "One row per experiment participant: primary metric and guardrails"
+    tests:
+      - unique_combination_of_columns:
+          columns: [experiment_id, user_id]
+    columns:
+      - name: user_id
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_users'), field: user_id}
+      - name: activated_14d
+        tests:
+          - accepted_values: {values: [0, 1], quote: false}
+
+  - name: fct_workspace_mrr
+    tests:
+      - unique_combination_of_columns:
+          columns: [workspace_id, month_start]
+    columns:
+      - name: mrr_movement
+        tests:
+          - accepted_values:
+              values: ['new', 'reactivation', 'churned', 'expansion', 'contraction', 'retained', 'inactive']
+
+  - name: metrics_product_health
+    description: "One row per workspace as of the latest event date"
+    columns:
+      - name: workspace_id
+        tests: [unique, not_null]

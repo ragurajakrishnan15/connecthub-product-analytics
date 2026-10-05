@@ -3,15 +3,32 @@ version: 2
 sources:
   - name: bronze
     schema: bronze
+    description: "Raw tables loaded by scripts/ingest_events.py"
     tables:
       - name: events_raw
         description: "Raw product events from ingestion layer"
       - name: users_raw
         description: "Raw user dimension from ingestion layer"
+        columns:
+          - name: user_id
+            tests: [unique, not_null]
       - name: workspaces_raw
         description: "Raw workspace dimension from ingestion layer"
+        columns:
+          - name: workspace_id
+            tests: [unique, not_null]
       - name: agent_evaluations
-        description: "AI agent call evaluation records"
+        description: "AI voice agent call evaluations, one per AI-handled call"
+        columns:
+          - name: eval_id
+            tests: [unique, not_null]
+      - name: subscriptions
+        description: "Monthly per-active-seat billing per workspace (MRR)"
+      - name: nps_responses
+        description: "NPS survey responses, score 0-10"
+        columns:
+          - name: response_id
+            tests: [unique, not_null]
 
   - name: experiments
     schema: experiments

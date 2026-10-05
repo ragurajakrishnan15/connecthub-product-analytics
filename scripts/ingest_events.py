@@ -13,6 +13,7 @@ import io
 import os
 
 import pandas as pd
+import pyarrow.parquet as pq
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 
@@ -60,12 +61,35 @@ TABLES = {
         'file': 'agent_evaluations.parquet',
         'columns': {
             'eval_id': 'TEXT PRIMARY KEY',
+            'workspace_id': 'TEXT',
             'call_date': 'DATE NOT NULL',
             'call_type': 'TEXT',
             'resolved_by_ai': 'BOOLEAN',
             'handle_time_seconds': 'INTEGER',
             'csat_score': 'NUMERIC(3, 1)',
             'escalated_to_human': 'BOOLEAN',
+        },
+    },
+    'bronze.subscriptions': {
+        'file': 'subscriptions.parquet',
+        'columns': {
+            'workspace_id': 'TEXT NOT NULL',
+            'month_start': 'DATE NOT NULL',
+            'plan_tier': 'TEXT NOT NULL',
+            'billed_seats': 'INTEGER NOT NULL',
+            'seat_price_usd': 'NUMERIC(8, 2) NOT NULL',
+            'mrr_usd': 'NUMERIC(12, 2) NOT NULL',
+        },
+        'primary_key': ('workspace_id', 'month_start'),
+    },
+    'bronze.nps_responses': {
+        'file': 'nps_responses.parquet',
+        'columns': {
+            'response_id': 'TEXT PRIMARY KEY',
+            'user_id': 'TEXT NOT NULL',
+            'workspace_id': 'TEXT',
+            'response_date': 'DATE NOT NULL',
+            'score': 'SMALLINT NOT NULL CHECK (score BETWEEN 0 AND 10)',
         },
     },
     'experiments.experiment_assignments': {
@@ -101,13 +125,29 @@ def database_url():
 
 
 def create_tables(engine, tables=TABLES):
-    """Create the bronze and experiments schemas and tables if missing."""
+    """Create the bronze and experiments schemas and tables if missing.
+
+    A table whose columns differ from its spec (an older layout) is dropped and
+    recreated. Every load replaces the table's contents anyway; dependent dbt
+    views are dropped with it and rebuilt by the next dbt run.
+    """
     with engine.begin() as conn:
         for schema in sorted({name.split('.')[0] for name in tables}):
             conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS {schema}'))
         for name, spec in tables.items():
-            cols = ',\n    '.join(f'{col} {ddl}' for col, ddl in spec['columns'].items())
-            conn.execute(text(f'CREATE TABLE IF NOT EXISTS {name} (\n    {cols}\n)'))
+            schema, table = name.split('.')
+            existing = conn.execute(text(
+                'SELECT column_name FROM information_schema.columns '
+                'WHERE table_schema = :s AND table_name = :t ORDER BY ordinal_position'),
+                {'s': schema, 't': table}).scalars().all()
+            if existing and existing != list(spec['columns']):
+                print(f'Recreating {name}: columns changed')
+                conn.execute(text(f'DROP TABLE {name} CASCADE'))
+            cols = [f'{col} {ddl}' for col, ddl in spec['columns'].items()]
+            if 'primary_key' in spec:
+                cols.append(f"PRIMARY KEY ({', '.join(spec['primary_key'])})")
+            body = ',\n    '.join(cols)
+            conn.execute(text(f'CREATE TABLE IF NOT EXISTS {name} (\n    {body}\n)'))
 
 
 def prepare_frame(df, columns):
@@ -125,24 +165,38 @@ def prepare_frame(df, columns):
 def copy_frame(engine, df, table_name, columns, chunksize=500_000):
     """Replace the table's contents with df using PostgreSQL COPY."""
     df = prepare_frame(df, columns)
+    chunks = (df.iloc[start:start + chunksize] for start in range(0, len(df), chunksize))
+    return copy_frames(engine, chunks, table_name, columns)
+
+
+def copy_frames(engine, frames, table_name, columns):
+    """Replace the table's contents with an iterable of DataFrames, in one transaction."""
     raw = engine.raw_connection()
+    rows = 0
     try:
         with raw.cursor() as cur:
             cur.execute(f'TRUNCATE {table_name}')
             copy_sql = (f'COPY {table_name} ({", ".join(columns)}) '
                         "FROM STDIN WITH (FORMAT csv, NULL '')")
-            for start in range(0, len(df), chunksize):
+            for frame in frames:
                 buf = io.StringIO()
-                df.iloc[start:start + chunksize].to_csv(buf, index=False, header=False)
+                prepare_frame(frame, columns).to_csv(buf, index=False, header=False)
                 buf.seek(0)
                 cur.copy_expert(copy_sql, buf)
+                rows += len(frame)
         raw.commit()
     except Exception:
         raw.rollback()
         raise
     finally:
         raw.close()
-    return len(df)
+    return rows
+
+
+def copy_parquet(engine, path, table_name, columns, batch_size=500_000):
+    """Stream a parquet file into the table batch by batch, so memory stays bounded."""
+    batches = pq.ParquetFile(path).iter_batches(batch_size=batch_size, columns=list(columns))
+    return copy_frames(engine, (b.to_pandas() for b in batches), table_name, columns)
 
 
 def ingest_from_parquet(input_path, output_path, event_date=None):
@@ -166,7 +220,7 @@ def ingest_to_postgres(parquet_path, conn_string=None, table_name='bronze.events
     engine = create_engine(conn_string or database_url())
     spec = TABLES[table_name]
     create_tables(engine, {table_name: spec})
-    rows = copy_frame(engine, pd.read_parquet(parquet_path), table_name, spec['columns'])
+    rows = copy_parquet(engine, parquet_path, table_name, spec['columns'])
     print(f"Loaded {rows:,} rows into {table_name}")
     return rows
 
@@ -180,7 +234,7 @@ def load_all_to_postgres(data_dir='data', conn_string=None):
     for table, spec in TABLES.items():
         filepath = os.path.join(data_dir, spec['file'])
         if os.path.exists(filepath):
-            rows = copy_frame(engine, pd.read_parquet(filepath), table, spec['columns'])
+            rows = copy_parquet(engine, filepath, table, spec['columns'])
             loaded[table] = rows
             print(f"OK   {spec['file']} -> {table} ({rows:,} rows)")
         else:

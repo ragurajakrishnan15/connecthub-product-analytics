@@ -65,23 +65,38 @@ pip install -r requirements.txt
 
 pytest                                                   # unit + PostgreSQL integration tests
 docker compose up -d postgres                            # local warehouse on 127.0.0.1:5432
-python scripts/generate_synthetic_data.py --users 2000 --workspaces 200 --evaluations 2000
+python scripts/generate_synthetic_data.py --users 10000  # ~2 s; deterministic for a given --seed
 python -m experimentation.assignment                     # writes data/experiment_assignments.parquet
 python scripts/ingest_events.py --load-postgres          # loads bronze.* and experiments.*
 cd dbt_project && dbt build && cd ..                     # builds staging / intermediate / gold / semantic
+python -m experimentation.evaluate                       # evaluates exp_onboarding_v2
 ```
 
-The generator's defaults (500K users) need tens of GB of RAM; use the flags above for local development.
+### Synthetic data
+
+`scripts/generate_synthetic_data.py` simulates a year (2025) of a B2B SaaS product with real behavioral structure,
+so the analytics have signal to find:
+
+- Workspaces have a latent engagement level that drives their users' behavior, plan changes, support load, AI
+  agent quality and NPS.
+- Users go through an ordered 14-day activation funnel (first call → AI feature → team invite); activity decays
+  after signup and activated users churn later.
+- Revenue is billed per active seat each month (`bronze.subscriptions`); NPS responses arrive at days 30/120/210/300.
+- Experiment `exp_onboarding_v2` has a **planted effect**: `variant_1` users are 1.3× as likely to use an AI feature
+  after their first call. Evaluation should recover it; nothing else differs between variants.
+
+The same `--seed` always produces identical files. Events are written in chunks, so memory stays bounded as
+`--users` grows (see `PHASE_2_REPORT.md` for measured scale).
 
 ### Warehouse schemas
 
 | Schema | Written by | Contents |
 |---|---|---|
-| `bronze` | `scripts/ingest_events.py` | Raw events, users, workspaces, agent evaluations |
+| `bronze` | `scripts/ingest_events.py` | Raw events, users, workspaces, agent evaluations, subscriptions (MRR), NPS responses |
 | `experiments` | `scripts/ingest_events.py` | `experiment_assignments` |
 | `staging` | dbt | Typed, deduplicated views over bronze |
 | `intermediate` | dbt | Sessions, feature usage, activation funnel |
-| `gold` | dbt | Facts and `metrics_product_health` consumed by Python, LookML and Hex |
+| `gold` | dbt | Facts (incl. `fct_workspace_mrr`, `fct_experiment_user_metrics`) and `metrics_product_health`, consumed by Python, LookML and Hex |
 | `semantic` | dbt | MetricFlow time spine for the semantic layer |
 
 ### Dependencies

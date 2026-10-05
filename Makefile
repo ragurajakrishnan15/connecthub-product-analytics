@@ -10,8 +10,9 @@ setup:
 
 # ==================== DATA ====================
 generate:
-	python scripts/generate_synthetic_data.py --users $(or $(USERS),2000) --workspaces $(or $(WORKSPACES),200) --evaluations $(or $(EVALUATIONS),2000)
-	@echo "✅ Synthetic data generated in data/"
+	python scripts/generate_synthetic_data.py --users $(or $(USERS),10000) --seed $(or $(SEED),42)
+	python -m experimentation.assignment
+	@echo "✅ Synthetic data and experiment assignments generated in data/"
 
 load-postgres:
 	python scripts/ingest_events.py --load-postgres
@@ -52,7 +53,6 @@ dbt-build:
 
 # ==================== ANALYTICS ====================
 run-experiments:
-	python -m experimentation.assignment
 	python -m experimentation.evaluate
 	@echo "✅ Experiments evaluated"
 
