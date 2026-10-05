@@ -53,7 +53,7 @@ def test_meta_with_an_unreachable_database_is_a_retryable_problem(client):
 
 # ---------------------------------------------------------------- errors
 def test_unknown_route_is_a_404_problem(client):
-    assert_problem(client.get('/api/overview'), 404, 'not-found')
+    assert_problem(client.get('/api/does-not-exist'), 404, 'not-found')
 
 
 def test_wrong_method_is_a_405_problem(client):
@@ -210,10 +210,16 @@ def test_api_key_mode_protects_meta_but_not_health():
 
 
 # ---------------------------------------------------------------- docs and OpenAPI
-def test_openapi_documents_only_the_phase_4b_endpoints(client):
+def test_openapi_documents_exactly_the_implemented_endpoints(client):
     spec = client.get('/api/openapi.json').json()
     assert spec['info']['title'] == 'ConnectHub Analytics API' and spec['info']['version'] == '0.1.0'
-    assert set(spec['paths']) == {'/api/health', '/api/health/ready', '/api/meta'}
+    assert set(spec['paths']) == {
+        '/api/health', '/api/health/ready', '/api/meta',                       # Phase 4B
+        '/api/overview', '/api/engagement', '/api/activation', '/api/retention',  # Phase 4C
+        '/api/cohorts', '/api/revenue', '/api/feature-adoption', '/api/experiments',
+        '/api/experiments/{experiment_id}', '/api/nps', '/api/support', '/api/customer-health',
+        '/api/customer-health/workspaces'}
+    assert all(set(ops) == {'get'} for ops in spec['paths'].values())     # read-only surface
     for path, ops in spec['paths'].items():
         for op in ops.values():
             assert op['tags'] and op['summary'], path

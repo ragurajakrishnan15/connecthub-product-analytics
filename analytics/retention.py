@@ -61,6 +61,30 @@ def as_of(table, date):
     return table[week_end <= date].reset_index(drop=True)
 
 
+def pooled_curve(table, date, weeks=range(13)):
+    """Pooled week-N retention with the counts behind it.
+
+    For each week N: the cohorts whose week N has ended by `date` (eligible),
+    their combined size, and their combined active users in week N. A missing
+    cell of an eligible cohort contributes 0 active users. Returns one dict per
+    week: {week, cohorts, cohort_users, active_users, retention_pct}, with
+    retention_pct None when no cohort is eligible.
+    """
+    date = pd.Timestamp(date)
+    sizes = table[table['weeks_since_signup'] == 0].set_index('cohort_week')['cohort_size']
+    sizes.index = pd.to_datetime(sizes.index)
+    cohort_weeks = pd.to_datetime(table['cohort_week'])
+    out = []
+    for week in weeks:
+        eligible = sizes[sizes.index + pd.Timedelta(days=7 * (week + 1) - 1) <= date]
+        cells = table[(table['weeks_since_signup'] == week) & cohort_weeks.isin(eligible.index)]
+        users, active = int(eligible.sum()), int(cells['active_users'].sum())
+        out.append({'week': week, 'cohorts': int(len(eligible)), 'cohort_users': users,
+                    'active_users': active,
+                    'retention_pct': round(100 * active / users, 2) if users else None})
+    return out
+
+
 def summarize(table, date, weeks=SUMMARY_WEEKS):
     """Pooled week-N retention over cohorts whose week N is complete on `date`.
 
@@ -69,15 +93,8 @@ def summarize(table, date, weeks=SUMMARY_WEEKS):
     """
     date = pd.Timestamp(date)
     sizes = table[table['weeks_since_signup'] == 0].set_index('cohort_week')['cohort_size']
-    sizes.index = pd.to_datetime(sizes.index)
-    pooled = {}
-    for week in weeks:
-        eligible = sizes[sizes.index + pd.Timedelta(days=7 * (week + 1) - 1) <= date]
-        if eligible.empty:
-            continue
-        cells = table[(table['weeks_since_signup'] == week)
-                      & pd.to_datetime(table['cohort_week']).isin(eligible.index)]
-        pooled[f'week_{week}'] = round(100 * cells['active_users'].sum() / eligible.sum(), 2)
+    pooled = {f"week_{p['week']}": p['retention_pct'] for p in pooled_curve(table, date, weeks)
+              if p['retention_pct'] is not None}
     return {
         'as_of': str(date.date()),
         'cohorts': int(len(sizes)),

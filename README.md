@@ -19,8 +19,10 @@ The live dashboard lets you experience the platform as a product team would — 
 - **Operations**: idempotent steps, structured JSON logs with run IDs, run history in `ops.pipeline_runs`, benchmarks
 - **Visualization** (illustrative, unvalidated): Hex notebooks, LookML, Plotly
 
-Not implemented: Kafka/Kinesis/S3 ingestion, Apache Iceberg, a serving API and the AI analyst. The dashboard in
-`index.html` still shows static numbers. See [docs/architecture.md](docs/architecture.md).
+A read-only analytics API (`api/`, FastAPI) serves the metrics from the warehouse; see [docs/api.md](docs/api.md).
+
+Not implemented: Kafka/Kinesis/S3 ingestion, Apache Iceberg and the AI analyst. The dashboard in `index.html` still
+shows static numbers (it is not yet connected to the API). See [docs/architecture.md](docs/architecture.md).
 
 ## Architecture
 
@@ -96,6 +98,18 @@ python scripts/benchmark.py --users 10000                   # timings and memory
 All return `0` on success, `1` on errors or failed checks (with a message on stderr), and `2` on usage errors;
 `evaluate --fail-on-srm` returns `3` when a sample ratio mismatch is found.
 
+### Analytics API
+
+```bash
+python -m api.provision                     # once: read-only database role (set API_DB_PASSWORD in .env)
+python -m api                               # http://127.0.0.1:8000/api/docs
+docker compose up -d postgres api-init api  # or in Docker
+```
+
+Endpoints: `/api/health`, `/api/health/ready`, `/api/meta`, `/api/overview`, `/api/engagement`, `/api/activation`,
+`/api/retention`, `/api/cohorts`, `/api/revenue`, `/api/feature-adoption`, `/api/experiments[/{id}]`, `/api/nps`,
+`/api/support`, `/api/customer-health[/workspaces]`. Reference: [docs/api.md](docs/api.md).
+
 ### With Docker: Airflow
 
 ```bash
@@ -158,6 +172,7 @@ environment (Airflow 2.8 needs SQLAlchemy < 2.0, pandas 2.2 needs >= 2.0). Optio
 
 ```
 connecthub-product-analytics/
+├── api/                            # Read-only analytics API (FastAPI): routers, services, repositories
 ├── pipeline/                       # Step runner, CLI, logging, fingerprints, load state
 ├── scripts/                        # Data generation, ingestion, benchmark
 ├── experimentation/                # Experiment registry, assignment, statistics, evaluation

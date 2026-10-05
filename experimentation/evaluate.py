@@ -26,6 +26,7 @@ import sys
 import pandas as pd
 from experimentation.stat_tests import z_test_proportions, t_test_continuous, srm_check
 from experimentation.bayesian_ab import bayesian_ab_test
+from experimentation.decision import DECISION_CODES, decision_code, guardrail_failed  # noqa: F401
 
 CONTROL, TREATMENT = 'variant_0', 'variant_1'
 AI_EVENTS = ('ai_assist.used', 'ai_voice_agent.activated')
@@ -152,19 +153,7 @@ def evaluate_user_metrics(users, experiment_id):
     }
 
 
-DECISION_CODES = ('SHIP', 'CONTINUE', 'HOLD', 'REVERT')
-
-
-def decision_code(decision):
-    """'SHIP - Significant lift ...' -> 'SHIP'."""
-    code = decision.split(' - ', 1)[0]
-    if code not in DECISION_CODES:
-        raise ValueError(f'unrecognized decision {decision!r}')
-    return code
-
-
-def _guardrail_failed(guardrail):
-    return guardrail['significant'] and guardrail['absolute_diff'] < 0
+_guardrail_failed = guardrail_failed
 
 
 def _make_decision(primary, bayesian, srm, guardrail_revenue, guardrail_session):
