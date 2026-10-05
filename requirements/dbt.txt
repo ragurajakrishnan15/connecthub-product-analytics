@@ -1,0 +1,4 @@
+# dbt for the local PostgreSQL warehouse.
+# dbt-core 1.7 supports Python <= 3.11 (it imports distutils, removed in 3.12).
+dbt-core==1.7.4
+dbt-postgres==1.7.4

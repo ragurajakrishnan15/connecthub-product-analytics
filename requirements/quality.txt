@@ -1,0 +1,4 @@
+# Optional, not yet wired into the pipeline (no Great Expectations data context,
+# no Looker instance for spectacles). Install separately if/when configured.
+great-expectations==0.18.8
+spectacles==2.2.0

@@ -1,0 +1,31 @@
+name: 'connecthub_analytics'
+version: '1.0.0'
+config-version: 2
+
+profile: 'connecthub'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  connecthub_analytics:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+    gold:
+      +materialized: table
+      +schema: gold
+    semantic:
+      +materialized: table
+      +schema: semantic

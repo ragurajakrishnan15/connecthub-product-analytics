@@ -1,0 +1,8 @@
+# Airflow is NOT installed into the development virtualenv: Airflow 2.8 pins
+# SQLAlchemy < 2.0, which conflicts with pandas 2.2 (requirements/app.txt).
+# It runs in the docker-compose containers (apache/airflow:2.8.1). If you need
+# it locally, use a separate Python 3.11 virtualenv and the official constraints:
+#
+#   pip install "apache-airflow==2.8.1" \
+#     --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.8.1/constraints-3.11.txt"
+apache-airflow==2.8.1

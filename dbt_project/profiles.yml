@@ -1,0 +1,16 @@
+# Connection settings come from the environment (see .env.example).
+# POSTGRES_PASSWORD has no default on purpose; dbt fails fast if it is unset.
+connecthub:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', 'localhost') }}"
+      port: "{{ env_var('POSTGRES_PORT', '5432') | int }}"
+      user: "{{ env_var('POSTGRES_USER', 'connecthub') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'connecthub_analytics') }}"
+      # Base schema only; every model sets its own schema (staging /
+      # intermediate / gold / semantic) via macros/generate_schema_name.sql.
+      schema: public
+      threads: 4

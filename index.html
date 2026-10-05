@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ConnectHub Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0c0c14;
+  --surface: #14141f;
+  --surface-2: #1a1a2a;
+  --surface-3: #22223a;
+  --border: #2a2a40;
+  --text: #eaeaf0;
+  --text-2: #9898b0;
+  --text-3: #6a6a80;
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --accent-bg: rgba(99,102,241,0.12);
+  --green: #34d399;
+  --green-bg: rgba(52,211,153,0.12);
+  --red: #f87171;
+  --red-bg: rgba(248,113,113,0.12);
+  --orange: #fbbf24;
+  --orange-bg: rgba(251,191,36,0.12);
+  --blue: #60a5fa;
+  --blue-bg: rgba(96,165,250,0.12);
+  --purple: #a78bfa;
+  --chat-user: #2a2a44;
+  --chat-ai: #1a1a2e;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* Top Bar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.topbar-logo {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 14px; color: #fff;
+}
+.topbar-name { font-weight: 700; font-size: 15px; }
+.topbar-sub { font-size: 12px; color: var(--text-2); margin-left: 4px; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.topbar-pill {
+  font-size: 11px; font-weight: 600;
+  padding: 4px 10px; border-radius: 12px;
+  background: var(--green-bg); color: var(--green);
+}
+.topbar-date { font-size: 12px; color: var(--text-3); }
+
+/* Nav Tabs */
+.nav-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0 24px;
+  overflow-x: auto;
+}
+.nav-tab {
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.nav-tab:hover { color: var(--text-2); }
+.nav-tab.active {
+  color: var(--accent-light);
+  border-bottom-color: var(--accent);
+}
+
+/* Main Layout */
+.main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* KPI Row */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.kpi-label { font-size: 12px; color: var(--text-3); font-weight: 500; margin-bottom: 8px; }
+.kpi-value { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+.kpi-change {
+  font-size: 12px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 10px;
+}
+.kpi-change.up { color: var(--green); background: var(--green-bg); }
+.kpi-change.down { color: var(--red); background: var(--red-bg); }
+
+/* Chart Cards */
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.chart-card.full { grid-column: 1 / -1; }
+.chart-title {
+  font-size: 14px; font-weight: 600; margin-bottom: 4px;
+}
+.chart-subtitle { font-size: 12px; color: var(--text-3); margin-bottom: 16px; }
+.chart-wrap { position: relative; height: 260px; }
+.chart-wrap canvas { width: 100% !important; height: 100% !important; }
+
+/* Insight Callout */
+.insight {
+  background: var(--accent-bg);
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.insight-icon { font-size: 16px; margin-top: 1px; }
+.insight-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+.insight-text strong { color: var(--accent-light); }
+
+/* Funnel */
+.funnel { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; }
+.funnel-stage {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.funnel-bar {
+  height: 28px; border-radius: 6px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  transition: width 0.8s ease;
+}
+.funnel-label { font-size: 13px; font-weight: 500; min-width: 140px; }
+.funnel-value { font-size: 13px; font-weight: 700; color: var(--accent-light); min-width: 60px; text-align: right; }
+.funnel-pct { font-size: 11px; color: var(--text-3); min-width: 45px; text-align: right; }
+
+/* Heatmap */
+.heatmap-wrap { overflow-x: auto; }
+.heatmap { border-collapse: collapse; width: 100%; font-size: 12px; }
+.heatmap th {
+  padding: 8px 10px; font-weight: 600; color: var(--text-3);
+  text-align: center; font-size: 11px;
+}
+.heatmap td {
+  padding: 8px 10px; text-align: center; font-weight: 600;
+  border-radius: 4px; font-size: 12px;
+}
+.heatmap .row-label { text-align: left; color: var(--text-2); font-weight: 500; font-size: 11px; }
+
+/* Experiment */
+.exp-result {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-bottom: 16px;
+}
+.exp-card {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 18px;
+  text-align: center;
+}
+.exp-card-label { font-size: 11px; color: var(--text-3); font-weight: 500; margin-bottom: 6px; }
+.exp-card-value { font-size: 24px; font-weight: 800; }
+.exp-card-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+.exp-verdict {
+  padding: 14px 18px; border-radius: 10px;
+  font-size: 14px; font-weight: 600;
+  text-align: center;
+}
+.exp-verdict.ship { background: var(--green-bg); color: var(--green); }
+
+/* Health Table */
+.health-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.health-table th {
+  text-align: left; padding: 10px 12px;
+  font-size: 11px; font-weight: 600; color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+}
+.health-table td {
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
+}
+.health-badge {
+  font-size: 11px; font-weight: 600;
+  padding: 3px 10px; border-radius: 10px;
+  display: inline-block;
+}
+.health-badge.champion { background: var(--green-bg); color: var(--green); }
+.health-badge.healthy { background: var(--blue-bg); color: var(--blue); }
+.health-badge.at-risk { background: var(--orange-bg); color: var(--orange); }
+.health-badge.critical { background: var(--red-bg); color: var(--red); }
+.health-bar-bg {
+  width: 80px; height: 6px; background: var(--surface-3);
+  border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 8px;
+}
+.health-bar-fill { height: 100%; border-radius: 3px; }
+
+/* AI Chat */
+.ai-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.ai-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.ai-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.ai-header-text { font-size: 14px; font-weight: 600; }
+.ai-header-sub { font-size: 12px; color: var(--text-3); margin-left: auto; }
+.ai-messages {
+  padding: 16px 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.ai-msg {
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.ai-msg.user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.ai-msg.ai {
+  align-self: flex-start;
+  background: var(--surface-2);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+.ai-msg.ai.thinking {
+  color: var(--text-3);
+  font-style: italic;
+}
+.ai-input-row {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 8px;
+}
+.ai-input {
+  flex: 1;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.ai-input:focus { border-color: var(--accent); }
+.ai-input::placeholder { color: var(--text-3); }
+.ai-send {
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.2s;
+}
+.ai-send:hover { opacity: 0.85; }
+.ai-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.ai-suggestions {
+  padding: 8px 16px 14px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.ai-chip {
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.2s, color 0.2s;
+}
+.ai-chip:hover { border-color: var(--accent); color: var(--accent-light); }
+
+/* Built-by */
+.built-by {
+  text-align: center;
+  padding: 32px 24px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+.built-by a { color: var(--accent-light); text-decoration: none; }
+
+@media (max-width: 768px) {
+  .chart-row { grid-template-columns: 1fr; }
+  .exp-result { grid-template-columns: 1fr; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .topbar-sub, .topbar-date { display: none; }
+  .ai-msg { max-width: 95%; }
+}
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">CH</div>
+    <span class="topbar-name">ConnectHub</span>
+    <span class="topbar-sub">Analytics</span>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-pill">Live</span>
+    <span class="topbar-date">Oct 2025 — Sep 2026</span>
+  </div>
+</div>
+
+<!-- Nav -->
+<div class="nav-tabs">
+  <div class="nav-tab active" data-tab="overview">Overview</div>
+  <div class="nav-tab" data-tab="retention">Retention</div>
+  <div class="nav-tab" data-tab="funnel">Activation</div>
+  <div class="nav-tab" data-tab="experiments">Experiments</div>
+  <div class="nav-tab" data-tab="health">Customer Health</div>
+  <div class="nav-tab" data-tab="ai">AI Analyst</div>
+</div>
+
+<div class="main">
+
+<!-- ===== OVERVIEW TAB ===== -->
+<div class="tab-content active" id="tab-overview">
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Monthly Recurring Revenue</div>
+      <div class="kpi-value">$2.4M</div>
+      <span class="kpi-change up">↑ 18.2% MoM</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Daily Active Users</div>
+      <div class="kpi-value">42,891</div>
+      <span class="kpi-change up">↑ 12.4%</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Week-4 Retention</div>
+      <div class="kpi-value">38.4%</div>
+      <span class="kpi-change up">↑ 4.8pp</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">AI Feature Adoption</div>
+      <div class="kpi-value">47.2%</div>
+      <span class="kpi-change up">↑ 11.3%</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Activation Rate (14d)</div>
+      <div class="kpi-value">34.2%</div>
+      <span class="kpi-change up">↑ 2.1pp</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">NPS</div>
+      <div class="kpi-value">47</div>
+      <span class="kpi-change up">↑ 3</span>
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="insight-icon">💡</div>
+    <div class="insight-text">
+      <strong>Key Insight:</strong> DAU grew 12.4% month-over-month, driven primarily by AI Assist adoption among Professional-tier workspaces. Week-2 retention improved from 41% to 46% after the guided setup flow launched. Recommendation: surface AI Assist as a post-call CTA within the first week.
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-card">
+      <div class="chart-title">Daily Active Users</div>
+      <div class="chart-subtitle">Trailing 12 months</div>
+      <div class="chart-wrap"><canvas id="chart-dau"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Feature Adoption</div>
+      <div class="chart-subtitle">Cumulative adoption by day since signup</div>
+      <div class="chart-wrap"><canvas id="chart-adoption"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-card">
+      <div class="chart-title">Revenue by Plan Tier</div>
+      <div class="chart-subtitle">Monthly breakdown</div>
+      <div class="chart-wrap"><canvas id="chart-revenue"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">AI Agent Resolution Rate</div>
+      <div class="chart-subtitle">% of calls resolved without human escalation</div>
+      <div class="chart-wrap"><canvas id="chart-agent"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RETENTION TAB ===== -->
+<div class="tab-content" id="tab-retention">
+  <div class="insight">
+    <div class="insight-icon">💡</div>
+    <div class="insight-text">
+      <strong>Insight:</strong> The Jan-2026 cohort shows a 6pp improvement in week-4 retention vs. Dec-2025, coinciding with the onboarding revamp. Cohorts with >3 features adopted in week 1 retain at 2x the rate of single-feature users.
+    </div>
+  </div>
+  <div class="chart-card full" style="margin-bottom:24px;">
+    <div class="chart-title">Weekly Retention Cohort Matrix</div>
+    <div class="chart-subtitle">% of cohort returning in week N</div>
+    <div class="heatmap-wrap" id="heatmap-container"></div>
+  </div>
+  <div class="chart-card full">
+    <div class="chart-title">Retention by Features Adopted (Week 1)</div>
+    <div class="chart-subtitle">More features in week 1 = higher retention</div>
+    <div class="chart-wrap"><canvas id="chart-feat-retention"></canvas></div>
+  </div>
+</div>
+
+<!-- ===== FUNNEL TAB ===== -->
+<div class="tab-content" id="tab-funnel">
+  <div class="insight">
+    <div class="insight-icon">💡</div>
+    <div class="insight-text">
+      <strong>Insight:</strong> 68% of signups place their first call within 14 days, but only 41% try an AI feature. The drop from Call → AI Feature is the biggest leak. Recommendation: surface AI Assist as a post-call CTA.
+    </div>
+  </div>
+  <div class="chart-card full" style="margin-bottom:24px">
+    <div class="chart-title">14-Day Activation Funnel</div>
+    <div class="chart-subtitle">New user milestones within first 14 days</div>
+    <div class="funnel" id="funnel-container"></div>
+  </div>
+  <div class="chart-card full">
+    <div class="chart-title">Time to Activation by Milestone</div>
+    <div class="chart-subtitle">Median days from signup to each milestone</div>
+    <div class="chart-wrap"><canvas id="chart-time-activation"></canvas></div>
+  </div>
+</div>
+
+<!-- ===== EXPERIMENTS TAB ===== -->
+<div class="tab-content" id="tab-experiments">
+  <div class="chart-card full" style="margin-bottom:24px">
+    <div class="chart-title">Experiment: Onboarding V2</div>
+    <div class="chart-subtitle">Hypothesis: Surfacing AI features earlier increases 14-day activation rate by ≥5%</div>
+
+    <div class="exp-result" style="margin-top:16px">
+      <div class="exp-card">
+        <div class="exp-card-label">Control (variant_0)</div>
+        <div class="exp-card-value">31.8%</div>
+        <div class="exp-card-sub">n = 124,832</div>
+      </div>
+      <div class="exp-card">
+        <div class="exp-card-label">Treatment (variant_1)</div>
+        <div class="exp-card-value" style="color:var(--green)">34.2%</div>
+        <div class="exp-card-sub">n = 125,168</div>
+      </div>
+    </div>
+
+    <div class="exp-result">
+      <div class="exp-card">
+        <div class="exp-card-label">Relative Lift</div>
+        <div class="exp-card-value" style="color:var(--green)">+7.5%</div>
+        <div class="exp-card-sub">p-value: 0.0003</div>
+      </div>
+      <div class="exp-card">
+        <div class="exp-card-label">Bayesian P(Treatment Better)</div>
+        <div class="exp-card-value" style="color:var(--green)">99.2%</div>
+        <div class="exp-card-sub">Expected loss: 0.0002</div>
+      </div>
+    </div>
+
+    <div class="exp-result">
+      <div class="exp-card">
+        <div class="exp-card-label">SRM Check</div>
+        <div class="exp-card-value" style="color:var(--green);font-size:18px">✓ Passed</div>
+        <div class="exp-card-sub">Ratio: 0.4993 (p=0.87)</div>
+      </div>
+      <div class="exp-card">
+        <div class="exp-card-label">Revenue Guardrail</div>
+        <div class="exp-card-value" style="color:var(--green);font-size:18px">✓ Passed</div>
+        <div class="exp-card-sub">No significant decrease</div>
+      </div>
+    </div>
+
+    <div class="exp-verdict ship">SHIP — Significant lift of +7.5% with 99.2% Bayesian confidence. All guardrails passed.</div>
+  </div>
+
+  <div class="chart-card full">
+    <div class="chart-title">Cumulative Conversion Over Time</div>
+    <div class="chart-subtitle">Control vs Treatment activation rate by day</div>
+    <div class="chart-wrap"><canvas id="chart-exp-time"></canvas></div>
+  </div>
+</div>
+
+<!-- ===== HEALTH TAB ===== -->
+<div class="tab-content" id="tab-health">
+  <div class="kpi-row" style="margin-bottom:20px">
+    <div class="kpi">
+      <div class="kpi-label">Champion</div>
+      <div class="kpi-value" style="color:var(--green)">8,420</div>
+      <span class="kpi-change up">16.8%</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Healthy</div>
+      <div class="kpi-value" style="color:var(--blue)">22,140</div>
+      <span class="kpi-change up">44.3%</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">At Risk</div>
+      <div class="kpi-value" style="color:var(--orange)">14,290</div>
+      <span class="kpi-change down">28.6%</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Critical</div>
+      <div class="kpi-value" style="color:var(--red)">5,150</div>
+      <span class="kpi-change down">10.3%</span>
+    </div>
+  </div>
+
+  <div class="chart-card full" style="margin-bottom:24px">
+    <div class="chart-title">Health Score Distribution</div>
+    <div class="chart-subtitle">Weighted composite: DAU/seats, features adopted, AI usage, support tickets, NPS</div>
+    <div class="chart-wrap"><canvas id="chart-health-dist"></canvas></div>
+  </div>
+
+  <div class="chart-card full">
+    <div class="chart-title">Top At-Risk Workspaces</div>
+    <div class="chart-subtitle">Prioritized for outreach — sorted by health score ascending</div>
+    <table class="health-table" style="margin-top:8px">
+      <thead><tr><th>Workspace</th><th>Plan</th><th>Health Score</th><th>Seats</th><th>DAU/Seats</th><th>AI Usage</th><th>Status</th></tr></thead>
+      <tbody id="health-table-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== AI ANALYST TAB ===== -->
+<div class="tab-content" id="tab-ai">
+  <div class="ai-section">
+    <div class="ai-header">
+      <div class="ai-dot"></div>
+      <span class="ai-header-text">ConnectHub AI Analyst</span>
+      <span class="ai-header-sub">Ask anything about the product data</span>
+    </div>
+    <div class="ai-messages" id="ai-messages">
+      <div class="ai-msg ai">Hi! I'm the ConnectHub AI Analyst. I have full context on the product metrics, retention cohorts, experiments, and customer health data. Ask me anything — why retention dropped, which features drive activation, how experiments performed, or what's driving churn risk.</div>
+    </div>
+    <div class="ai-suggestions" id="ai-suggestions">
+      <button class="ai-chip" onclick="askSuggestion(this)">Why did retention improve this quarter?</button>
+      <button class="ai-chip" onclick="askSuggestion(this)">Which features drive the most retention?</button>
+      <button class="ai-chip" onclick="askSuggestion(this)">Should we ship the onboarding experiment?</button>
+      <button class="ai-chip" onclick="askSuggestion(this)">What's driving churn in Enterprise accounts?</button>
+      <button class="ai-chip" onclick="askSuggestion(this)">How does AI Assist adoption correlate with NPS?</button>
+    </div>
+    <div class="ai-input-row">
+      <input class="ai-input" id="ai-input" placeholder="Ask about metrics, retention, experiments..." onkeydown="if(event.key==='Enter')sendMessage()">
+      <button class="ai-send" id="ai-send" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<div class="built-by">
+  Built by <strong>Ragu</strong> · <a href="https://github.com/yourusername/connecthub-product-analytics">View Source on GitHub</a>
+</div>
+
+<script>
+// ===== TAB NAVIGATION =====
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ===== CHART DEFAULTS =====
+Chart.defaults.color = '#9898b0';
+Chart.defaults.borderColor = '#2a2a40';
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.pointStyleWidth = 8;
+
+const months = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep'];
+
+// ===== DAU CHART =====
+new Chart(document.getElementById('chart-dau'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [{
+      label: 'DAU',
+      data: [28400,29800,31200,33100,34800,36200,37600,38900,40100,41200,42100,42891],
+      borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.08)',
+      fill: true, tension: 0.35, borderWidth: 2, pointRadius: 3
+    }]
+  },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+});
+
+// ===== FEATURE ADOPTION =====
+new Chart(document.getElementById('chart-adoption'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length:10}, (_,i) => `Day ${i*10}`),
+    datasets: [
+      { label:'AI Assist', data:[0,12,22,30,36,40,43,45,46.5,47.2], borderColor:'#6366f1', tension:0.3, borderWidth:2, pointRadius:2 },
+      { label:'Voice Calls', data:[0,28,45,55,62,67,71,74,76,78], borderColor:'#34d399', tension:0.3, borderWidth:2, pointRadius:2 },
+      { label:'SMS', data:[0,8,15,21,26,30,33,35,37,38], borderColor:'#fbbf24', tension:0.3, borderWidth:2, pointRadius:2 },
+      { label:'WhatsApp', data:[0,5,10,15,19,22,25,27,29,30], borderColor:'#f87171', tension:0.3, borderWidth:2, pointRadius:2 },
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:false }
+});
+
+// ===== REVENUE =====
+new Chart(document.getElementById('chart-revenue'), {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [
+      { label:'Enterprise', data:[380,400,420,450,470,490,510,540,560,580,600,620], backgroundColor:'#6366f1', borderRadius:4 },
+      { label:'Professional', data:[520,540,560,580,600,620,640,660,680,700,720,740], backgroundColor:'#818cf8', borderRadius:4 },
+      { label:'Essentials', data:[400,410,420,430,440,450,460,470,480,490,500,510], backgroundColor:'#a5b4fc', borderRadius:4 },
+      { label:'Free', data:[0,0,0,0,0,0,0,0,0,0,0,0], backgroundColor:'#374151', borderRadius:4 },
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:false, scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'$'+v+'K'}}} }
+});
+
+// ===== AI AGENT =====
+new Chart(document.getElementById('chart-agent'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [{
+      label:'AI Resolution Rate',
+      data: [22,24,26,28,30,32,33,34,35,36,37,38],
+      borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.08)',
+      fill:true, tension:0.3, borderWidth:2, pointRadius:3
+    }]
+  },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:v=>v+'%'}}} }
+});
+
+// ===== RETENTION HEATMAP =====
+(function(){
+  const cohorts = ['Oct W1','Oct W3','Nov W1','Nov W3','Dec W1','Dec W3','Jan W1','Jan W3','Feb W1','Feb W3','Mar W1'];
+  const weeks = Array.from({length:13},(_,i)=>'W'+i);
+  const data = [
+    [100,62,48,40,35,31,28,26,24,23,22,21,20],
+    [100,63,49,41,36,32,29,27,25,24,23,22,21],
+    [100,64,50,42,37,33,30,28,26,25,24,23,22],
+    [100,65,51,43,38,34,31,29,27,26,25,24,23],
+    [100,66,52,44,39,35,32,30,28,27,26,25,24],
+    [100,67,53,45,40,36,33,31,29,28,27,26,null],
+    [100,70,56,48,42,38,35,33,31,30,null,null,null],
+    [100,71,57,49,43,39,36,34,null,null,null,null,null],
+    [100,72,58,50,44,40,null,null,null,null,null,null,null],
+    [100,73,59,51,null,null,null,null,null,null,null,null,null],
+    [100,74,null,null,null,null,null,null,null,null,null,null,null],
+  ];
+  let html = '<table class="heatmap"><thead><tr><th></th>';
+  weeks.forEach(w => html += '<th>'+w+'</th>');
+  html += '</tr></thead><tbody>';
+  cohorts.forEach((c,i) => {
+    html += '<tr><td class="row-label">'+c+'</td>';
+    data[i].forEach(v => {
+      if(v===null) { html += '<td style="color:var(--text-3)">—</td>'; }
+      else {
+        const intensity = Math.max(0.08, v/100);
+        const color = v>=50?'rgba(99,102,241,'+intensity+')': v>=30?'rgba(96,165,250,'+intensity+')':'rgba(251,191,36,'+intensity+')';
+        html += '<td style="background:'+color+'">'+v+'%</td>';
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('heatmap-container').innerHTML = html;
+})();
+
+// ===== FEATURES → RETENTION =====
+new Chart(document.getElementById('chart-feat-retention'), {
+  type: 'bar',
+  data: {
+    labels: ['1 feature','2 features','3 features','4 features','5+ features'],
+    datasets: [{
+      label:'Week-4 Retention',
+      data: [22,31,42,54,68],
+      backgroundColor: ['#f87171','#fbbf24','#60a5fa','#818cf8','#34d399'],
+      borderRadius: 6
+    }]
+  },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:v=>v+'%'}}} }
+});
+
+// ===== FUNNEL =====
+(function(){
+  const stages = [
+    {name:'Signed Up', value:500000, pct:'100%'},
+    {name:'Placed First Call', value:340000, pct:'68%'},
+    {name:'Used AI Feature', value:205000, pct:'41%'},
+    {name:'Invited Team Member', value:135000, pct:'27%'},
+  ];
+  const max = stages[0].value;
+  let html = '';
+  stages.forEach(s => {
+    const w = (s.value/max*100);
+    html += `<div class="funnel-stage">
+      <div class="funnel-label">${s.name}</div>
+      <div style="flex:1"><div class="funnel-bar" style="width:${w}%;opacity:${0.5+w/200}"></div></div>
+      <div class="funnel-value">${(s.value/1000).toFixed(0)}K</div>
+      <div class="funnel-pct">${s.pct}</div>
+    </div>`;
+  });
+  document.getElementById('funnel-container').innerHTML = html;
+})();
+
+// ===== TIME TO ACTIVATION =====
+new Chart(document.getElementById('chart-time-activation'), {
+  type: 'bar',
+  data: {
+    labels: ['First Call','AI Feature Used','Team Invited','Fully Activated'],
+    datasets: [{
+      label:'Median Days',
+      data: [2.1, 5.8, 8.4, 11.2],
+      backgroundColor: ['#6366f1','#818cf8','#a5b4fc','#c7d2fe'],
+      borderRadius: 6
+    }]
+  },
+  options: { responsive:true, maintainAspectRatio:false, indexAxis:'y', plugins:{legend:{display:false}} }
+});
+
+// ===== EXPERIMENT TIME SERIES =====
+new Chart(document.getElementById('chart-exp-time'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length:15},(_,i)=>'Day '+(i+1)),
+    datasets: [
+      { label:'Control', data:[8,12,16,19,22,24,26,27.5,28.8,29.8,30.5,31,31.3,31.5,31.8], borderColor:'#9898b0', borderDash:[5,5], tension:0.3, borderWidth:2, pointRadius:2 },
+      { label:'Treatment', data:[9,14,18,22,25,27.5,29.5,31,32,33,33.5,33.8,34,34.1,34.2], borderColor:'#34d399', tension:0.3, borderWidth:2, pointRadius:2 },
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:false, scales:{y:{ticks:{callback:v=>v+'%'}}} }
+});
+
+// ===== HEALTH DISTRIBUTION =====
+new Chart(document.getElementById('chart-health-dist'), {
+  type: 'bar',
+  data: {
+    labels: ['0-10','10-20','20-30','30-40','40-50','50-60','60-70','70-80','80-90','90-100'],
+    datasets: [{
+      label:'Workspaces',
+      data: [820,1840,2490,4200,5100,4990,6200,8450,9200,6710],
+      backgroundColor: v => {
+        const colors = ['#f87171','#f87171','#f87171','#fbbf24','#fbbf24','#fbbf24','#60a5fa','#60a5fa','#34d399','#34d399'];
+        return colors;
+      },
+      borderRadius: 4
+    }]
+  },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{title:{display:true,text:'Health Score'}}} }
+});
+// Fix bar colors
+document.getElementById('chart-health-dist').__chartjs = true;
+
+// ===== HEALTH TABLE =====
+(function(){
+  const rows = [
+    {name:'Acme Corp',plan:'Enterprise',score:12,seats:50,dau:0.06,ai:'None',status:'critical'},
+    {name:'TechFlow Inc',plan:'Professional',score:18,seats:25,dau:0.08,ai:'None',status:'critical'},
+    {name:'DataBridge',plan:'Enterprise',score:24,seats:100,dau:0.09,ai:'Low',status:'critical'},
+    {name:'CloudSync',plan:'Professional',score:31,seats:15,dau:0.13,ai:'None',status:'at-risk'},
+    {name:'NexGen Labs',plan:'Essentials',score:35,seats:10,dau:0.15,ai:'Low',status:'at-risk'},
+    {name:'Pinnacle IO',plan:'Professional',score:42,seats:25,dau:0.22,ai:'Medium',status:'at-risk'},
+    {name:'Horizon SaaS',plan:'Enterprise',score:68,seats:50,dau:0.48,ai:'High',status:'healthy'},
+    {name:'Velocity AI',plan:'Professional',score:82,seats:15,dau:0.67,ai:'High',status:'champion'},
+  ];
+  let html = '';
+  rows.forEach(r => {
+    const barColor = r.score<30?'var(--red)':r.score<60?'var(--orange)':r.score<80?'var(--blue)':'var(--green)';
+    html += `<tr>
+      <td style="font-weight:500">${r.name}</td>
+      <td>${r.plan}</td>
+      <td><div class="health-bar-bg"><div class="health-bar-fill" style="width:${r.score}%;background:${barColor}"></div></div>${r.score}</td>
+      <td>${r.seats}</td>
+      <td>${(r.dau*100).toFixed(0)}%</td>
+      <td>${r.ai}</td>
+      <td><span class="health-badge ${r.status}">${r.status.replace('-',' ')}</span></td>
+    </tr>`;
+  });
+  document.getElementById('health-table-body').innerHTML = html;
+})();
+
+// ===== AI ANALYST =====
+const PROJECT_CONTEXT = `You are the AI Product Analyst for ConnectHub, a B2B SaaS AI-powered customer communications platform with 22,000+ businesses, 500K users, and 50M+ product events.
+
+Current metrics (as of Sep 2026):
+- MRR: $2.4M (+18.2% MoM)
+- DAU: 42,891 (+12.4%)
+- WAU: 89,200
+- MAU: 186,400
+- DAU/MAU stickiness: 23%
+- Week-4 retention: 38.4% (+4.8pp vs last quarter)
+- Week-12 retention: 21%
+- 14-day activation rate: 34.2% (+2.1pp)
+- AI feature adoption: 47.2% of active workspaces
+- NPS: 47 (+3)
+- AI agent resolution rate: 38% (up from 22% a year ago)
+
+Activation funnel (14 days):
+- Signed up: 500K
+- Placed first call: 340K (68%)
+- Used AI feature: 205K (41%) ← biggest drop
+- Invited team member: 135K (27%)
+- Biggest leak: Call → AI Feature (27pp drop)
+- Median time to first call: 2.1 days
+- Median time to AI feature: 5.8 days
+
+Retention by features adopted in week 1:
+- 1 feature: 22% week-4 retention
+- 2 features: 31%
+- 3 features: 42%
+- 4 features: 54%
+- 5+ features: 68% ← 3x the single-feature rate
+
+Experiment: Onboarding V2 (completed):
+- Hypothesis: surfacing AI features earlier increases activation
+- Control: 31.8% activation (n=124,832)
+- Treatment: 34.2% activation (n=125,168)
+- Relative lift: +7.5%, p-value: 0.0003
+- Bayesian P(treatment better): 99.2%
+- SRM check: passed (ratio 0.4993)
+- Revenue guardrail: passed (no decrease)
+- Decision: SHIP
+
+Customer health scoring:
+- Champion (80-100): 8,420 workspaces (16.8%)
+- Healthy (60-80): 22,140 (44.3%)
+- At Risk (30-60): 14,290 (28.6%)
+- Critical (0-30): 5,150 (10.3%)
+- Weights: DAU/seats 25%, features adopted 20%, AI usage 15%, session duration 10%, support tickets -10%, NPS 10%, expansion revenue 10%
+- Top churn signals: low DAU/seat ratio (<10%), zero AI feature usage, >5 support tickets/month
+
+Revenue breakdown:
+- Enterprise: $620K/mo (26%)
+- Professional: $740K/mo (31%)
+- Essentials: $510K/mo (21%)
+- Free: $0 (22% of workspaces, conversion target)
+
+AI Agent performance:
+- Resolution rate: 38% (up from 22%)
+- Avg handle time (AI): 45 seconds
+- Avg handle time (human): 4.2 minutes
+- CSAT for AI-resolved: 4.1/5
+- CSAT for human-resolved: 4.3/5
+- Escalation rate: 25%
+
+Tech stack: Python, SQL, PySpark, dbt, Airflow, Apache Iceberg, Hex, Looker (LookML), Plotly, Great Expectations, scikit-learn
+
+Answer concisely as a senior data scientist would. Use specific numbers. If asked about methodology, reference the actual tools and approaches used.`;
+
+let sampleApi = null;
+let chatReady = false;
+
+async function initAI() {
+  try {
+    sampleApi = await claude.use('sample');
+    if (sampleApi) { chatReady = true; }
+  } catch(e) { /* sample not available */ }
+}
+initAI();
+
+function askSuggestion(el) {
+  document.getElementById('ai-input').value = el.textContent;
+  sendMessage();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('ai-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const msgs = document.getElementById('ai-messages');
+  const sendBtn = document.getElementById('ai-send');
+
+  // Add user message
+  const userDiv = document.createElement('div');
+  userDiv.className = 'ai-msg user';
+  userDiv.textContent = msg;
+  msgs.appendChild(userDiv);
+  input.value = '';
+  sendBtn.disabled = true;
+
+  // Hide suggestions after first use
+  document.getElementById('ai-suggestions').style.display = 'none';
+
+  // Add thinking indicator
+  const aiDiv = document.createElement('div');
+  aiDiv.className = 'ai-msg ai thinking';
+  aiDiv.textContent = 'Analyzing data...';
+  msgs.appendChild(aiDiv);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  if (sampleApi && chatReady) {
+    try {
+      const result = await sampleApi(
+        [{ role: 'user', content: PROJECT_CONTEXT + '\n\nUser question: ' + msg }],
+        {
+          onText: ({text}) => {
+            aiDiv.className = 'ai-msg ai';
+            aiDiv.textContent = text;
+            msgs.scrollTop = msgs.scrollHeight;
+          },
+          modelTier: 'quick'
+        }
+      );
+      aiDiv.className = 'ai-msg ai';
+      aiDiv.textContent = result.text;
+    } catch(e) {
+      aiDiv.className = 'ai-msg ai';
+      if (e.code === 'not_granted') {
+        aiDiv.textContent = 'To use the AI Analyst, please allow this page to use Claude when prompted. Refresh and try again.';
+      } else {
+        aiDiv.textContent = 'Could not reach the AI analyst right now. The dashboard data is still fully interactive above.';
+      }
+    }
+  } else {
+    // Fallback: pattern-matched responses
+    aiDiv.className = 'ai-msg ai';
+    aiDiv.textContent = getFallbackResponse(msg);
+  }
+
+  msgs.scrollTop = msgs.scrollHeight;
+  sendBtn.disabled = false;
+  input.focus();
+}
+
+function getFallbackResponse(q) {
+  const ql = q.toLowerCase();
+  if (ql.includes('retention') && (ql.includes('improve') || ql.includes('why')))
+    return "Week-4 retention improved from 33.6% to 38.4% (+4.8pp) this quarter, driven by two factors:\n\n1. The Onboarding V2 experiment shipped in January — it surfaces AI features earlier in the setup flow, which increased 14-day activation by 7.5%.\n\n2. Users who adopt 3+ features in week 1 retain at 42% vs 22% for single-feature users. AI Assist adoption grew from 36% to 47.2%, pulling more users into the multi-feature cohort.\n\nThe Jan-2026 cohort specifically shows 70% week-1 retention (vs 62% in Oct-2025), which compounds through the retention curve.";
+  if (ql.includes('feature') && ql.includes('retention'))
+    return "Feature adoption in week 1 is the strongest predictor of retention:\n\n• 1 feature → 22% week-4 retention\n• 2 features → 31%\n• 3 features → 42%\n• 4 features → 54%\n• 5+ features → 68%\n\nThe biggest lever is getting users from 1→3 features. Voice Calls (78% adoption) is the entry point, but AI Assist (47.2%) is the inflection — users who try AI Assist in week 1 are 2.4x more likely to still be active in week 4. SMS and WhatsApp are secondary but additive.";
+  if (ql.includes('experiment') || ql.includes('ship') || ql.includes('onboarding'))
+    return "The Onboarding V2 experiment is a clear SHIP:\n\n• Control: 31.8% activation | Treatment: 34.2% (+7.5% lift)\n• p-value: 0.0003 (well below 0.05 threshold)\n• Bayesian P(better): 99.2% (above 95% ship threshold)\n• SRM check: passed — no assignment bias (ratio 0.4993)\n• Revenue guardrail: passed — no decrease in ARPU\n• Expected loss from shipping: 0.0002 (negligible)\n\nThe treatment surfaces AI Assist as a post-call CTA during the first week, which closes the biggest funnel leak (Call → AI Feature, 27pp drop).";
+  if (ql.includes('churn') || ql.includes('risk') || ql.includes('critical'))
+    return "5,150 workspaces (10.3%) are in Critical health status. The top churn signals:\n\n1. DAU/seat ratio < 10% — the product isn't being used relative to seats purchased\n2. Zero AI feature usage — these workspaces miss the stickiness benefit of AI Assist\n3. 5+ support tickets/month — high friction indicating poor product-fit\n\nEnterprise accounts like Acme Corp (score: 12, 50 seats, 6% utilization) are the highest-value at-risk targets. Recommended action: CSM outreach with guided AI Assist activation sessions for the top 50 Critical workspaces.";
+  if (ql.includes('ai') && (ql.includes('nps') || ql.includes('correlat')))
+    return "AI Assist adoption correlates strongly with NPS:\n\n• Workspaces with AI usage: avg NPS 54\n• Without AI usage: avg NPS 38\n• Gap: +16 points\n\nThe mechanism: AI Assist automates post-call summaries and reduces handle time by ~60% (45 sec vs 4.2 min). Agents spend less time on admin work, which improves both agent satisfaction and customer response times. The CSAT gap is smaller (4.1 vs 4.3) because customers slightly prefer human resolution, but the speed advantage offsets this for routine calls.";
+  if (ql.includes('tech') || ql.includes('stack') || ql.includes('built'))
+    return "The platform is built on:\n\n• Ingestion: Kafka + Kinesis → S3 raw zone\n• Processing: PySpark for sessionization (30-min gap logic), Airflow for orchestration\n• Lakehouse: Apache Iceberg (time-travel, schema evolution), dbt medallion models (Bronze→Silver→Gold)\n• Analytics: Python modules — cohort engine, activation funnel, health scoring, A/B test framework (frequentist + Bayesian)\n• Serving: Hex notebooks for ad-hoc analysis, Looker (LookML) for governed dashboards\n• Quality: Great Expectations contracts between pipeline stages\n\n50M+ events processed daily across 500K users.";
+  return "That's a great question. Based on the ConnectHub data:\n\n• MRR is at $2.4M (+18.2% MoM), driven by Professional tier growth\n• DAU hit 42,891 with 23% stickiness (DAU/MAU)\n• The biggest opportunity is the activation funnel — 68% place a call but only 41% try AI features\n• The Onboarding V2 experiment proved that surfacing AI earlier lifts activation by 7.5%\n\nIs there a specific metric or area you'd like me to dig deeper into?";
+}
+</script>
+
+</body>
+</html>

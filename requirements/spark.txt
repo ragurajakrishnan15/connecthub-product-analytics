@@ -1,0 +1,2 @@
+# Optional: PySpark jobs in spark_jobs/. Requires a Java 17 runtime on PATH.
+pyspark==3.5.1
