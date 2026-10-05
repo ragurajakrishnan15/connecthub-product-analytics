@@ -1,0 +1,172 @@
+version: 2
+
+# API-serving gold models (Phase 4A). Each has an enforced contract: dbt checks
+# the column names and types before building, and every column is NOT NULL in
+# the database. Grain uniqueness is a generic test; reconciliation and funnel
+# checks are singular tests in tests/serving/. Metric definitions:
+# docs/metric-definitions.md.
+
+x-plan-tiers: &plan_tiers
+  accepted_values: {values: ['Free', 'Essentials', 'Professional', 'Enterprise']}
+x-not-null: &not_null
+  - type: not_null
+
+models:
+  - name: fct_activation_daily
+    description: "14-day activation counts per signup date and billed plan (additive)"
+    config: {contract: {enforced: true}}
+    tests:
+      - unique_combination_of_columns: {columns: [signup_date, plan_tier]}
+    columns:
+      - {name: signup_date, data_type: date, constraints: *not_null}
+      - {name: plan_tier, data_type: text, constraints: *not_null, tests: [*plan_tiers]}
+      - {name: signups, data_type: bigint, constraints: *not_null}
+      - {name: placed_first_call, data_type: bigint, constraints: *not_null}
+      - {name: used_ai_feature, data_type: bigint, constraints: *not_null}
+      - {name: invited_team_member, data_type: bigint, constraints: *not_null}
+      - {name: call_and_ai, data_type: bigint, constraints: *not_null}
+      - {name: activated_14d, data_type: bigint, constraints: *not_null}
+      - {name: window_14d_complete, data_type: boolean, constraints: *not_null}
+
+  - name: fct_activation_milestone_days
+    description: "Users reaching each activation milestone, by days since signup (0-14)"
+    config: {contract: {enforced: true}}
+    tests:
+      - unique_combination_of_columns:
+          columns: [signup_date, plan_tier, milestone, days_to_milestone]
+    columns:
+      - {name: signup_date, data_type: date, constraints: *not_null}
+      - {name: plan_tier, data_type: text, constraints: *not_null, tests: [*plan_tiers]}
+      - name: milestone
+        data_type: text
+        constraints: *not_null
+        tests:
+          - accepted_values:
+              values: ['placed_first_call', 'used_ai_feature', 'invited_team_member', 'activated_14d']
+      - {name: days_to_milestone, data_type: integer, constraints: *not_null}
+      - {name: users, data_type: bigint, constraints: *not_null}
+      - {name: window_14d_complete, data_type: boolean, constraints: *not_null}
+
+  - name: fct_revenue_monthly
+    description: "MRR per month and billed plan with movement components"
+    config: {contract: {enforced: true}}
+    tests:
+      - unique_combination_of_columns: {columns: [month_start, plan_tier]}
+    columns:
+      - {name: month_start, data_type: date, constraints: *not_null}
+      - {name: plan_tier, data_type: text, constraints: *not_null, tests: [*plan_tiers]}
+      - {name: workspaces, data_type: bigint, constraints: *not_null}
+      - {name: paying_workspaces, data_type: bigint, constraints: *not_null}
+      - {name: billed_seats, data_type: bigint, constraints: *not_null}
+      - {name: mrr_usd, data_type: numeric, constraints: *not_null}
+      - {name: previous_mrr_usd, data_type: numeric, constraints: *not_null}
+      - {name: new_mrr_usd, data_type: numeric, constraints: *not_null}
+      - {name: expansion_mrr_usd, data_type: numeric, constraints: *not_null}
+      - {name: reactivation_mrr_usd, data_type: numeric, constraints: *not_null}
+      - {name: contraction_mrr_usd, data_type: numeric, constraints: *not_null}
+      - {name: churned_mrr_usd, data_type: numeric, constraints: *not_null}
+      - {name: new_workspaces, data_type: bigint, constraints: *not_null}
+      - {name: expansion_workspaces, data_type: bigint, constraints: *not_null}
+      - {name: reactivation_workspaces, data_type: bigint, constraints: *not_null}
+      - {name: contraction_workspaces, data_type: bigint, constraints: *not_null}
+      - {name: churned_workspaces, data_type: bigint, constraints: *not_null}
+      - {name: month_complete, data_type: boolean, constraints: *not_null}
+
+  - name: fct_nps_daily
+    description: "NPS responses per response date and billed plan (additive)"
+    config: {contract: {enforced: true}}
+    tests:
+      - unique_combination_of_columns: {columns: [response_date, plan_tier]}
+    columns:
+      - {name: response_date, data_type: date, constraints: *not_null}
+      - {name: plan_tier, data_type: text, constraints: *not_null, tests: [*plan_tiers]}
+      - {name: responses, data_type: bigint, constraints: *not_null}
+      - {name: promoters, data_type: bigint, constraints: *not_null}
+      - {name: passives, data_type: bigint, constraints: *not_null}
+      - {name: detractors, data_type: bigint, constraints: *not_null}
+      - {name: score_sum, data_type: bigint, constraints: *not_null}
+
+  - name: fct_support_daily
+    description: "Support tickets and active users per day and billed plan (incremental)"
+    config: {contract: {enforced: true}}
+    tests:
+      - unique_combination_of_columns: {columns: [event_date, plan_tier]}
+    columns:
+      - {name: event_date, data_type: date, constraints: *not_null}
+      - {name: plan_tier, data_type: text, constraints: *not_null, tests: [*plan_tiers]}
+      - {name: active_users, data_type: bigint, constraints: *not_null}
+      - {name: tickets_created, data_type: bigint, constraints: *not_null}
+      - {name: tickets_resolved, data_type: bigint, constraints: *not_null}
+
+  - name: fct_agent_performance_daily
+    description: "AI voice-agent call outcomes per call date, billed plan and call type"
+    config: {contract: {enforced: true}}
+    tests:
+      - unique_combination_of_columns: {columns: [call_date, plan_tier, call_type]}
+    columns:
+      - {name: call_date, data_type: date, constraints: *not_null}
+      - {name: plan_tier, data_type: text, constraints: *not_null, tests: [*plan_tiers]}
+      - name: call_type
+        data_type: text
+        constraints: *not_null
+        tests:
+          - accepted_values: {values: ['inbound', 'outbound', 'internal', 'voicemail', 'unknown']}
+      - {name: calls, data_type: bigint, constraints: *not_null}
+      - {name: ai_resolved, data_type: bigint, constraints: *not_null}
+      - {name: escalated, data_type: bigint, constraints: *not_null}
+      - {name: human_handled, data_type: bigint, constraints: *not_null}
+      - {name: csat_sum, data_type: numeric, constraints: *not_null}
+      - {name: csat_count, data_type: bigint, constraints: *not_null}
+      - {name: handle_time_seconds_sum, data_type: bigint, constraints: *not_null}
+      - {name: handle_time_count, data_type: bigint, constraints: *not_null}
+
+  - name: fct_feature_usage_monthly
+    description: "Monthly active users and workspaces per feature (incremental)"
+    config: {contract: {enforced: true}}
+    tests:
+      - unique_combination_of_columns: {columns: [month_start, feature_name]}
+    columns:
+      - {name: month_start, data_type: date, constraints: *not_null}
+      - name: feature_name
+        data_type: text
+        constraints: *not_null
+        tests:
+          - accepted_values:
+              values: ['ai_assist', 'ai_voice_agent', 'voice_calls', 'call_recording', 'sms',
+                       'whatsapp', 'integrations']
+      - {name: active_workspaces, data_type: bigint, constraints: *not_null}
+      - {name: active_users, data_type: bigint, constraints: *not_null}
+      - {name: usage_events, data_type: bigint, constraints: *not_null}
+      - {name: month_complete, data_type: boolean, constraints: *not_null}
+
+  - name: fct_activity_monthly
+    description: "Monthly active users/workspaces overall, for any feature, and for AI features (incremental)"
+    config: {contract: {enforced: true}}
+    tests:
+      - unique_combination_of_columns: {columns: [month_start]}
+    columns:
+      - {name: month_start, data_type: date, constraints: *not_null}
+      - {name: active_users, data_type: bigint, constraints: *not_null}
+      - {name: active_workspaces, data_type: bigint, constraints: *not_null}
+      - {name: feature_active_users, data_type: bigint, constraints: *not_null}
+      - {name: feature_active_workspaces, data_type: bigint, constraints: *not_null}
+      - {name: ai_active_users, data_type: bigint, constraints: *not_null}
+      - {name: ai_active_workspaces, data_type: bigint, constraints: *not_null}
+      - {name: month_complete, data_type: boolean, constraints: *not_null}
+
+  - name: fct_experiment_activation_curve
+    description: "Cumulative 14-day activation by day since signup per experiment arm"
+    config: {contract: {enforced: true}}
+    tests:
+      - unique_combination_of_columns: {columns: [experiment_id, variant, day_since_signup]}
+    columns:
+      - {name: experiment_id, data_type: text, constraints: *not_null}
+      - name: variant
+        data_type: text
+        constraints: *not_null
+        tests:
+          - accepted_values: {values: ['variant_0', 'variant_1']}
+      - {name: day_since_signup, data_type: integer, constraints: *not_null}
+      - {name: users_in_window, data_type: bigint, constraints: *not_null}
+      - {name: activated_cumulative, data_type: bigint, constraints: *not_null}
+      - {name: cumulative_activation_rate, data_type: numeric, constraints: *not_null}

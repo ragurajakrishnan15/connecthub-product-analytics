@@ -43,7 +43,7 @@ everywhere:
 | `experiments` | assignment | `experiment_assignments` (PK experiment_id, user_id) |
 | `staging` | dbt | `stg_events` (incremental table), dimension views |
 | `intermediate` | dbt | `int_sessions`, `int_feature_usage` (incremental), `int_activation_funnel` |
-| `gold` | dbt | facts and `metrics_product_health` |
+| `gold` | dbt | facts and `metrics_product_health`; serving models (`models/gold/serving/`, tag `serving`): small additive daily/monthly tables for the API, see [metric-definitions](metric-definitions.md#serving-models-read-by-the-api) |
 | `semantic` | dbt | MetricFlow time spine |
 | `analytics` | Python analytics | `workspace_health_scores`, `experiment_results` |
 | `ops` | pipeline | `pipeline_runs` (one row per run x step, with metrics), `load_state` |
@@ -53,7 +53,9 @@ Airflow's own metadata lives in a separate database (`airflow`), not in the ware
 ## Incremental processing
 
 `stg_events`, `int_sessions` and `int_feature_usage` are incremental
-(`delete+insert`). Each run reprocesses events dated within `lookback_days`
+(`delete+insert`), as are the serving models that read events
+(`fct_support_daily` by date; `fct_activity_monthly` and
+`fct_feature_usage_monthly` by whole month). Each run reprocesses events dated within `lookback_days`
 (default 3, `dbt_project.yml`) of the latest date already built:
 
 - `stg_events` / `int_feature_usage`: whole dates in the window are recomputed.
