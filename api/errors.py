@@ -27,6 +27,7 @@ PROBLEMS = {  # slug -> (status, title)
     'invalid-range': (400, 'Invalid range'),
     'unauthorized': (401, 'Unauthorized'),
     'not-found': (404, 'Not found'),
+    'experiment-not-found': (404, 'Experiment not found'),
     'method-not-allowed': (405, 'Method not allowed'),
     'uri-too-long': (414, 'Query string too long'),
     'data-not-ready': (503, 'Warehouse data not ready'),

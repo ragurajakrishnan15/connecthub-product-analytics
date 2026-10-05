@@ -123,8 +123,17 @@ validation results, experiment decisions). The same metrics are stored in
 `ops.pipeline_runs`. Secret values from the environment and passwords in
 connection URLs are masked before anything is written (`pipeline/log.py`).
 
+## Analytics API
+
+`api/` is a read-only FastAPI service over the warehouse (reference:
+[api.md](api.md)). It connects as a dedicated read-only role
+(`python -m api.provision`), reads only the gold serving tables, `analytics.*`
+and `ops.pipeline_runs`, and is layered routers -> services -> repositories
+(SQL only in repositories, bound parameters only). Docker: `api-init`
+(provisioning) and `api` in `docker-compose.yml`.
+
 ## Not implemented
 
-Kafka / Kinesis / S3 ingestion, Apache Iceberg, a serving API, the live
-dashboard's data connection and the AI analyst. `index.html` still shows static
-numbers. LookML and Hex files are illustrative and unvalidated.
+Kafka / Kinesis / S3 ingestion, Apache Iceberg, the live dashboard's data
+connection and the AI analyst. `index.html` still shows static numbers. LookML
+and Hex files are illustrative and unvalidated.

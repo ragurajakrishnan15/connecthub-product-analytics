@@ -12,6 +12,27 @@ class DateRange(BaseModel):
     end: date
 
 
+class Period(BaseModel):
+    """An inclusive date range a value was measured over."""
+    start: date
+    end: date
+
+
+class Kpi(BaseModel):
+    """A headline value with the period it covers and the comparison period."""
+    value: float | None = Field(description='Null when undefined (zero denominator, too '
+                                            'few responses, or the period is not fully loaded)')
+    previous_value: float | None
+    change_abs: float | None
+    change_rel: float | None = Field(description='(value - previous) / previous; null if '
+                                                 'previous is 0 or null')
+    period: Period
+    previous_period: Period
+    unit: str
+    definition: str
+    note: str | None = None
+
+
 class ResponseMeta(BaseModel):
     """Context for every data response: what the numbers describe and where they came from."""
     as_of: date | None = Field(description='Last loaded event date the data describes')

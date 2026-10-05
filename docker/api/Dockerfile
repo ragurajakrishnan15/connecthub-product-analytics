@@ -19,7 +19,8 @@ COPY api/ api/
 COPY pipeline/ pipeline/
 COPY analytics/__init__.py analytics/features.py analytics/health_scoring.py \
      analytics/retention.py analytics/
-COPY experimentation/__init__.py experimentation/experiments.py experimentation/
+COPY experimentation/__init__.py experimentation/experiments.py experimentation/decision.py \
+     experimentation/
 
 RUN useradd --system --uid 10001 --no-create-home app
 USER app

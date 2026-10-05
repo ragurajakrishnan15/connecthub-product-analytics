@@ -19,13 +19,23 @@ from api import __version__, errors
 from api import logging as api_logging
 from api.db import create_engine
 from api.middleware import RequestContextMiddleware
-from api.routers import health, meta
+from api.routers import analytics, health, meta
 from api.settings import Settings
 
 DOCS_URL, REDOC_URL, OPENAPI_URL = '/api/docs', '/api/redoc', '/api/openapi.json'
 TAGS = [
     {'name': 'health', 'description': 'Liveness and readiness (no authentication).'},
     {'name': 'meta', 'description': 'Data window, freshness and dimension metadata.'},
+    {'name': 'overview', 'description': 'Headline KPIs.'},
+    {'name': 'engagement', 'description': 'Daily, weekly and monthly active users.'},
+    {'name': 'activation', 'description': '14-day activation funnel by signup date.'},
+    {'name': 'retention', 'description': 'Weekly retention cohorts.'},
+    {'name': 'revenue', 'description': 'Monthly recurring revenue and movement.'},
+    {'name': 'feature-adoption', 'description': 'Feature adoption curves and monthly usage.'},
+    {'name': 'experiments', 'description': 'Persisted A/B experiment evaluations.'},
+    {'name': 'nps', 'description': 'Net Promoter Score.'},
+    {'name': 'support', 'description': 'Support tickets and AI voice-agent performance.'},
+    {'name': 'customer-health', 'description': 'Workspace health scores and tiers.'},
 ]
 DESCRIPTION = """Read-only business metrics from the ConnectHub analytics warehouse.
 
@@ -65,6 +75,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     errors.install(app)
     app.include_router(health.router)
     app.include_router(meta.router)
+    app.include_router(analytics.router)
 
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.add_middleware(
