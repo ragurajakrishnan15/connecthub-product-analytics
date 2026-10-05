@@ -1,4 +1,5 @@
-# Optional, not yet wired into the pipeline (no Great Expectations data context,
-# no Looker instance for spectacles). Install separately if/when configured.
+# Data-quality validation (quality/), run by the pipeline after each stage.
 great-expectations==0.18.8
-spectacles==2.2.0
+# great-expectations pulls cryptography>=46 / cffi>=2, but dbt-core 1.7 needs cffi<2.
+cffi>=1.9,<2
+cryptography<46

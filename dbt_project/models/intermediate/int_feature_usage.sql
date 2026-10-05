@@ -1,6 +1,21 @@
--- Intermediate: daily feature usage aggregates per user per feature
+-- Intermediate: daily feature usage aggregates per user per feature.
+-- Incremental: whole dates in the lookback window are recomputed, which is
+-- exact because event_date is part of the grain.
+{{ config(
+    materialized='incremental',
+    unique_key=['user_id', 'workspace_id', 'event_date', 'feature_name'],
+    incremental_strategy='delete+insert',
+    on_schema_change='fail',
+    indexes=[
+        {'columns': ['user_id', 'workspace_id', 'event_date', 'feature_name'], 'unique': True},
+        {'columns': ['workspace_id', 'event_date']},
+    ]
+) }}
 WITH events AS (
     SELECT * FROM {{ ref('stg_events') }}
+    {% if is_incremental() %}
+    WHERE event_date >= {{ incremental_window_start('event_date') }}
+    {% endif %}
 ),
 feature_mapped AS (
     SELECT

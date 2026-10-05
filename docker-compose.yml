@@ -1,12 +1,41 @@
 # Credentials come from .env (copy .env.example). Nothing secret is hard-coded here.
+#
+#   docker compose up -d postgres                 warehouse only (local dev)
+#   docker compose up -d                          + Airflow (builds docker/airflow)
+#   docker compose --profile spark run --rm spark pytest tests/test_spark_jobs.py
 
-x-airflow-env: &airflow-env
-  AIRFLOW__CORE__EXECUTOR: LocalExecutor
-  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-connecthub}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres/${POSTGRES_DB:-connecthub_analytics}
-  AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
-  AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-  AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY:-}
-  AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY:-}
+x-pipeline-env: &pipeline-env
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: ${POSTGRES_USER:-connecthub}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+  POSTGRES_DB: ${POSTGRES_DB:-connecthub_analytics}
+
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: docker/airflow/Dockerfile
+  image: connecthub-airflow:local
+  environment:
+    <<: *pipeline-env
+    AIRFLOW_DB: ${AIRFLOW_DB:-airflow}
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    # Airflow metadata lives in its own database, not in the analytics warehouse.
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-connecthub}:${POSTGRES_PASSWORD}@postgres/${AIRFLOW_DB:-airflow}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY:-}
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY:?Set AIRFLOW__WEBSERVER__SECRET_KEY in .env}
+    AIRFLOW__WEBSERVER__WORKERS: "2"
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+    AIRFLOW_ADMIN_USER: ${AIRFLOW_ADMIN_USER:-admin}
+    AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?Set AIRFLOW_ADMIN_PASSWORD in .env}
+  volumes:
+    # Generated parquet is shared with the host; code is baked into the image.
+    - ./data:/opt/connecthub/data
+  depends_on:
+    postgres:
+      condition: service_healthy
 
 services:
   postgres:
@@ -26,48 +55,61 @@ services:
       timeout: 5s
       retries: 5
 
-  airflow-webserver:
-    image: apache/airflow:2.8.1
+  airflow-init:
+    <<: *airflow-common
     environment:
-      <<: *airflow-env
+      <<: *pipeline-env
+      AIRFLOW_DB: ${AIRFLOW_DB:-airflow}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-connecthub}:${POSTGRES_PASSWORD}@postgres/${AIRFLOW_DB:-airflow}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY:-}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW_ADMIN_USER: ${AIRFLOW_ADMIN_USER:-admin}
       AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?Set AIRFLOW_ADMIN_PASSWORD in .env}
+      # The image's entrypoint waits for the metadata DB before running the
+      # command; this service is what creates that DB, so skip the wait.
+      CONNECTION_CHECK_MAX_COUNT: "0"
+    command: ["bash", "/opt/connecthub/docker/airflow/init.sh"]
+    restart: "no"
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: airflow webserver
     ports:
-      - "127.0.0.1:8080:8080"
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./scripts:/opt/airflow/scripts
-      - ./analytics:/opt/airflow/analytics
-      - ./experimentation:/opt/airflow/experimentation
-      - ./spark_jobs:/opt/airflow/spark_jobs
-      - ./dbt_project:/opt/airflow/dbt_project
-      - ./data:/opt/airflow/data
+      - "127.0.0.1:${AIRFLOW_PORT:-8081}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     depends_on:
-      postgres:
-        condition: service_healthy
-    command: >
-      bash -c "
-        airflow db init &&
-        airflow users create --username $${AIRFLOW_ADMIN_USER} --password $${AIRFLOW_ADMIN_PASSWORD} --firstname Admin --lastname User --role Admin --email admin@connecthub.dev &&
-        airflow webserver
-      "
+      airflow-init:
+        condition: service_completed_successfully
 
   airflow-scheduler:
-    image: apache/airflow:2.8.1
+    <<: *airflow-common
+    command: airflow scheduler
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  spark:
+    profiles: ["spark"]
+    build:
+      context: .
+      dockerfile: docker/spark/Dockerfile
+    image: connecthub-spark:local
     environment:
-      <<: *airflow-env
+      <<: *pipeline-env
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ./scripts:/opt/airflow/scripts
-      - ./analytics:/opt/airflow/analytics
-      - ./experimentation:/opt/airflow/experimentation
-      - ./spark_jobs:/opt/airflow/spark_jobs
-      - ./dbt_project:/opt/airflow/dbt_project
-      - ./data:/opt/airflow/data
+      - ./data:/opt/connecthub/data
     depends_on:
       postgres:
         condition: service_healthy
-    command: airflow scheduler
 
 volumes:
   postgres_data:

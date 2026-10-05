@@ -1,0 +1,2 @@
+# Optional: LookML validation. Needs a Looker instance; not wired into the pipeline.
+spectacles==2.2.0

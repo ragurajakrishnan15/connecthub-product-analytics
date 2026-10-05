@@ -1,0 +1,15 @@
+.venv/
+.git/
+data/
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+.ruff_cache/
+dbt_project/target/
+dbt_project/logs/
+dbt_project/dbt_packages/
+.env
+notebooks/
+hex_notebooks/
+lookml/
+index.html

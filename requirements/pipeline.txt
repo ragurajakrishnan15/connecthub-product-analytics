@@ -1,0 +1,6 @@
+# Everything the pipeline steps need at runtime (used by the Airflow image's
+# pipeline virtualenv): app + dbt + data quality. Install with the lock file:
+#   pip install -r requirements/pipeline.txt -c requirements/constraints-py311.txt
+-r app.txt
+-r dbt.txt
+-r quality.txt

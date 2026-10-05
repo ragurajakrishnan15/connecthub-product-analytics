@@ -9,8 +9,19 @@ Both entry points evaluate the same per-user metrics (gold.fct_experiment_user_m
 - guardrail revenue_60d: seat revenue billed for the user within 60 days of
             signup; must not drop significantly
 Each metric only uses users whose observation window is complete.
+
+CLI:
+    python -m experimentation.evaluate --experiment-id exp_onboarding_v2 [--experiment-id ...]
+        [--all] [--source warehouse|parquet] [--data-dir data] [--persist] [--json]
+        [--fail-on-srm]
+--persist replaces the experiment's row in analytics.experiment_results.
+Exit codes: 0 ok, 1 error (unknown experiment, no data), 2 usage error,
+3 sample ratio mismatch detected with --fail-on-srm.
 """
+import argparse
+import json
 import os
+import sys
 
 import pandas as pd
 from experimentation.stat_tests import z_test_proportions, t_test_continuous, srm_check
@@ -146,25 +157,126 @@ def _guardrail_failed(guardrail):
 def _make_decision(primary, bayesian, srm, guardrail_revenue, guardrail_session):
     """Automated decision recommendation."""
     if srm['srm_detected']:
-        return 'HOLD — Sample ratio mismatch detected, investigate assignment logic'
+        return 'HOLD - Sample ratio mismatch detected, investigate assignment logic'
     if _guardrail_failed(guardrail_revenue):
-        return 'REVERT — Revenue guardrail failed (significant decrease)'
+        return 'REVERT - Revenue guardrail failed (significant decrease)'
     if _guardrail_failed(guardrail_session):
-        return 'REVERT — Session duration guardrail failed (significant decrease)'
+        return 'REVERT - Session duration guardrail failed (significant decrease)'
     if primary['significant'] and primary['relative_lift'] > 0:
-        return f"SHIP — Significant lift of {primary['relative_lift']:.1%} (p={primary['p_value']:.4f})"
+        return f"SHIP - Significant lift of {primary['relative_lift']:.1%} (p={primary['p_value']:.4f})"
     if bayesian['prob_treatment_better'] > 0.95:
-        return f"SHIP — Bayesian probability {bayesian['prob_treatment_better']:.1%} treatment is better"
+        return f"SHIP - Bayesian probability {bayesian['prob_treatment_better']:.1%} treatment is better"
     if bayesian['prob_treatment_better'] > 0.80:
-        return 'CONTINUE — Promising but needs more data'
-    return 'REVERT — No significant improvement detected'
+        return 'CONTINUE - Promising but needs more data'
+    return 'REVERT - No significant improvement detected'
+
+
+RESULTS_TABLE = 'analytics.experiment_results'
+
+
+def evaluate_source(experiment_id, source='warehouse', data_dir='data', engine=None):
+    if source == 'parquet':
+        return evaluate_from_parquet(os.path.join(data_dir, 'experiment_assignments.parquet'),
+                                     os.path.join(data_dir, 'events.parquet'), experiment_id)
+    return evaluate_experiment(engine, experiment_id)
+
+
+def persist_result(engine, result):
+    """Replace the experiment's row in analytics.experiment_results (idempotent)."""
+    from sqlalchemy import text
+    p, s = result['primary_metric'], result['srm_check']
+    row = {
+        'experiment_id': result['experiment_id'],
+        'decision': result['decision'],
+        'control_users': result['sample_sizes']['control'],
+        'treatment_users': result['sample_sizes']['treatment'],
+        'control_rate': p['control_rate'], 'treatment_rate': p['treatment_rate'],
+        'relative_lift': p['relative_lift'], 'p_value': p['p_value'],
+        'srm_p_value': s['p_value'], 'srm_detected': s['srm_detected'],
+        'guardrail_session_p_value': result['guardrail_session_duration']['p_value'],
+        'guardrail_revenue_p_value': result['guardrail_revenue']['p_value'],
+        'result_json': json.dumps(result, sort_keys=True),
+    }
+    with engine.begin() as conn:
+        conn.execute(text('CREATE SCHEMA IF NOT EXISTS analytics'))
+        conn.execute(text(f"""
+            CREATE TABLE IF NOT EXISTS {RESULTS_TABLE} (
+                experiment_id TEXT PRIMARY KEY, decision TEXT NOT NULL,
+                control_users INTEGER, treatment_users INTEGER,
+                control_rate DOUBLE PRECISION, treatment_rate DOUBLE PRECISION,
+                relative_lift DOUBLE PRECISION, p_value DOUBLE PRECISION,
+                srm_p_value DOUBLE PRECISION, srm_detected BOOLEAN,
+                guardrail_session_p_value DOUBLE PRECISION,
+                guardrail_revenue_p_value DOUBLE PRECISION,
+                result_json JSONB NOT NULL
+            )"""))
+        conn.execute(text(f'DELETE FROM {RESULTS_TABLE} WHERE experiment_id = :e'),
+                     {'e': row['experiment_id']})
+        cols = ', '.join(row)
+        conn.execute(text(f'INSERT INTO {RESULTS_TABLE} ({cols}) VALUES '
+                          f"({', '.join(':' + c for c in row)})"), row)
+
+
+def describe(result):
+    p, n = result['primary_metric'], result['sample_sizes']
+    return (f"{result['experiment_id']}: {result['decision']} | activation "
+            f"{p['control_rate']:.2%} -> {p['treatment_rate']:.2%} "
+            f"(lift {p['relative_lift']:+.1%}, p={p['p_value']:.4g}) | n={n['control']:,}/"
+            f"{n['treatment']:,} | SRM p={result['srm_check']['p_value']:.4f} | guardrails: "
+            f"{_guardrail_text('session', result['guardrail_session_duration'])}, "
+            f"{_guardrail_text('revenue', result['guardrail_revenue'])}")
+
+
+def _guardrail_text(name, g):
+    return f"{name} {g['relative_lift']:+.1%} (p={g['p_value']:.3f})"
+
+
+def main(argv=None):
+    from experimentation.experiments import EXPERIMENTS, get_experiment
+    parser = argparse.ArgumentParser(prog='python -m experimentation.evaluate',
+                                     description='Evaluate A/B experiments.')
+    parser.add_argument('--experiment-id', action='append', dest='experiments')
+    parser.add_argument('--all', action='store_true', help='Evaluate every registered experiment')
+    parser.add_argument('--source', choices=['warehouse', 'parquet'], default='warehouse')
+    parser.add_argument('--data-dir', default='data')
+    parser.add_argument('--persist', action='store_true',
+                        help=f'Replace the result rows in {RESULTS_TABLE}')
+    parser.add_argument('--json', action='store_true', help='Print full results as JSON lines')
+    parser.add_argument('--fail-on-srm', action='store_true',
+                        help='Exit 3 if any experiment shows a sample ratio mismatch')
+    parser.add_argument('--date', help=argparse.SUPPRESS)  # accepted for scheduler compatibility
+    args = parser.parse_args(argv)
+    if args.all == bool(args.experiments):
+        parser.error('pass --experiment-id (repeatable) or --all')
+    experiments = sorted(EXPERIMENTS) if args.all else args.experiments
+    try:
+        for e in experiments:
+            get_experiment(e)
+    except KeyError as exc:
+        print(f'error: {exc.args[0]}', file=sys.stderr)
+        return 1
+
+    engine = None
+    if args.source == 'warehouse' or args.persist:
+        from pipeline.config import create_engine
+        engine = create_engine()
+    srm_failed = False
+    for experiment_id in experiments:
+        try:
+            result = evaluate_source(experiment_id, args.source, args.data_dir, engine)
+        except (IndexError, ValueError, ZeroDivisionError, FileNotFoundError) as exc:
+            print(f'error: {experiment_id}: no evaluable data ({type(exc).__name__}: {exc})',
+                  file=sys.stderr)
+            return 1
+        if args.persist:
+            persist_result(engine, result)
+        print(json.dumps(result, default=str) if args.json else describe(result))
+        srm_failed |= result['srm_check']['srm_detected']
+    if srm_failed and args.fail_on_srm:
+        print('error: sample ratio mismatch detected', file=sys.stderr)
+        return 3
+    return 0
 
 
 if __name__ == '__main__':
-    import json
-    result = evaluate_from_parquet(
-        'data/experiment_assignments.parquet',
-        'data/events.parquet',
-        'exp_onboarding_v2'
-    )
-    print(json.dumps(result, indent=2, default=str))
+    sys.exit(main())

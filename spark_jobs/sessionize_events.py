@@ -1,120 +1,80 @@
 """
-PySpark Event Sessionization Pipeline
-Reads raw events from Bronze layer, sessionizes with 30-min gap logic,
-writes to Silver layer (Iceberg).
+PySpark event sessionization: a new session starts after 30 minutes of
+inactivity (or at a user's first event).
+
+Not part of the production pipeline: dbt builds int_sessions from the
+generator's session_id in PostgreSQL. This job is an independent check that
+re-derives sessions from raw timestamps, and the path to take if event volume
+outgrows a single PostgreSQL instance (see docs/architecture.md).
+
+    spark-submit spark_jobs/sessionize_events.py \
+        --input data/events.parquet --output data/spark/events_sessionized.parquet
+
+--iceberg TABLE writes to an Iceberg table instead; it needs an Iceberg
+catalog configured through spark-submit --conf (none is provided here).
 """
+import argparse
+
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
-import sys
 
-SESSION_GAP = 30 * 60  # 30 minutes in seconds
-
-
-def create_spark_session():
-    """Create Spark session with Iceberg catalog."""
-    spark = SparkSession.builder \
-        .appName('ConnectHub_Sessionization') \
-        .config('spark.sql.catalog.lakehouse', 'org.apache.iceberg.spark.SparkCatalog') \
-        .config('spark.sql.catalog.lakehouse.type', 'hadoop') \
-        .config('spark.sql.catalog.lakehouse.warehouse', 's3://connecthub-lakehouse/') \
-        .config('spark.sql.extensions', 'org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions') \
-        .getOrCreate()
-    return spark
+SESSION_GAP_SECONDS = 30 * 60
 
 
-def sessionize_events(spark, event_date):
-    """Sessionize events for a given date using 30-minute inactivity gap."""
-
-    # Read raw events from Iceberg Bronze layer
-    raw_events = spark.read.format('iceberg') \
-        .load('lakehouse.bronze.events_raw') \
-        .filter(F.col('event_date') == event_date)
-
-    # Define window for sessionization
-    user_window = Window.partitionBy('user_id').orderBy('timestamp_utc')
-
-    # Sessionize: detect gaps > 30 minutes
-    sessionized = raw_events \
-        .withColumn('prev_ts', F.lag('timestamp_utc').over(user_window)) \
+def sessionize(events):
+    """Add spark_session_id, session_start/end, duration and event count."""
+    user_window = Window.partitionBy('user_id').orderBy('timestamp_utc', 'event_id')
+    sessionized = (
+        events
+        .withColumn('prev_ts', F.lag('timestamp_utc').over(user_window))
         .withColumn('gap_seconds',
-            F.unix_timestamp('timestamp_utc') - F.unix_timestamp('prev_ts')) \
+                    F.unix_timestamp('timestamp_utc') - F.unix_timestamp('prev_ts'))
         .withColumn('new_session',
-            F.when(F.col('gap_seconds') > SESSION_GAP, 1)
-             .when(F.col('prev_ts').isNull(), 1)
-             .otherwise(0)) \
-        .withColumn('session_id',
-            F.concat(
-                F.col('user_id'), F.lit('_'),
-                F.sum('new_session').over(user_window)
-            )) \
-        .drop('prev_ts', 'gap_seconds', 'new_session')
-
-    # Add session-level metrics
-    session_window = Window.partitionBy('session_id')
-    sessionized = sessionized \
-        .withColumn('session_start', F.min('timestamp_utc').over(session_window)) \
-        .withColumn('session_end', F.max('timestamp_utc').over(session_window)) \
+                    F.when(F.col('prev_ts').isNull(), 1)
+                     .when(F.col('gap_seconds') > SESSION_GAP_SECONDS, 1)
+                     .otherwise(0))
+        .withColumn('session_number', F.sum('new_session').over(user_window))
+        .withColumn('spark_session_id',
+                    F.concat_ws('_', F.col('user_id'), F.col('session_number').cast('string')))
+        .drop('prev_ts', 'gap_seconds', 'new_session', 'session_number')
+    )
+    session_window = Window.partitionBy('spark_session_id')
+    return (
+        sessionized
+        .withColumn('session_start', F.min('timestamp_utc').over(session_window))
+        .withColumn('session_end', F.max('timestamp_utc').over(session_window))
         .withColumn('session_duration_min',
-            (F.unix_timestamp('session_end') - F.unix_timestamp('session_start')) / 60) \
+                    (F.unix_timestamp('session_end') - F.unix_timestamp('session_start')) / 60)
         .withColumn('events_in_session', F.count('*').over(session_window))
-
-    # Write to Silver layer
-    sessionized.writeTo('lakehouse.silver.events_sessionized') \
-        .overwritePartitions()
-
-    return sessionized
+    )
 
 
-def sessionize_from_parquet(spark, input_path, output_path):
-    """Alternative: sessionize from local parquet files (for local dev)."""
+def create_spark(app_name='ConnectHub_Sessionization'):
+    return (SparkSession.builder.appName(app_name)
+            .config('spark.sql.session.timeZone', 'UTC')
+            .getOrCreate())
 
-    raw_events = spark.read.parquet(input_path)
 
-    user_window = Window.partitionBy('user_id').orderBy('timestamp_utc')
+def main(argv=None):
+    parser = argparse.ArgumentParser(description='Sessionize events with a 30-minute gap')
+    parser.add_argument('--input', default='data/events.parquet')
+    parser.add_argument('--output', default='data/spark/events_sessionized.parquet')
+    parser.add_argument('--iceberg', help='Write to this Iceberg table instead of --output')
+    args = parser.parse_args(argv)
 
-    sessionized = raw_events \
-        .withColumn('prev_ts', F.lag('timestamp_utc').over(user_window)) \
-        .withColumn('gap_seconds',
-            F.unix_timestamp('timestamp_utc') - F.unix_timestamp('prev_ts')) \
-        .withColumn('new_session',
-            F.when(F.col('gap_seconds') > SESSION_GAP, 1)
-             .when(F.col('prev_ts').isNull(), 1)
-             .otherwise(0)) \
-        .withColumn('session_id',
-            F.concat(
-                F.col('user_id'), F.lit('_'),
-                F.sum('new_session').over(user_window)
-            )) \
-        .drop('prev_ts', 'gap_seconds', 'new_session')
-
-    session_window = Window.partitionBy('session_id')
-    sessionized = sessionized \
-        .withColumn('session_start', F.min('timestamp_utc').over(session_window)) \
-        .withColumn('session_end', F.max('timestamp_utc').over(session_window)) \
-        .withColumn('session_duration_min',
-            (F.unix_timestamp('session_end') - F.unix_timestamp('session_start')) / 60) \
-        .withColumn('events_in_session', F.count('*').over(session_window))
-
-    sessionized.write.mode('overwrite').parquet(output_path)
-    print(f"Sessionized {sessionized.count():,} events → {output_path}")
-
-    return sessionized
+    spark = create_spark()
+    result = sessionize(spark.read.parquet(args.input))
+    if args.iceberg:
+        result.writeTo(args.iceberg).createOrReplace()
+        target = args.iceberg
+    else:
+        result.write.mode('overwrite').parquet(args.output)
+        target = args.output
+    sessions = result.select('spark_session_id').distinct().count()
+    print(f'Sessionized {result.count():,} events into {sessions:,} sessions -> {target}')
+    spark.stop()
 
 
 if __name__ == '__main__':
-    spark = create_spark_session()
-
-    if len(sys.argv) > 1 and sys.argv[1] == '--local':
-        # Local dev mode: parquet → parquet
-        sessionize_from_parquet(
-            spark,
-            input_path='data/events.parquet',
-            output_path='data/events_sessionized.parquet'
-        )
-    else:
-        # Production mode: Iceberg → Iceberg
-        event_date = sys.argv[1] if len(sys.argv) > 1 else '2025-06-15'
-        sessionize_events(spark, event_date)
-
-    spark.stop()
+    main()

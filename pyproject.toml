@@ -13,10 +13,15 @@ testpaths = ["tests"]
 markers = [
     "integration: needs a reachable PostgreSQL (set POSTGRES_* in the environment)",
 ]
+filterwarnings = [
+    # Third-party deprecation noise (matplotlib/pyparsing, great_expectations).
+    "ignore::DeprecationWarning:matplotlib.*",
+    "ignore::DeprecationWarning:great_expectations.*",
+]
 
 [tool.ruff]
 target-version = "py311"
-extend-exclude = ["dbt_project/target", "dbt_project/dbt_packages"]
+extend-exclude = ["dbt_project/target", "dbt_project/dbt_packages", "data"]
 
 [tool.ruff.lint]
 select = ["F", "E9"]

@@ -1,7 +1,6 @@
-# Development environment (Python 3.11). Install with:
-#   pip install -r requirements.txt
-# Airflow, Spark and data-quality tooling live in separate files under
-# requirements/ because they are optional or conflict with this environment.
--r requirements/app.txt
--r requirements/dbt.txt
+# Development environment (Python 3.11). Install with the lock file:
+#   pip install -r requirements.txt -c requirements/constraints-py311.txt
+# Airflow and Spark live in separate files under requirements/ (their own
+# images, see docker/) because they conflict with or bloat this environment.
+-r requirements/pipeline.txt
 -r requirements/dev.txt
