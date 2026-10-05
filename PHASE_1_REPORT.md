@@ -21,6 +21,25 @@
 
 > **The dbt results are from Python 3.12 with a workaround.** dbt-core 1.7.4 imports `distutils`, which Python 3.12 removed. To validate the dbt project, `setuptools` (which supplies `distutils`) was installed into the temporary validation virtualenv only. It was **not** added to the project's requirements: on the target Python 3.11, dbt runs without it. Re-run the commands below on 3.11 once it's installed (see "Manual action").
 
+## Update 2026-10-04: validated on Python 3.11
+
+Manual action 1 is done. Python 3.11.9 is installed, and the project `.venv` was created with it from `requirements.txt` (`pip check`: no broken requirements). The full pipeline was then re-run on 3.11 against PostgreSQL 15 from `docker compose`, **with no `setuptools` workaround**:
+
+| Check | Result on 3.11.9 |
+|---|---|
+| `pytest` | **28 passed, 0 skipped** (the integration test ran against live Postgres) |
+| `ruff check .` | All checks passed |
+| Generator (`--users 2000 --workspaces 200 --evaluations 2000`) | 152,108 events |
+| `python -m experimentation.assignment` | 2,000 assignments (1,009 / 991) |
+| `ingest_events.py --load-postgres` | 5 tables loaded |
+| `dbt debug` | All checks passed |
+| `dbt build` | **PASS=17 WARN=0 ERROR=0** (13 models, 4 tests); row counts match the 3.12 run |
+
+- The project is now a git repository. The baseline commit `bb45e69` holds this Phase 1 state.
+- **Observation:** the variant split differs from the 3.12 run (988 / 1,012). Assignment is deterministic per user, so the generator must produce different user IDs on each run. This is covered by Phase 2 item 1 (deterministic IDs).
+
+Blockers 1 and 11 (the git half) below are resolved. The folder is still nested one level deep.
+
 ---
 
 ## 1. Problems fixed
@@ -200,7 +219,7 @@ python (all 6 DB-backed functions against the warehouse) -> all OK
 
 | # | Blocker | Impact |
 |---|---|---|
-| 1 | **Python 3.11 is not installed.** Everything was validated on 3.12; dbt needed a `setuptools` shim there. | The documented target environment has not been executed end to end |
+| 1 | ~~**Python 3.11 is not installed.**~~ **Resolved 2026-10-04:** validated end to end on 3.11.9 (see the update at the top). | — |
 | 2 | Airflow image still lacks dbt, PySpark, Java and the project packages; DAG tasks use relative paths; no init service | The DAG cannot run (out of scope; Phase 7 in the audit) |
 | 3 | Spark untested (no Java). Its outputs still go to parquet or Iceberg, not Postgres; `int_sessions` uses the generator's per-day session ids | Spark-derived sessions are not used by the warehouse |
 | 4 | Still mocked: `index.html` numbers and AI analyst; `evaluate_from_parquet` (random conversions, now labeled in code); parquet-path health inputs (random NPS, revenue, AI %) | Dashboard and parquet-based experiment results are not real |
@@ -210,7 +229,7 @@ python (all 6 DB-backed functions against the warehouse) -> all OK
 | 8 | Great Expectations has no data context; the DAG's GE task cannot run | Data-quality step is non-functional |
 | 9 | LookML not validated (no Looker instance); `percent_*` formats on 0–100 values in other views remain | Cosmetic and validation risk |
 | 10 | Notebooks still assume CWD = repo root | Running from `notebooks/` fails |
-| 11 | The project is not a git repository, and the folder is still nested one level deep | No history for these changes |
+| 11 | ~~The project is not a git repository~~ (resolved: baseline commit `bb45e69`). The folder is still nested one level deep. | Cosmetic |
 
 ## 8. Manual action required
 1. **Install Python 3.11**, e.g. `winget install Python.Python.3.11` or python.org. Then, from the project root:
