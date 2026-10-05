@@ -39,3 +39,10 @@ postgres_data/
 .env
 .ruff_cache/
 .pytest_cache/
+
+# Pipeline working files
+data/_manifest.json
+data/.staging/
+data/bench/
+data/spark/
+dbt_project/.user.yml

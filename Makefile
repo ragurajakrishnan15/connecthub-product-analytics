@@ -1,82 +1,57 @@
-.PHONY: setup test generate load-postgres run-docker stop-docker dbt-run dbt-test dbt-build spark-session spark-features run-experiments run-all lint clean
+.PHONY: setup test test-fast lint pipeline pipeline-incremental verify-incremental validate \
+        bench up down airflow-test spark-test clean
 
 # Requires Python 3.11 (see .python-version). Configuration comes from the
 # environment: copy .env.example to .env and export its variables first.
+USERS ?= 10000
+SEED ?= 42
 
 # ==================== SETUP ====================
 setup:
-	pip install -r requirements.txt
-	@echo "✅ Dependencies installed"
+	pip install -r requirements.txt -c requirements/constraints-py311.txt
 
-# ==================== DATA ====================
-generate:
-	python scripts/generate_synthetic_data.py --users $(or $(USERS),10000) --seed $(or $(SEED),42)
-	python -m experimentation.assignment
-	@echo "✅ Synthetic data and experiment assignments generated in data/"
+# ==================== PIPELINE ====================
+pipeline:                 ## all steps: generate -> assign -> ingest -> validate -> dbt -> validate -> analytics -> validate
+	python -m pipeline run --users $(USERS) --seed $(SEED)
 
-load-postgres:
-	python scripts/ingest_events.py --load-postgres
-	@echo "✅ Loaded data/ into bronze.* and experiments.*"
+pipeline-incremental:     ## load one day (DAY=YYYY-MM-DD) and build incrementally
+	python -m pipeline run --users $(USERS) --seed $(SEED) --start-date $(DAY) \
+		--steps ingest,validate_bronze,dbt,validate_gold,analytics,validate_analytics
+
+verify-incremental:       ## prove incremental dbt == full refresh on the same data
+	python -m pipeline verify-incremental --users $(USERS) --seed $(SEED)
+
+validate:
+	python -m quality.validate --stage all
+
+bench:
+	python scripts/benchmark.py --users $(USERS)
 
 # ==================== DOCKER ====================
-run-docker:
-	docker compose up -d
-	@echo "✅ Docker stack running"
-	@echo "   Postgres: localhost:5432"
-	@echo "   Airflow:  localhost:8080 (credentials from .env)"
+up:                       ## postgres + Airflow (UI on 127.0.0.1:$${AIRFLOW_PORT:-8081})
+	docker compose up -d --build
 
-stop-docker:
+down:
 	docker compose down
-	@echo "✅ Docker stack stopped"
 
-# ==================== SPARK ====================
-spark-session:
-	spark-submit spark_jobs/sessionize_events.py --local
-	@echo "✅ Events sessionized"
+airflow-test:
+	docker compose exec airflow-scheduler python -m pytest tests/test_dag.py
 
-spark-features:
-	spark-submit spark_jobs/feature_extraction.py data/events_sessionized.parquet data/feature_usage.parquet
-	@echo "✅ Features extracted"
-
-# ==================== DBT ====================
-dbt-run:
-	cd dbt_project && dbt run
-	@echo "✅ dbt models built"
-
-dbt-test:
-	cd dbt_project && dbt test
-	@echo "✅ dbt tests passed"
-
-dbt-build:
-	cd dbt_project && dbt build
-	@echo "✅ dbt models built and tested"
-
-# ==================== ANALYTICS ====================
-run-experiments:
-	python -m experimentation.evaluate
-	@echo "✅ Experiments evaluated"
+spark-test:
+	docker compose --profile spark run --rm spark python -m pytest tests/test_spark_jobs.py -v
 
 # ==================== TESTS ====================
-test:
-	pytest -v
+test:                     ## everything, incl. the ~4 min end-to-end test
+	pytest
+
+test-fast:
+	pytest -m "not integration"
 
 lint:
 	ruff check .
-	@echo "✅ All tests passed"
-
-# ==================== FULL PIPELINE ====================
-run-all: generate spark-session spark-features run-experiments test
-	@echo ""
-	@echo "🚀 Full pipeline complete!"
-	@echo "   - Synthetic data generated"
-	@echo "   - Events sessionized"
-	@echo "   - Features extracted"
-	@echo "   - Experiments evaluated"
-	@echo "   - Tests passed"
 
 # ==================== CLEAN ====================
 clean:
-	rm -rf data/*.parquet
-	rm -rf dbt_project/target/
+	rm -rf data/*.parquet data/_manifest.json data/.staging data/bench data/spark
+	rm -rf dbt_project/target/ dbt_project/logs/
 	rm -rf __pycache__ */__pycache__
-	@echo "✅ Cleaned"

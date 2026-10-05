@@ -11,6 +11,11 @@ seed-paths: ["seeds"]
 macro-paths: ["macros"]
 snapshot-paths: ["snapshots"]
 
+vars:
+  # Incremental models recompute rows dated within this many days of the
+  # latest date they already hold (see macros/incremental_window.sql).
+  lookback_days: 3
+
 clean-targets:
   - "target"
   - "dbt_packages"

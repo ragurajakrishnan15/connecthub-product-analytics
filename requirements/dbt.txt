@@ -2,3 +2,7 @@
 # dbt-core 1.7 supports Python <= 3.11 (it imports distutils, removed in 3.12).
 dbt-core==1.7.4
 dbt-postgres==1.7.4
+# dbt-core 1.7.4 declares protobuf>=4 with no upper bound, but on Linux/macOS it
+# fires a resource-report event through a protobuf API removed in 5.26
+# (MessageToJson(including_default_value_fields=...)), failing every run.
+protobuf>=4.21,<5

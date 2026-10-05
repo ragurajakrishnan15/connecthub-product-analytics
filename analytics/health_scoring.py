@@ -9,8 +9,17 @@ better) and the score is the weighted average of the ranks, 0-100. Inputs a
 workspace has no signal for (no calls, no NPS responses, no billing) are left
 out of its average instead of counting as zero. Scores are relative to the
 workspaces scored together.
+
+CLI:
+    python -m analytics.health_scoring [--as-of YYYY-MM-DD] [--source warehouse|parquet]
+        [--data-dir data] [--persist] [--output scores.csv] [--json]
+--persist replaces analytics.workspace_health_scores rows for the snapshot date
+(idempotent). Exit codes: 0 ok, 1 no data or error, 2 usage error.
 """
+import argparse
+import json
 import os
+import sys
 
 import numpy as np
 import pandas as pd
@@ -170,3 +179,98 @@ def _score(df):
     df['risk_tier'] = pd.cut(df['health_score'], bins=TIER_BINS, labels=TIER_LABELS,
                              include_lowest=True)
     return df.sort_values('health_score', ascending=True)
+
+
+PERSIST_TABLE = 'analytics.workspace_health_scores'
+PERSIST_COLUMNS = INPUT_COLUMNS + ['health_score', 'risk_tier']
+
+
+def persist_scores(engine, scores):
+    """Replace the snapshot's rows in analytics.workspace_health_scores (idempotent)."""
+    from sqlalchemy import text
+    out = scores[PERSIST_COLUMNS].copy()
+    out['risk_tier'] = out['risk_tier'].astype(str)
+    out['snapshot_date'] = pd.to_datetime(out['snapshot_date']).dt.date
+    snapshots = sorted(out['snapshot_date'].unique())
+    with engine.begin() as conn:
+        conn.execute(text('CREATE SCHEMA IF NOT EXISTS analytics'))
+        conn.execute(text(f"""
+            CREATE TABLE IF NOT EXISTS {PERSIST_TABLE} (
+                workspace_id TEXT NOT NULL, workspace_name TEXT, plan_tier TEXT,
+                seat_count INTEGER, snapshot_date DATE NOT NULL,
+                active_users_30d INTEGER, dau_over_seats_ratio DOUBLE PRECISION,
+                features_adopted_count INTEGER, used_ai_feature_30d BOOLEAN,
+                avg_session_duration_minutes DOUBLE PRECISION,
+                support_tickets_last_30d INTEGER, pct_ai_calls_automated DOUBLE PRECISION,
+                nps_score DOUBLE PRECISION, nps_responses_90d INTEGER,
+                mrr_usd DOUBLE PRECISION, mrr_change_usd DOUBLE PRECISION,
+                health_score DOUBLE PRECISION, risk_tier TEXT,
+                PRIMARY KEY (snapshot_date, workspace_id)
+            )"""))
+        conn.execute(text(f'DELETE FROM {PERSIST_TABLE} WHERE snapshot_date = ANY(:d)'),
+                     {'d': snapshots})
+        out.to_sql(PERSIST_TABLE.split('.')[1], conn, schema='analytics', if_exists='append',
+                   index=False, method='multi', chunksize=5000)
+    return len(out)
+
+
+def tier_counts(scores):
+    return {str(k): int(v) for k, v in scores['risk_tier'].value_counts().sort_index().items()}
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog='python -m analytics.health_scoring',
+                                     description='Workspace health scores and risk tiers.')
+    parser.add_argument('--as-of', help='Snapshot date (parquet source only; '
+                                        'the warehouse holds the latest snapshot)')
+    parser.add_argument('--source', choices=['warehouse', 'parquet'], default='warehouse')
+    parser.add_argument('--data-dir', default='data')
+    parser.add_argument('--persist', action='store_true',
+                        help=f'Replace this snapshot in {PERSIST_TABLE}')
+    parser.add_argument('--output', help='Write scores to this CSV')
+    parser.add_argument('--json', action='store_true')
+    args = parser.parse_args(argv)
+    if args.as_of and args.source == 'warehouse':
+        parser.error('--as-of needs --source parquet (gold.metrics_product_health '
+                     'holds only the latest snapshot)')
+
+    engine = None
+    try:
+        if args.source == 'parquet':
+            scores = _score(health_inputs_from_parquet(args.data_dir, args.as_of))
+        else:
+            from pipeline.config import create_engine
+            engine = create_engine()
+            scores = compute_health_scores(engine)
+    except Exception as exc:
+        print(f'error: could not compute health scores from {args.source}: {exc}',
+              file=sys.stderr)
+        return 1
+    if scores.empty:
+        print('error: no workspaces to score', file=sys.stderr)
+        return 1
+
+    summary = {
+        'snapshot_date': str(scores['snapshot_date'].iloc[0]),
+        'workspaces': int(len(scores)),
+        'tiers': tier_counts(scores),
+        'mean_health_score': round(float(scores['health_score'].mean()), 1),
+    }
+    if args.persist:
+        if engine is None:
+            from pipeline.config import create_engine
+            engine = create_engine()
+        summary['persisted_rows'] = persist_scores(engine, scores)
+    if args.output:
+        scores.to_csv(args.output, index=False)
+    if args.json:
+        print(json.dumps(summary))
+    else:
+        tiers = ', '.join(f'{k} {v}' for k, v in summary['tiers'].items())
+        print(f"Health scores for {summary['workspaces']:,} workspaces as of "
+              f"{summary['snapshot_date']}: {tiers} (mean {summary['mean_health_score']})")
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

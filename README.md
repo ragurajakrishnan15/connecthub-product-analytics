@@ -12,42 +12,44 @@ The live dashboard lets you experience the platform as a product team would — 
 
 ## What This Demonstrates
 
-- **Product Analytics**: Activation funnels, retention cohorts, feature adoption curves, customer health scoring
-- **Experimentation**: A/B testing with power analysis, frequentist + Bayesian evaluation, guardrail metrics
-- **Data Engineering**: dbt models on PostgreSQL (bronze → staging → intermediate → gold), Airflow orchestration, PySpark at scale
-- **Lakehouse Architecture**: Apache Iceberg tables with time-travel, schema evolution, partition pruning
-- **Visualization**: Hex notebooks (SQL + Python), Looker dashboards with LookML semantic layer, Plotly charts
-- **Data Quality**: Great Expectations contracts between pipeline stages
-- **AI-Powered Insights**: Interactive AI analyst that answers questions about the product data
+- **Product Analytics**: activation funnels, retention cohorts, feature adoption curves, customer health scoring
+- **Experimentation**: registry-driven deterministic assignment, power analysis, frequentist + Bayesian evaluation, guardrails, SRM checks
+- **Data Engineering**: deterministic synthetic data → PostgreSQL bronze → incremental dbt (staging → intermediate → gold), orchestrated by Airflow
+- **Data Quality**: Great Expectations contracts after every stage; critical failures stop the pipeline
+- **Operations**: idempotent steps, structured JSON logs with run IDs, run history in `ops.pipeline_runs`, benchmarks
+- **Visualization** (illustrative, unvalidated): Hex notebooks, LookML, Plotly
+
+Not implemented: Kafka/Kinesis/S3 ingestion, Apache Iceberg, a serving API and the AI analyst. The dashboard in
+`index.html` still shows static numbers. See [docs/architecture.md](docs/architecture.md).
 
 ## Architecture
 
 ```
-Ingestion (Kafka/Kinesis/S3)
-    → Processing (PySpark/Airflow)
-    → Lakehouse (Iceberg/dbt)
-    → Analytics (Cohort/Experiment engines)
-    → Serving (Hex/Looker/Dashboard)
+generate (parquet) → assign (experiments.*) → ingest (bronze.*) → validate
+    → dbt build (staging / intermediate / gold) → validate
+    → analytics (health scores, retention, experiment results) → validate
 ```
+
+Each arrow is one idempotent step of `python -m pipeline`; the Airflow DAG `connecthub_pipeline` runs the same steps.
+Metric definitions: [docs/metric-definitions.md](docs/metric-definitions.md).
 
 ## Tech Stack
 
-Python | SQL | PySpark | dbt | Apache Airflow | Apache Iceberg | Hex | Looker (LookML) | Plotly | Chart.js | Great Expectations | scikit-learn | Pandas | NumPy | SciPy
+Python 3.11 | SQL | PostgreSQL 15 | dbt 1.7 | Apache Airflow 2.8 | Great Expectations 0.18 | pandas | NumPy | SciPy | scikit-learn | PySpark (isolated) | Docker
 
 ## Quick Start
 
 ### Requirements
 
 - **Python 3.11** (pinned in `.python-version`). dbt-core 1.7 and Airflow 2.8 do not support Python 3.12+.
-- Docker Desktop (for the local PostgreSQL warehouse)
-- Optional: Java 17 for the PySpark jobs (`requirements/spark.txt`)
+- Docker Desktop (PostgreSQL warehouse; Airflow and Spark images)
 
 ### Configuration
 
 All connection settings and credentials come from environment variables. Nothing secret is committed.
 
 ```bash
-cp .env.example .env            # then edit .env and set real passwords
+cp .env.example .env            # then edit .env and set real passwords and keys
 set -a; . ./.env; set +a        # bash: export the variables for dbt and the scripts
 ```
 
@@ -57,20 +59,62 @@ PowerShell:
 Get-Content .env | Where-Object { $_ -match '^[A-Z_]+=' } | ForEach-Object { $k, $v = $_ -split '=', 2; Set-Item "env:$k" $v }
 ```
 
+Use `POSTGRES_HOST=127.0.0.1`, not `localhost`: on Windows `localhost` tries IPv6 first and every connection then
+waits about 2 seconds.
+
 ### Run the pipeline locally
 
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate   # Windows: py -3.11 -m venv .venv; .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.txt -c requirements/constraints-py311.txt
 
-pytest                                                   # unit + PostgreSQL integration tests
-docker compose up -d postgres                            # local warehouse on 127.0.0.1:5432
-python scripts/generate_synthetic_data.py --users 10000  # ~2 s; deterministic for a given --seed
-python -m experimentation.assignment                     # writes data/experiment_assignments.parquet
-python scripts/ingest_events.py --load-postgres          # loads bronze.* and experiments.*
-cd dbt_project && dbt build && cd ..                     # builds staging / intermediate / gold / semantic
-python -m experimentation.evaluate                       # evaluates exp_onboarding_v2
+docker compose up -d postgres                 # warehouse on 127.0.0.1:5432
+python -m pipeline run --users 10000          # all steps, about 1-2 minutes; safe to rerun
+pytest                                        # unit, integration and end-to-end tests
 ```
+
+Useful variants:
+
+```bash
+python -m pipeline run --steps dbt,validate_gold            # a subset of steps
+python -m pipeline step ingest --start-date 2025-12-31      # load one day (incremental)
+python -m pipeline verify-incremental                       # prove incremental dbt == full refresh
+python -m pipeline fingerprint --out before.json            # compare warehouses with --compare
+python scripts/benchmark.py --users 10000                   # timings and memory per step
+```
+
+### Command-line tools
+
+| Command | What it does |
+|---|---|
+| `python -m experimentation.assignment [--persist]` | Assign users to every registered experiment |
+| `python -m experimentation.evaluate --experiment-id exp_onboarding_v2` | Evaluate an experiment (`--all`, `--json`, `--persist`, `--fail-on-srm`) |
+| `python -m analytics.cohort_engine --date 2025-12-31` | Retention as of a date (`--source parquet`, `--output cells.csv`) |
+| `python -m analytics.health_scoring [--persist]` | Workspace health scores and tiers |
+| `python -m quality.validate --stage all` | Run the data-quality checks (`bronze`, `gold`, `analytics` or `all`) |
+
+All return `0` on success, `1` on errors or failed checks (with a message on stderr), and `2` on usage errors;
+`evaluate --fail-on-srm` returns `3` when a sample ratio mismatch is found.
+
+### With Docker: Airflow
+
+```bash
+docker compose up -d                          # postgres + airflow-init + webserver + scheduler
+# UI: http://127.0.0.1:8081 (AIRFLOW_PORT), user/password from .env
+docker compose exec airflow-scheduler airflow dags trigger connecthub_pipeline
+docker compose exec airflow-scheduler python -m pytest tests/test_dag.py
+```
+
+The DAG accepts params `users`, `seed`, `partition_date` (incremental daily load) and `full_refresh`.
+
+### Spark (optional, isolated)
+
+```bash
+docker compose --profile spark build spark
+docker compose --profile spark run --rm spark python -m pytest tests/test_spark_jobs.py -v
+```
+
+Spark is not part of the pipeline; see [docs/architecture.md](docs/architecture.md#spark-isolated-not-in-the-pipeline).
 
 ### Synthetic data
 
@@ -82,51 +126,51 @@ so the analytics have signal to find:
 - Users go through an ordered 14-day activation funnel (first call → AI feature → team invite); activity decays
   after signup and activated users churn later.
 - Revenue is billed per active seat each month (`bronze.subscriptions`); NPS responses arrive at days 30/120/210/300.
-- Experiment `exp_onboarding_v2` has a **planted effect**: `variant_1` users are 1.3× as likely to use an AI feature
-  after their first call. Evaluation should recover it; nothing else differs between variants.
+- Experiments come from `experimentation/experiments.py`. `exp_onboarding_v2` has a **planted effect**: users
+  assigned to `variant_1` are 1.3× as likely to use an AI feature after their first call. `exp_ai_summary_v1` is
+  an A/A check with no effect.
 
 The same `--seed` always produces identical files. Events are written in chunks, so memory stays bounded as
-`--users` grows (see `PHASE_2_REPORT.md` for measured scale).
+`--users` grows.
 
 ### Warehouse schemas
 
 | Schema | Written by | Contents |
 |---|---|---|
-| `bronze` | `scripts/ingest_events.py` | Raw events, users, workspaces, agent evaluations, subscriptions (MRR), NPS responses |
-| `experiments` | `scripts/ingest_events.py` | `experiment_assignments` |
-| `staging` | dbt | Typed, deduplicated views over bronze |
-| `intermediate` | dbt | Sessions, feature usage, activation funnel |
-| `gold` | dbt | Facts (incl. `fct_workspace_mrr`, `fct_experiment_user_metrics`) and `metrics_product_health`, consumed by Python, LookML and Hex |
+| `bronze` | ingestion | Raw events, users, workspaces, agent evaluations, subscriptions (MRR), NPS responses |
+| `experiments` | assignment | `experiment_assignments` (one row per experiment and user) |
+| `staging` | dbt | `stg_events` (incremental table) and typed views over bronze |
+| `intermediate` | dbt | Sessions and feature usage (incremental), activation funnel |
+| `gold` | dbt | Facts (incl. `fct_workspace_mrr`, `fct_experiment_user_metrics`) and `metrics_product_health` |
 | `semantic` | dbt | MetricFlow time spine for the semantic layer |
+| `analytics` | Python | `workspace_health_scores`, `experiment_results` |
+| `ops` | pipeline | `pipeline_runs` (per-step status, metrics, timings), `load_state` |
 
 ### Dependencies
 
-`requirements.txt` installs the development environment (`requirements/app.txt`, `dbt.txt`, `dev.txt`).
-Optional sets live beside them: `spark.txt`, `airflow.txt` (container/separate venv only: Airflow 2.8 needs SQLAlchemy < 2.0, pandas 2.2 needs >= 2.0), and `quality.txt`.
-
-### With Docker (full stack):
-
-```bash
-docker compose up -d    # Postgres + Airflow; Airflow UI on localhost:8080, credentials from .env
-```
+`requirements.txt` installs the development environment (`requirements/pipeline.txt` + `dev.txt`).
+`requirements/constraints-py311.txt` pins every package, including transitive ones, to the versions validated on
+Python 3.11.9; the Airflow image installs from the same file. Airflow itself uses its official constraints in its own
+environment (Airflow 2.8 needs SQLAlchemy < 2.0, pandas 2.2 needs >= 2.0). Optional: `spark.txt` (Spark image),
+`lookml.txt`.
 
 ## Project Structure
 
 ```
 connecthub-product-analytics/
-├── index.html                      # Live interactive dashboard with AI analyst
-├── scripts/                        # Data generation & ingestion
-├── spark_jobs/                     # PySpark pipelines
-├── dbt_project/                    # dbt models (staging → intermediate → gold)
-├── dags/                           # Airflow DAGs
-├── great_expectations/             # Data quality checks
-├── analytics/                      # Product analytics modules
-├── experimentation/                # A/B testing framework
-├── hex_notebooks/                  # Hex notebook configs
-├── lookml/                         # Looker semantic layer (LookML)
-├── notebooks/                      # Jupyter exploration notebooks
-├── tests/                          # Unit tests (pytest)
-└── docs/                           # Architecture docs & playbooks
+├── pipeline/                       # Step runner, CLI, logging, fingerprints, load state
+├── scripts/                        # Data generation, ingestion, benchmark
+├── experimentation/                # Experiment registry, assignment, statistics, evaluation
+├── analytics/                      # Cohorts, funnel, adoption, health scoring
+├── quality/                        # Data-quality contracts (Great Expectations)
+├── dbt_project/                    # dbt models (staging → intermediate → gold) and tests
+├── dags/                           # Airflow DAG
+├── docker/                         # Airflow and Spark images
+├── spark_jobs/                     # PySpark jobs (isolated, verified against dbt)
+├── tests/                          # pytest: unit, integration, end-to-end
+├── docs/                           # Architecture, metric definitions, playbooks
+├── index.html                      # Static dashboard prototype (not connected to data)
+└── hex_notebooks/, lookml/, notebooks/   # Illustrative analysis artefacts
 ```
 
 ## Key Modules
@@ -139,7 +183,7 @@ connecthub-product-analytics/
 
 ### Experimentation
 - **Power Analysis** — Sample size calculator for proportion and continuous metrics
-- **Assignment** — Deterministic SHA-256 hashing for consistent variant assignment
+- **Assignment** — Registry-driven, salted SHA-256 traffic and variant hashes; idempotent persistence
 - **Statistical Tests** — Z-test for proportions, Welch's t-test, SRM check
 - **Bayesian A/B** — Beta-Binomial model with probability of improvement
 - **Evaluation** — End-to-end pipeline with guardrail metrics and decision logic

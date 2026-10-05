@@ -42,7 +42,7 @@ def test_revenue_guardrail_blocks_a_winning_variant():
     users = user_frame(treatment_rate=0.28, treatment_revenue=25.0)
     result = evaluate_user_metrics(users, 'exp')
     assert result['guardrail_revenue']['significant']
-    assert result['decision'].startswith('REVERT — Revenue guardrail')
+    assert result['decision'].startswith('REVERT - Revenue guardrail')
 
 
 def test_session_guardrail_blocks_a_winning_variant():
@@ -50,7 +50,7 @@ def test_session_guardrail_blocks_a_winning_variant():
     treated = users['variant'] == 'variant_1'
     users.loc[treated, 'avg_session_minutes_14d'] -= 2
     result = evaluate_user_metrics(users, 'exp')
-    assert result['decision'].startswith('REVERT — Session duration guardrail')
+    assert result['decision'].startswith('REVERT - Session duration guardrail')
 
 
 def test_incomplete_windows_are_excluded_from_metrics():

@@ -36,7 +36,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from experimentation.assignment import assign_variant  # noqa: E402
+from experimentation.assignment import variants_for  # noqa: E402
+from experimentation.experiments import get_experiment  # noqa: E402
 
 NUM_USERS = 10_000
 START_DATE = np.datetime64('2025-01-01')
@@ -164,7 +165,12 @@ def generate_users(n, ws, rng, seed):
 
     ids = _stable_ids(seed, 'user', n)
     engagement = 0.7 * ws['engagement'][ws_idx] + rng.normal(0, 0.7, n)
-    treated = np.array([assign_variant(u, EXPERIMENT_ID) == TREATMENT_VARIANT for u in ids])
+    # Planted effect: exactly the users the registry assigns to the treatment arm.
+    experiment = get_experiment(EXPERIMENT_ID)
+    signup_ts = START_DATE + signup
+    eligible = ((signup_ts >= np.datetime64(experiment.start))
+                & (signup_ts <= np.datetime64(experiment.end)))
+    treated = eligible & (variants_for(experiment, ids) == TREATMENT_VARIANT)
 
     # Ordered activation funnel. Milestone days are counted from signup.
     called = rng.random(n) < _sigmoid(1.0 + 0.8 * engagement)
