@@ -109,6 +109,41 @@ QUERIES = {
                                     'staging.stg_users', 'user_id'),
     'orphan_health_workspace': _orphans('gold.metrics_product_health', 'workspace_id',
                                         'staging.stg_workspaces', 'workspace_id'),
+    # ---- gold serving models (read by the API)
+    'adoption_observed_fraction': ('SELECT observed_adoption_pct / 100.0 AS adoption_fraction '
+                                   'FROM gold.fct_feature_adoption'),
+    'serving_activation_funnel_order': (
+        'SELECT signup_date FROM gold.fct_activation_daily '
+        'WHERE NOT (activated_14d <= call_and_ai AND call_and_ai <= placed_first_call '
+        'AND placed_first_call <= signups)'),
+    'serving_activation_signups_total': (
+        'SELECT 1 FROM (SELECT SUM(signups) AS n FROM gold.fct_activation_daily) a, '
+        '(SELECT COUNT(*) AS n FROM staging.stg_users) u WHERE a.n <> u.n'),
+    'serving_revenue_signs': (
+        'SELECT month_start FROM gold.fct_revenue_monthly '
+        'WHERE new_mrr_usd < 0 OR expansion_mrr_usd < 0 OR reactivation_mrr_usd < 0 '
+        'OR contraction_mrr_usd > 0 OR churned_mrr_usd > 0'),
+    'serving_revenue_movement_identity': (
+        'SELECT month_start FROM gold.fct_revenue_monthly '
+        'WHERE new_mrr_usd + expansion_mrr_usd + reactivation_mrr_usd + contraction_mrr_usd '
+        '+ churned_mrr_usd <> mrr_usd - previous_mrr_usd'),
+    'serving_nps_categories': (
+        'SELECT response_date FROM gold.fct_nps_daily '
+        'WHERE promoters + passives + detractors <> responses'),
+    'serving_agent_outcomes': (
+        'SELECT call_date FROM gold.fct_agent_performance_daily '
+        'WHERE ai_resolved + escalated + human_handled <> calls'),
+    'serving_agent_csat_mean': (
+        'SELECT csat_sum / csat_count AS csat_mean FROM gold.fct_agent_performance_daily '
+        'WHERE csat_count > 0'),
+    'serving_support_vs_dau': (
+        'SELECT d.event_date FROM gold.fct_daily_active_users d LEFT JOIN '
+        '(SELECT event_date, SUM(active_users) AS users FROM gold.fct_support_daily '
+        'GROUP BY event_date) s USING (event_date) WHERE COALESCE(s.users, 0) <> d.dau'),
+    'serving_activity_order': (
+        'SELECT month_start FROM gold.fct_activity_monthly '
+        'WHERE NOT (ai_active_workspaces <= feature_active_workspaces '
+        'AND feature_active_workspaces <= active_workspaces)'),
     # ---- analytics outputs
     'health_snapshot_incomplete': (
         'SELECT 1 FROM (SELECT COUNT(*) AS n FROM analytics.workspace_health_scores '
@@ -182,6 +217,35 @@ STAGES = {
         _between('gold.metrics_product_health', 'dau_over_seats_ratio', 0),
         _no_rows('orphan_metrics_user'),
         _no_rows('orphan_health_workspace'),
+        # ---- serving models
+        _between('adoption_observed_fraction', 'adoption_fraction', 0, 1),
+        *_pk('gold.fct_activation_daily', 'signup_date', 'plan_tier'),
+        _in_set('gold.fct_activation_daily', 'plan_tier', PLAN_TIERS),
+        _no_rows('serving_activation_funnel_order'),
+        _no_rows('serving_activation_signups_total'),
+        *_pk('gold.fct_activation_milestone_days',
+             'signup_date', 'plan_tier', 'milestone', 'days_to_milestone'),
+        _between('gold.fct_activation_milestone_days', 'days_to_milestone', 0, 14),
+        *_pk('gold.fct_revenue_monthly', 'month_start', 'plan_tier'),
+        _between('gold.fct_revenue_monthly', 'mrr_usd', 0),
+        _no_rows('serving_revenue_signs'),
+        _no_rows('serving_revenue_movement_identity'),
+        *_pk('gold.fct_nps_daily', 'response_date', 'plan_tier'),
+        _between('gold.fct_nps_daily', 'response_date', DATA_START, DATA_END),
+        _no_rows('serving_nps_categories'),
+        *_pk('gold.fct_support_daily', 'event_date', 'plan_tier'),
+        _between('gold.fct_support_daily', 'event_date', DATA_START, DATA_END),
+        _no_rows('serving_support_vs_dau'),
+        *_pk('gold.fct_agent_performance_daily', 'call_date', 'plan_tier', 'call_type'),
+        _no_rows('serving_agent_outcomes'),
+        _between('serving_agent_csat_mean', 'csat_mean', 1, 5),
+        *_pk('gold.fct_feature_usage_monthly', 'month_start', 'feature_name'),
+        *_pk('gold.fct_activity_monthly', 'month_start'),
+        _no_rows('serving_activity_order'),
+        *_pk('gold.fct_experiment_activation_curve', 'experiment_id', 'variant',
+             'day_since_signup'),
+        _between('gold.fct_experiment_activation_curve', 'cumulative_activation_rate', 0, 1),
+        _between('gold.fct_experiment_activation_curve', 'day_since_signup', 0, 14),
     ],
     'analytics': [
         *_pk('analytics.workspace_health_scores', 'snapshot_date', 'workspace_id'),

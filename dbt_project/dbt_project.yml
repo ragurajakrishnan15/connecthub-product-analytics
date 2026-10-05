@@ -31,6 +31,9 @@ models:
     gold:
       +materialized: table
       +schema: gold
+      # Small additive tables the API reads (Phase 4); built in the gold schema.
+      serving:
+        +tags: ['serving']
     semantic:
       +materialized: table
       +schema: semantic
