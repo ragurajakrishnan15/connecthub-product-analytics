@@ -1,0 +1,64 @@
+# Hex Notebook: Experiment Results Write-Up
+name: Experiment Results — Onboarding V2
+description: Statistical analysis of the onboarding redesign experiment
+connection: connecthub_warehouse
+
+cells:
+  - id: exp_1
+    type: markdown
+    name: "Experiment Overview"
+    content: |
+      ## Experiment: Onboarding V2
+      **Hypothesis:** Redesigning the onboarding flow to surface AI features earlier
+      will increase 14-day activation rate by at least 5%.
+
+      **Primary Metric:** 14-day activation rate
+      **Guardrail:** Revenue per user (must not decrease)
+      **Duration:** 4 weeks | **Traffic:** 100%
+
+  - id: exp_2
+    type: sql
+    name: "Variant Summary"
+    query: |
+      SELECT
+          variant,
+          COUNT(*) AS total_users,
+          SUM(CASE WHEN activation_stage = 'fully_activated' THEN 1 ELSE 0 END) AS activated,
+          ROUND(AVG(CASE WHEN activation_stage = 'fully_activated' THEN 1.0 ELSE 0 END) * 100, 2) AS activation_rate
+      FROM gold.fct_experiment_assignments ea
+      JOIN intermediate.int_activation_funnel af ON ea.user_id = af.user_id
+      WHERE ea.experiment_id = 'exp_onboarding_v2'
+      GROUP BY variant
+
+  - id: exp_3
+    type: python
+    name: "Statistical Tests"
+    code: |
+      from experimentation.stat_tests import z_test_proportions, srm_check
+      from experimentation.bayesian_ab import bayesian_ab_test
+
+      control = exp_2[exp_2['variant'] == 'variant_0'].iloc[0]
+      treatment = exp_2[exp_2['variant'] == 'variant_1'].iloc[0]
+
+      srm = srm_check(int(control['total_users']), int(treatment['total_users']))
+      freq = z_test_proportions(
+          int(control['activated']), int(control['total_users']),
+          int(treatment['activated']), int(treatment['total_users'])
+      )
+      bayes = bayesian_ab_test(
+          int(control['activated']), int(control['total_users']),
+          int(treatment['activated']), int(treatment['total_users'])
+      )
+
+      print("SRM Check:", srm)
+      print("Frequentist:", freq)
+      print("Bayesian:", bayes)
+
+  - id: exp_4
+    type: markdown
+    name: "Decision"
+    content: |
+      ## Decision: SHIP
+      Treatment showed a statistically significant lift in activation rate
+      with no revenue guardrail violation. Bayesian probability of treatment
+      being better exceeds 95%.

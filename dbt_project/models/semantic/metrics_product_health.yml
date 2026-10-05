@@ -1,0 +1,143 @@
+version: 2
+
+# dbt semantic layer (MetricFlow spec, dbt >= 1.6).
+# Ratio metrics reference other metrics, which reference measures on semantic models.
+# revenue_per_workspace is not defined yet: no revenue/MRR data exists in the warehouse.
+
+semantic_models:
+  - name: activation_funnel
+    description: "One row per user with 14-day activation milestones"
+    model: ref('int_activation_funnel')
+    defaults:
+      agg_time_dimension: signup_date
+    entities:
+      - name: user
+        type: primary
+        expr: user_id
+    dimensions:
+      - name: signup_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: activation_stage
+        type: categorical
+    measures:
+      - name: total_signups
+        agg: count
+        expr: user_id
+      - name: activated_users
+        description: "Users who placed a call, used an AI feature and invited a teammate within 14 days"
+        agg: sum
+        expr: "CASE WHEN placed_first_call = 1 AND used_ai_feature = 1 AND invited_team_member = 1 THEN 1 ELSE 0 END"
+
+  - name: retention_cohorts
+    description: "Weekly retention cohort cells"
+    model: ref('fct_retention_cohorts')
+    defaults:
+      agg_time_dimension: cohort_week
+    entities:
+      - name: retention_cell
+        type: primary
+        expr: "cohort_week || '-' || weeks_since_signup"
+    dimensions:
+      - name: cohort_week
+        type: time
+        type_params:
+          time_granularity: day
+      - name: weeks_since_signup
+        type: categorical
+    measures:
+      - name: returning_users_week_n
+        agg: sum
+        expr: active_users
+      - name: cohort_size
+        agg: sum
+        expr: cohort_size
+
+  - name: feature_usage
+    description: "Daily feature usage per user and workspace"
+    model: ref('int_feature_usage')
+    defaults:
+      agg_time_dimension: event_date
+    entities:
+      - name: feature_usage_row
+        type: primary
+        expr: "user_id || '-' || feature_name || '-' || event_date"
+      - name: workspace
+        type: foreign
+        expr: workspace_id
+    dimensions:
+      - name: event_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: feature_name
+        type: categorical
+    measures:
+      - name: total_active_workspaces
+        agg: count_distinct
+        expr: workspace_id
+      - name: ai_active_workspaces
+        agg: count_distinct
+        expr: "CASE WHEN feature_name IN ('ai_assist', 'ai_voice_agent') THEN workspace_id END"
+
+metrics:
+  - name: total_signups
+    label: "Total Signups"
+    type: simple
+    type_params:
+      measure: total_signups
+
+  - name: activated_users
+    label: "Activated Users (14d)"
+    type: simple
+    type_params:
+      measure: activated_users
+
+  - name: activation_rate_14d
+    label: "14-Day Activation Rate"
+    description: "Share of new users who complete all activation milestones (call, AI feature, team invite) within 14 days of signup"
+    type: ratio
+    type_params:
+      numerator: activated_users
+      denominator: total_signups
+
+  - name: returning_users_week_n
+    label: "Returning Users (Week N)"
+    type: simple
+    type_params:
+      measure: returning_users_week_n
+
+  - name: cohort_size
+    label: "Cohort Size"
+    type: simple
+    type_params:
+      measure: cohort_size
+
+  - name: weekly_retention_rate
+    label: "Week-N Retention Rate"
+    description: "Share of cohort users active in week N after their first active week; group by weeks_since_signup"
+    type: ratio
+    type_params:
+      numerator: returning_users_week_n
+      denominator: cohort_size
+
+  - name: ai_active_workspaces
+    label: "AI-Active Workspaces"
+    type: simple
+    type_params:
+      measure: ai_active_workspaces
+
+  - name: total_active_workspaces
+    label: "Active Workspaces"
+    type: simple
+    type_params:
+      measure: total_active_workspaces
+
+  - name: ai_feature_adoption
+    label: "AI Feature Adoption Rate"
+    description: "Share of active workspaces using at least one AI feature in the queried time window (query a trailing 30-day window for the dashboard KPI)"
+    type: ratio
+    type_params:
+      numerator: ai_active_workspaces
+      denominator: total_active_workspaces

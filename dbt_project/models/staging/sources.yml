@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: bronze
+    schema: bronze
+    tables:
+      - name: events_raw
+        description: "Raw product events from ingestion layer"
+      - name: users_raw
+        description: "Raw user dimension from ingestion layer"
+      - name: workspaces_raw
+        description: "Raw workspace dimension from ingestion layer"
+      - name: agent_evaluations
+        description: "AI agent call evaluation records"
+
+  - name: experiments
+    schema: experiments
+    tables:
+      - name: experiment_assignments
+        description: "A/B test variant assignments"

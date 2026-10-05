@@ -1,0 +1,7 @@
+# Development environment (Python 3.11). Install with:
+#   pip install -r requirements.txt
+# Airflow, Spark and data-quality tooling live in separate files under
+# requirements/ because they are optional or conflict with this environment.
+-r requirements/app.txt
+-r requirements/dbt.txt
+-r requirements/dev.txt
