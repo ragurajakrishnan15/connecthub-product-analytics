@@ -1,0 +1,230 @@
+{
+ "data": {
+  "snapshot_date": "2025-12-31",
+  "workspaces": 1000,
+  "mean_score": 46.4,
+  "tiers": [
+   {
+    "tier": "Critical",
+    "min": 0,
+    "max": 40,
+    "workspaces": 299,
+    "share": 0.299
+   },
+   {
+    "tier": "At Risk",
+    "min": 40,
+    "max": 55,
+    "workspaces": 283,
+    "share": 0.283
+   },
+   {
+    "tier": "Healthy",
+    "min": 55,
+    "max": 70,
+    "workspaces": 304,
+    "share": 0.304
+   },
+   {
+    "tier": "Champion",
+    "min": 70,
+    "max": 100,
+    "workspaces": 114,
+    "share": 0.114
+   }
+  ],
+  "histogram": [
+   {
+    "bin_start": 0,
+    "bin_end": 5,
+    "workspaces": 0,
+    "tier": "Critical"
+   },
+   {
+    "bin_start": 5,
+    "bin_end": 10,
+    "workspaces": 0,
+    "tier": "Critical"
+   },
+   {
+    "bin_start": 10,
+    "bin_end": 15,
+    "workspaces": 228,
+    "tier": "Critical"
+   },
+   {
+    "bin_start": 15,
+    "bin_end": 20,
+    "workspaces": 3,
+    "tier": "Critical"
+   },
+   {
+    "bin_start": 20,
+    "bin_end": 25,
+    "workspaces": 7,
+    "tier": "Critical"
+   },
+   {
+    "bin_start": 25,
+    "bin_end": 30,
+    "workspaces": 4,
+    "tier": "Critical"
+   },
+   {
+    "bin_start": 30,
+    "bin_end": 35,
+    "workspaces": 19,
+    "tier": "Critical"
+   },
+   {
+    "bin_start": 35,
+    "bin_end": 40,
+    "workspaces": 38,
+    "tier": "Critical"
+   },
+   {
+    "bin_start": 40,
+    "bin_end": 45,
+    "workspaces": 73,
+    "tier": "At Risk"
+   },
+   {
+    "bin_start": 45,
+    "bin_end": 50,
+    "workspaces": 99,
+    "tier": "At Risk"
+   },
+   {
+    "bin_start": 50,
+    "bin_end": 55,
+    "workspaces": 111,
+    "tier": "At Risk"
+   },
+   {
+    "bin_start": 55,
+    "bin_end": 60,
+    "workspaces": 113,
+    "tier": "Healthy"
+   },
+   {
+    "bin_start": 60,
+    "bin_end": 65,
+    "workspaces": 106,
+    "tier": "Healthy"
+   },
+   {
+    "bin_start": 65,
+    "bin_end": 70,
+    "workspaces": 85,
+    "tier": "Healthy"
+   },
+   {
+    "bin_start": 70,
+    "bin_end": 75,
+    "workspaces": 54,
+    "tier": "Champion"
+   },
+   {
+    "bin_start": 75,
+    "bin_end": 80,
+    "workspaces": 36,
+    "tier": "Champion"
+   },
+   {
+    "bin_start": 80,
+    "bin_end": 85,
+    "workspaces": 19,
+    "tier": "Champion"
+   },
+   {
+    "bin_start": 85,
+    "bin_end": 90,
+    "workspaces": 4,
+    "tier": "Champion"
+   },
+   {
+    "bin_start": 90,
+    "bin_end": 95,
+    "workspaces": 1,
+    "tier": "Champion"
+   },
+   {
+    "bin_start": 95,
+    "bin_end": 100,
+    "workspaces": 0,
+    "tier": "Champion"
+   }
+  ],
+  "by_plan": [
+   {
+    "plan_tier": "Enterprise",
+    "workspaces": 140,
+    "mean_score": 50.5,
+    "tiers": {
+     "Critical": 32,
+     "At Risk": 40,
+     "Healthy": 44,
+     "Champion": 24
+    }
+   },
+   {
+    "plan_tier": "Essentials",
+    "workspaces": 298,
+    "mean_score": 46.8,
+    "tiers": {
+     "Critical": 83,
+     "At Risk": 94,
+     "Healthy": 92,
+     "Champion": 29
+    }
+   },
+   {
+    "plan_tier": "Free",
+    "workspaces": 370,
+    "mean_score": 43.1,
+    "tiers": {
+     "Critical": 131,
+     "At Risk": 104,
+     "Healthy": 106,
+     "Champion": 29
+    }
+   },
+   {
+    "plan_tier": "Professional",
+    "workspaces": 192,
+    "mean_score": 49.1,
+    "tiers": {
+     "Critical": 53,
+     "At Risk": 45,
+     "Healthy": 62,
+     "Champion": 32
+    }
+   }
+  ],
+  "weights": {
+   "dau_over_seats_ratio": 0.25,
+   "features_adopted_count": 0.2,
+   "pct_ai_calls_automated": 0.15,
+   "avg_session_duration_minutes": 0.1,
+   "nps_score": 0.1,
+   "mrr_change_usd": 0.1,
+   "tickets_per_active_user": 0.1
+  }
+ },
+ "meta": {
+  "as_of": "2025-12-31",
+  "data_start": "2025-01-02",
+  "data_end": "2025-12-31",
+  "effective_range": null,
+  "filters": {
+   "plan_tier": null
+  },
+  "sources": [],
+  "data_version": "phase4b-run-1",
+  "generated_at": "2026-10-06T19:06:36.880114Z",
+  "definitions": {},
+  "caveats": [
+   "Scores are percentile ranks relative to the workspaces scored together, and tiers are calibrated on the synthetic data (PHASE_2_REPORT.md); plan_tier is the workspace's current plan."
+  ]
+ }
+}

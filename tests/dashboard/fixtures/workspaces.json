@@ -1,0 +1,83 @@
+{
+ "data": {
+  "snapshot_date": "2025-12-31",
+  "total": 1000,
+  "limit": 3,
+  "offset": 0,
+  "next_offset": 10,
+  "sort": "health_score",
+  "order": "asc",
+  "items": [
+   {
+    "workspace_id": "96322935-79ac-5060-accb-b9e3f26fe8ed",
+    "workspace_name": "Workspace_22",
+    "plan_tier": "Enterprise",
+    "health_score": 10.6,
+    "risk_tier": "Critical",
+    "seat_count": 5,
+    "active_users_30d": 0,
+    "dau_over_seats_ratio": 0,
+    "features_adopted_count": 0,
+    "used_ai_feature_30d": false,
+    "pct_ai_calls_automated": null,
+    "nps_score": null,
+    "support_tickets_last_30d": 0,
+    "mrr_usd": 0,
+    "mrr_change_usd": -90
+   },
+   {
+    "workspace_id": "2fff1756-e71d-5753-8045-75d4b3266086",
+    "workspace_name": "Workspace_438",
+    "plan_tier": "Enterprise",
+    "health_score": 11.5,
+    "risk_tier": "Critical",
+    "seat_count": 3,
+    "active_users_30d": 0,
+    "dau_over_seats_ratio": 0,
+    "features_adopted_count": 0,
+    "used_ai_feature_30d": false,
+    "pct_ai_calls_automated": null,
+    "nps_score": null,
+    "support_tickets_last_30d": 0,
+    "mrr_usd": 0,
+    "mrr_change_usd": -45
+   },
+   {
+    "workspace_id": "63080468-96b5-5495-9b5e-eae33b79a71c",
+    "workspace_name": "Workspace_33",
+    "plan_tier": "Enterprise",
+    "health_score": 11.5,
+    "risk_tier": "Critical",
+    "seat_count": 5,
+    "active_users_30d": 0,
+    "dau_over_seats_ratio": 0,
+    "features_adopted_count": 0,
+    "used_ai_feature_30d": false,
+    "pct_ai_calls_automated": null,
+    "nps_score": null,
+    "support_tickets_last_30d": 0,
+    "mrr_usd": 0,
+    "mrr_change_usd": -45
+   }
+  ]
+ },
+ "meta": {
+  "as_of": "2025-12-31",
+  "data_start": "2025-01-02",
+  "data_end": "2025-12-31",
+  "effective_range": null,
+  "filters": {
+   "tier": null,
+   "plan_tier": null,
+   "sort": "health_score",
+   "order": "asc"
+  },
+  "sources": [],
+  "data_version": "phase4b-run-1",
+  "generated_at": "2026-10-06T19:06:36.928524Z",
+  "definitions": {},
+  "caveats": [
+   "Scores are percentile ranks relative to the workspaces scored together, and tiers are calibrated on the synthetic data (PHASE_2_REPORT.md); plan_tier is the workspace's current plan."
+  ]
+ }
+}

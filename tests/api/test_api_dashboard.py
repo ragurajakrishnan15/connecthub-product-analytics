@@ -104,7 +104,8 @@ def test_the_page_is_public_but_the_data_is_not():
 def test_csp_never_allows_unsafe_inline_or_eval(client):
     csp = client.get('/').headers['content-security-policy']
     assert 'unsafe-inline' not in csp and 'unsafe-eval' not in csp
-    assert "'unsafe-hashes'" in directive(csp, 'style-src-attr')   # hash-pinned, attributes only
+    assert 'unsafe-hashes' not in csp                               # the page has no style attributes at all
+    assert directive(csp, 'style-src-attr') == ["'none'"]
     assert directive(csp, 'default-src') == ["'none'"]
     assert directive(csp, 'connect-src') == ["'self'"]
     assert directive(csp, 'base-uri') == ["'none'"] and directive(csp, 'form-action') == ["'none'"]
@@ -123,10 +124,8 @@ def test_style_policy_covers_the_markup_exactly(client):
     text = page_text()
     blocks = re.findall(r'<style>(.*?)</style>', text, re.S)
     assert directive(csp, 'style-src') == [sha(b) for b in blocks] + ['https://fonts.googleapis.com']
-    attrs = {a for a in re.findall(r'\sstyle="([^"]*)"', text)}
-    assert directive(csp, 'style-src-attr') == ["'unsafe-hashes'"] + [sha(a) for a in dict.fromkeys(
-        a for a in re.findall(r'\sstyle="([^"]*)"', text))]
-    assert len(attrs) >= 1
+    assert not re.findall(r'\sstyle\s*=', text)                     # layout uses classes; styles set from script use the DOM
+    assert directive(csp, 'style-src-attr') == ["'none'"]
     assert directive(csp, 'font-src') == ['https://fonts.gstatic.com']
 
 
@@ -135,7 +134,7 @@ def test_the_page_needs_no_inline_handlers_or_inline_style_in_templates():
     assert not re.search(r'\son[a-z]+\s*=', text)              # addEventListener only
     assert not re.search(r'javascript:', text, re.I)
     script = re.findall(r'<script>(.*?)</script>', text, re.S)[0]
-    assert not re.search(r'(?<![\w-])style\s*=\s*"', script)   # generated markup uses data-style
+    assert not re.search(r'(?<![\w-])style\s*=\s*"', script)   # generated markup sets styles through the DOM
 
 
 def test_crlf_checkout_gives_the_same_page_and_policy(tmp_path):
@@ -146,7 +145,9 @@ def test_crlf_checkout_gives_the_same_page_and_policy(tmp_path):
 
 def test_changing_the_page_changes_its_hash(tmp_path):
     original = load_dashboard(INDEX)
-    changed = load_dashboard(write(tmp_path, page_text().replace('applyStyles(root)', 'applyStyles(r)', 1)))
+    edited = page_text().replace('const EM_DASH', 'const EM_DASH_', 1)
+    assert edited != page_text()
+    changed = load_dashboard(write(tmp_path, edited))
     assert changed.csp != original.csp and changed.etag != original.etag
 
 

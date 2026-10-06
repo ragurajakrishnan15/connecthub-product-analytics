@@ -98,7 +98,7 @@ Not part of the API contract (not in `docs/openapi.json`). With `API_DASHBOARD_P
 | `default-src` | `'none'` |
 | `script-src` | `sha256-` hash of each inline `<script>`, plus the exact Chart.js URL on cdnjs (removed when Chart.js is vendored). **No `'unsafe-inline'`**; inline event handlers are therefore not allowed. |
 | `style-src` | `sha256-` hash of each inline `<style>`, plus `https://fonts.googleapis.com` |
-| `style-src-attr` | `'unsafe-hashes'` with the hash of each distinct `style="…"` value in the markup. Styles set from script (`element.style`) are not restricted by CSP. |
+| `style-src-attr` | `'none'` while the page has no `style="…"` attributes (it uses CSS classes). If a page ever has them, each distinct value is allowed by hash with `'unsafe-hashes'`. Styles set from script (`element.style`) are not restricted by CSP. |
 | `font-src` | `https://fonts.gstatic.com` |
 | `connect-src` | `'self'` |
 | `base-uri`, `form-action` | `'none'` |
@@ -110,6 +110,21 @@ Not part of the API contract (not in `docs/openapi.json`). With `API_DASHBOARD_P
 - **ETag revalidation.** The page remembers each response's `ETag` per URL (bounded, in memory), sends `If-None-Match`, and on `304` reuses its stored copy.
 - **Errors** become `ApiError` objects with a `kind` (`network`, `timeout`, `aborted`, `auth`, `validation`, `not-found`, `unavailable`, `server-timeout`, `server`, `parse`, `protocol`, `config`), the problem `type`, `request_id` and `Retry-After`. A request that succeeds with nothing to draw is flagged `empty`.
 - **API key (`API_AUTH_MODE=api_key`).** On a `401` the page shows a key dialog, keeps the key in `sessionStorage` (this tab only; memory if storage is blocked), sends it in `X-API-Key` and retries once. It is never put in a URL, never logged and never in the source. A rejected key is forgotten.
+
+**Panels** (every number on the page comes from one of these endpoints; nothing is hard-coded):
+
+| Tab | Panels | Endpoints |
+|---|---|---|
+| Top bar | "Data as of", data window, dataset label | `/api/meta` |
+| Overview | 6 KPI cards, DAU, feature adoption, revenue by plan, AI resolution rate | `/api/overview`, `/api/engagement`, `/api/feature-adoption`, `/api/revenue`, `/api/support` |
+| Overview, Voice of Customer | NPS, support tickets, AI resolution, CSAT, NPS trend and by plan (trailing 12 months from `/api/meta`'s data window) | `/api/nps`, `/api/support` |
+| Retention | Weekly cohort matrix | `/api/cohorts` |
+| Activation | Funnel, time to milestone | `/api/activation` |
+| Experiments | Selector, evaluation cards, verdict, activation curve | `/api/experiments`, `/api/experiments/{id}` |
+| Customer Health | Tier cards, score distribution, lowest-scoring workspaces | `/api/customer-health`, `/api/customer-health/workspaces` |
+| AI Analyst | Placeholder ("coming in Phase 6"); no analyst yet | none |
+
+The Overview loads at start; every other tab loads the first time it is opened. Each panel shows its own loading, empty or error state (with the request id and a Retry button), so one failing endpoint never blanks another panel. The API's `meta.caveats` are shown under each panel. All API text is written to the page as text (never as HTML).
 
 Changing the page changes its hashes automatically on the next start. Because the page's own styles are hashed, markup generated at runtime must set styles through the DOM (`element.style`), not `style=""` strings.
 

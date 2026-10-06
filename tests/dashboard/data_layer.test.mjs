@@ -713,8 +713,9 @@ describe('page wiring', () => {
     assert.ok(!/CONNECTHUB_API_BASE/.test(html));
   });
 
-  it('sends nothing at load: no request is made until a panel asks', () => {
+  it('makes requests only when a panel asks, through the client', () => {
     const code = html.slice(html.indexOf(END)).replace(/\/\/.*$/gm, '');
-    assert.ok(!/\bapi\.[a-zA-Z]+\(/.test(code.replace(/api\.setApiKey\(key\)/, '')));
+    assert.ok(!/(^|[^.\w])fetch\(/.test(code.replace(/window\.fetch\.bind/, '')));   // panels never call fetch themselves
+    assert.ok(!/\bapi\.[a-zA-Z]+\(/.test(code.replace(/api\.setApiKey\(key\)/, '')));  // and reach the client only via needApi()
   });
 });

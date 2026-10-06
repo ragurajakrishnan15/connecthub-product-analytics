@@ -1,0 +1,233 @@
+{
+ "data": {
+  "as_of": "2025-12-31",
+  "weeks": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12
+  ],
+  "cohorts": [
+   {
+    "cohort_week": "2025-06-30",
+    "cohort_size": 159,
+    "cells": [
+     {
+      "week": 0,
+      "active_users": 159,
+      "retention_rate": 1
+     },
+     {
+      "week": 1,
+      "active_users": 127,
+      "retention_rate": 0.798742
+     },
+     {
+      "week": 2,
+      "active_users": 96,
+      "retention_rate": 0.603774
+     },
+     {
+      "week": 3,
+      "active_users": 84,
+      "retention_rate": 0.528302
+     },
+     {
+      "week": 4,
+      "active_users": 60,
+      "retention_rate": 0.377358
+     },
+     {
+      "week": 5,
+      "active_users": 63,
+      "retention_rate": 0.396226
+     },
+     {
+      "week": 6,
+      "active_users": 54,
+      "retention_rate": 0.339623
+     },
+     {
+      "week": 7,
+      "active_users": 53,
+      "retention_rate": 0.333333
+     },
+     {
+      "week": 8,
+      "active_users": 47,
+      "retention_rate": 0.295597
+     },
+     {
+      "week": 9,
+      "active_users": 48,
+      "retention_rate": 0.301887
+     },
+     {
+      "week": 10,
+      "active_users": 44,
+      "retention_rate": 0.27673
+     },
+     {
+      "week": 11,
+      "active_users": 40,
+      "retention_rate": 0.251572
+     },
+     {
+      "week": 12,
+      "active_users": 38,
+      "retention_rate": 0.238994
+     }
+    ]
+   },
+   {
+    "cohort_week": "2025-07-07",
+    "cohort_size": 186,
+    "cells": [
+     {
+      "week": 0,
+      "active_users": 186,
+      "retention_rate": 1
+     },
+     {
+      "week": 1,
+      "active_users": 142,
+      "retention_rate": 0.763441
+     },
+     {
+      "week": 2,
+      "active_users": 108,
+      "retention_rate": 0.580645
+     },
+     {
+      "week": 3,
+      "active_users": 80,
+      "retention_rate": 0.430108
+     },
+     {
+      "week": 4,
+      "active_users": 70,
+      "retention_rate": 0.376344
+     },
+     {
+      "week": 5,
+      "active_users": 60,
+      "retention_rate": 0.322581
+     },
+     {
+      "week": 6,
+      "active_users": 53,
+      "retention_rate": 0.284946
+     },
+     {
+      "week": 7,
+      "active_users": 49,
+      "retention_rate": 0.263441
+     },
+     {
+      "week": 8,
+      "active_users": 43,
+      "retention_rate": 0.231183
+     },
+     {
+      "week": 9,
+      "active_users": 50,
+      "retention_rate": 0.268817
+     },
+     {
+      "week": 10,
+      "active_users": 39,
+      "retention_rate": 0.209677
+     },
+     {
+      "week": 11,
+      "active_users": 49,
+      "retention_rate": 0.263441
+     },
+     {
+      "week": 12,
+      "active_users": 45,
+      "retention_rate": 0.241935
+     }
+    ]
+   },
+   {
+    "cohort_week": "2025-12-15",
+    "cohort_size": 256,
+    "cells": [
+     {
+      "week": 0,
+      "active_users": 256,
+      "retention_rate": 1
+     },
+     {
+      "week": 1,
+      "active_users": 188,
+      "retention_rate": 0.734375
+     },
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ]
+   },
+   {
+    "cohort_week": "2025-12-22",
+    "cohort_size": 231,
+    "cells": [
+     {
+      "week": 0,
+      "active_users": 231,
+      "retention_rate": 1
+     },
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ]
+   }
+  ]
+ },
+ "meta": {
+  "as_of": "2025-12-31",
+  "data_start": "2025-01-02",
+  "data_end": "2025-12-31",
+  "effective_range": null,
+  "filters": {
+   "cohort_start": null,
+   "cohort_end": null,
+   "weeks": "12"
+  },
+  "sources": [],
+  "data_version": "phase4b-run-1",
+  "generated_at": "2026-10-06T19:06:36.453743Z",
+  "definitions": {},
+  "caveats": [
+   "Cohorts are users grouped by the Monday-start week of their first product activity; retention has no plan-tier breakdown.",
+   "Showing the latest 26 cohorts with a complete first week; pass cohort_start/cohort_end for others."
+  ]
+ }
+}

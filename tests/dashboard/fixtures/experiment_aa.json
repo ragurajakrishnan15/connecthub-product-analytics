@@ -1,0 +1,286 @@
+{
+ "data": {
+  "experiment": {
+   "experiment_id": "exp_ai_summary_v1",
+   "kind": "aa",
+   "description": "A/A check: half of active users enter and no effect is planted. Any single A/A run is significant 5% of the time at alpha=0.05; tests check that rate across re-randomizations (salts).",
+   "hypothesis": "No difference between arms: both receive the same experience.",
+   "eligibility": "active_users",
+   "start": "2025-07-01",
+   "end": "2025-12-31",
+   "traffic_share": 0.5
+  },
+  "status": "completed",
+  "evaluation": {
+   "srm": {
+    "control_count": 1947,
+    "treatment_count": 2011,
+    "actual_ratio": 0.4919,
+    "p_value": 0.309018,
+    "detected": false
+   },
+   "primary": {
+    "metric": "activated_14d",
+    "control_rate": 0.2468,
+    "treatment_rate": 0.2807,
+    "absolute_diff": 0.0339,
+    "relative_lift": 0.1373,
+    "ci_lower": 0.0055,
+    "ci_upper": 0.0622,
+    "z_statistic": 2.3384,
+    "p_value": 0.019368,
+    "significant": true
+   },
+   "bayesian": {
+    "prob_treatment_better": 0.9906,
+    "expected_lift": 0.1388,
+    "lift_ci_95": [
+     0.021,
+     0.2675
+    ],
+    "expected_loss": 0.000043
+   },
+   "guardrails": [
+    {
+     "metric": "avg_session_minutes_14d",
+     "control_mean": 8.9379,
+     "treatment_mean": 8.9957,
+     "absolute_diff": 0.0579,
+     "relative_lift": 0.0065,
+     "p_value": 0.751561,
+     "significant": false,
+     "failed": false
+    },
+    {
+     "metric": "revenue_60d",
+     "control_mean": 30.857,
+     "treatment_mean": 32.2276,
+     "absolute_diff": 1.3705,
+     "relative_lift": 0.0444,
+     "p_value": 0.318465,
+     "significant": false,
+     "failed": false
+    }
+   ],
+   "sample_sizes": {
+    "control": 1947,
+    "treatment": 2011,
+    "control_14d_window": 1815,
+    "control_60d_window": 1266,
+    "treatment_14d_window": 1888,
+    "treatment_60d_window": 1349
+   },
+   "decision_code": "SHIP",
+   "decision_text": "SHIP - Significant lift of 13.7% (p=0.0194)"
+  },
+  "activation_curve": [
+   {
+    "variant": "variant_0",
+    "points": [
+     {
+      "day": 0,
+      "activation_rate": 0.006612,
+      "activated": 12,
+      "users_in_window": 1815
+     },
+     {
+      "day": 1,
+      "activation_rate": 0.024793,
+      "activated": 45,
+      "users_in_window": 1815
+     },
+     {
+      "day": 2,
+      "activation_rate": 0.047934,
+      "activated": 87,
+      "users_in_window": 1815
+     },
+     {
+      "day": 3,
+      "activation_rate": 0.076033,
+      "activated": 138,
+      "users_in_window": 1815
+     },
+     {
+      "day": 4,
+      "activation_rate": 0.103581,
+      "activated": 188,
+      "users_in_window": 1815
+     },
+     {
+      "day": 5,
+      "activation_rate": 0.13168,
+      "activated": 239,
+      "users_in_window": 1815
+     },
+     {
+      "day": 6,
+      "activation_rate": 0.155372,
+      "activated": 282,
+      "users_in_window": 1815
+     },
+     {
+      "day": 7,
+      "activation_rate": 0.176309,
+      "activated": 320,
+      "users_in_window": 1815
+     },
+     {
+      "day": 8,
+      "activation_rate": 0.198347,
+      "activated": 360,
+      "users_in_window": 1815
+     },
+     {
+      "day": 9,
+      "activation_rate": 0.210468,
+      "activated": 382,
+      "users_in_window": 1815
+     },
+     {
+      "day": 10,
+      "activation_rate": 0.219835,
+      "activated": 399,
+      "users_in_window": 1815
+     },
+     {
+      "day": 11,
+      "activation_rate": 0.230854,
+      "activated": 419,
+      "users_in_window": 1815
+     },
+     {
+      "day": 12,
+      "activation_rate": 0.238567,
+      "activated": 433,
+      "users_in_window": 1815
+     },
+     {
+      "day": 13,
+      "activation_rate": 0.243526,
+      "activated": 442,
+      "users_in_window": 1815
+     },
+     {
+      "day": 14,
+      "activation_rate": 0.246832,
+      "activated": 448,
+      "users_in_window": 1815
+     }
+    ]
+   },
+   {
+    "variant": "variant_1",
+    "points": [
+     {
+      "day": 0,
+      "activation_rate": 0.006886,
+      "activated": 13,
+      "users_in_window": 1888
+     },
+     {
+      "day": 1,
+      "activation_rate": 0.024894,
+      "activated": 47,
+      "users_in_window": 1888
+     },
+     {
+      "day": 2,
+      "activation_rate": 0.052436,
+      "activated": 99,
+      "users_in_window": 1888
+     },
+     {
+      "day": 3,
+      "activation_rate": 0.081568,
+      "activated": 154,
+      "users_in_window": 1888
+     },
+     {
+      "day": 4,
+      "activation_rate": 0.110169,
+      "activated": 208,
+      "users_in_window": 1888
+     },
+     {
+      "day": 5,
+      "activation_rate": 0.143008,
+      "activated": 270,
+      "users_in_window": 1888
+     },
+     {
+      "day": 6,
+      "activation_rate": 0.167903,
+      "activated": 317,
+      "users_in_window": 1888
+     },
+     {
+      "day": 7,
+      "activation_rate": 0.190678,
+      "activated": 360,
+      "users_in_window": 1888
+     },
+     {
+      "day": 8,
+      "activation_rate": 0.208157,
+      "activated": 393,
+      "users_in_window": 1888
+     },
+     {
+      "day": 9,
+      "activation_rate": 0.226165,
+      "activated": 427,
+      "users_in_window": 1888
+     },
+     {
+      "day": 10,
+      "activation_rate": 0.243644,
+      "activated": 460,
+      "users_in_window": 1888
+     },
+     {
+      "day": 11,
+      "activation_rate": 0.256886,
+      "activated": 485,
+      "users_in_window": 1888
+     },
+     {
+      "day": 12,
+      "activation_rate": 0.269068,
+      "activated": 508,
+      "users_in_window": 1888
+     },
+     {
+      "day": 13,
+      "activation_rate": 0.274894,
+      "activated": 519,
+      "users_in_window": 1888
+     },
+     {
+      "day": 14,
+      "activation_rate": 0.28072,
+      "activated": 530,
+      "users_in_window": 1888
+     }
+    ]
+   }
+  ]
+ },
+ "meta": {
+  "as_of": "2025-12-31",
+  "data_start": "2025-01-02",
+  "data_end": "2025-12-31",
+  "effective_range": null,
+  "filters": {
+   "experiment_id": "exp_ai_summary_v1"
+  },
+  "sources": [],
+  "data_version": "phase4b-run-1",
+  "generated_at": "2026-10-06T19:06:36.717899Z",
+  "definitions": {},
+  "caveats": [
+   "The decision rule applies no multiple-testing or peeking correction: about 1 in 20 experiments without a real effect will show a significant lift.",
+   "exp_ai_summary_v1 is an A/A check (identical arms): a SHIP decision here is a false positive by construction, expected in about 5% of runs."
+  ]
+ }
+}

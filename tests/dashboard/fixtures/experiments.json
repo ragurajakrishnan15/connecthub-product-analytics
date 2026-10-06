@@ -1,0 +1,86 @@
+{
+ "data": {
+  "experiments": [
+   {
+    "experiment": {
+     "experiment_id": "exp_ai_summary_v1",
+     "kind": "aa",
+     "description": "A/A check: half of active users enter and no effect is planted. Any single A/A run is significant 5% of the time at alpha=0.05; tests check that rate across re-randomizations (salts).",
+     "hypothesis": "No difference between arms: both receive the same experience.",
+     "eligibility": "active_users",
+     "start": "2025-07-01",
+     "end": "2025-12-31",
+     "traffic_share": 0.5
+    },
+    "status": "completed",
+    "decision_code": "SHIP",
+    "decision_text": "SHIP - Significant lift of 13.7% (p=0.0194)",
+    "primary": {
+     "metric": "activated_14d",
+     "control_rate": 0.2468,
+     "treatment_rate": 0.2807,
+     "relative_lift": 0.1373,
+     "p_value": 0.019368,
+     "significant": true
+    },
+    "srm": {
+     "p_value": 0.309018,
+     "detected": false
+    },
+    "sample": {
+     "control": 1947,
+     "treatment": 2011
+    }
+   },
+   {
+    "experiment": {
+     "experiment_id": "exp_onboarding_v2",
+     "kind": "ab",
+     "description": "New onboarding flow. Planted effect in the synthetic data: variant_1 is 1.3x as likely to use an AI feature after the first call.",
+     "hypothesis": "The new onboarding flow increases the 14-day activation rate without lowering session duration or 60-day revenue.",
+     "eligibility": "new_signups",
+     "start": "2025-01-01",
+     "end": "2025-12-31",
+     "traffic_share": 1
+    },
+    "status": "completed",
+    "decision_code": "SHIP",
+    "decision_text": "SHIP - Significant lift of 35.9% (p=0.0000)",
+    "primary": {
+     "metric": "activated_14d",
+     "control_rate": 0.1867,
+     "treatment_rate": 0.2538,
+     "relative_lift": 0.3593,
+     "p_value": 0,
+     "significant": true
+    },
+    "srm": {
+     "p_value": 0.496504,
+     "detected": false
+    },
+    "sample": {
+     "control": 4966,
+     "treatment": 5034
+    }
+   }
+  ]
+ },
+ "meta": {
+  "as_of": "2025-12-31",
+  "data_start": "2025-01-02",
+  "data_end": "2025-12-31",
+  "effective_range": null,
+  "filters": {
+   "decision": null,
+   "status": null
+  },
+  "sources": [],
+  "data_version": "phase4b-run-1",
+  "generated_at": "2026-10-06T19:06:36.597542Z",
+  "definitions": {},
+  "caveats": [
+   "The decision rule applies no multiple-testing or peeking correction: about 1 in 20 experiments without a real effect will show a significant lift.",
+   "exp_ai_summary_v1 is an A/A check (identical arms): a SHIP decision here is a false positive by construction, expected in about 5% of runs."
+  ]
+ }
+}

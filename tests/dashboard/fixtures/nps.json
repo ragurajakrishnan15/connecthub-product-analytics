@@ -1,0 +1,140 @@
+{
+ "data": {
+  "min_responses": 30,
+  "summary": {
+   "responses": 987,
+   "promoters": 374,
+   "passives": 322,
+   "detractors": 291,
+   "nps": 8.4,
+   "margin_of_error_95": 5.1,
+   "promoter_share": 0.378926,
+   "passive_share": 0.326241,
+   "detractor_share": 0.294833,
+   "suppressed_reason": null
+  },
+  "by_plan": [
+   {
+    "responses": 152,
+    "promoters": 67,
+    "passives": 53,
+    "detractors": 32,
+    "nps": 23,
+    "margin_of_error_95": 12.3,
+    "promoter_share": 0.440789,
+    "passive_share": 0.348684,
+    "detractor_share": 0.210526,
+    "suppressed_reason": null,
+    "plan_tier": "Enterprise"
+   },
+   {
+    "responses": 335,
+    "promoters": 125,
+    "passives": 110,
+    "detractors": 100,
+    "nps": 7.5,
+    "margin_of_error_95": 8.7,
+    "promoter_share": 0.373134,
+    "passive_share": 0.328358,
+    "detractor_share": 0.298507,
+    "suppressed_reason": null,
+    "plan_tier": "Essentials"
+   },
+   {
+    "responses": 279,
+    "promoters": 89,
+    "passives": 77,
+    "detractors": 113,
+    "nps": -8.6,
+    "margin_of_error_95": 9.9,
+    "promoter_share": 0.318996,
+    "passive_share": 0.275986,
+    "detractor_share": 0.405018,
+    "suppressed_reason": null,
+    "plan_tier": "Free"
+   },
+   {
+    "responses": 221,
+    "promoters": 93,
+    "passives": 82,
+    "detractors": 46,
+    "nps": 21.3,
+    "margin_of_error_95": 10.1,
+    "promoter_share": 0.420814,
+    "passive_share": 0.371041,
+    "detractor_share": 0.208145,
+    "suppressed_reason": null,
+    "plan_tier": "Professional"
+   }
+  ],
+  "granularity": "month",
+  "series": [
+   {
+    "responses": 269,
+    "promoters": 107,
+    "passives": 89,
+    "detractors": 73,
+    "nps": 12.6,
+    "margin_of_error_95": 9.7,
+    "promoter_share": 0.39777,
+    "passive_share": 0.330855,
+    "detractor_share": 0.271375,
+    "suppressed_reason": null,
+    "period_start": "2025-10-03",
+    "period_end": "2025-10-31",
+    "is_complete": false
+   },
+   {
+    "responses": 287,
+    "promoters": 108,
+    "passives": 93,
+    "detractors": 86,
+    "nps": 7.7,
+    "margin_of_error_95": 9.5,
+    "promoter_share": 0.376307,
+    "passive_share": 0.324042,
+    "detractor_share": 0.299652,
+    "suppressed_reason": null,
+    "period_start": "2025-11-01",
+    "period_end": "2025-11-30",
+    "is_complete": true
+   },
+   {
+    "responses": 431,
+    "promoters": 159,
+    "passives": 140,
+    "detractors": 132,
+    "nps": 6.3,
+    "margin_of_error_95": 7.7,
+    "promoter_share": 0.36891,
+    "passive_share": 0.324826,
+    "detractor_share": 0.306265,
+    "suppressed_reason": null,
+    "period_start": "2025-12-01",
+    "period_end": "2025-12-31",
+    "is_complete": true
+   }
+  ]
+ },
+ "meta": {
+  "as_of": "2025-12-31",
+  "data_start": "2025-01-02",
+  "data_end": "2025-12-31",
+  "effective_range": {
+   "start": "2025-10-03",
+   "end": "2025-12-31"
+  },
+  "filters": {
+   "plan_tier": null,
+   "granularity": "month",
+   "min_responses": "30"
+  },
+  "sources": [],
+  "data_version": "phase4b-run-1",
+  "generated_at": "2026-10-06T19:06:36.776542Z",
+  "definitions": {},
+  "caveats": [
+   "NPS is suppressed (null) for groups with fewer than 30 responses."
+  ]
+ }
+}

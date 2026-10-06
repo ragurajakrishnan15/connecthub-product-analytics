@@ -1,0 +1,114 @@
+{
+ "data": {
+  "curves": [
+   {
+    "feature": "ai_assist",
+    "is_ai": true,
+    "total_users": 10000,
+    "points": [
+     {
+      "day": 0,
+      "cumulative_rate": 0.03,
+      "observed_rate": 0.03,
+      "eligible_users": 10000
+     },
+     {
+      "day": 1,
+      "cumulative_rate": 0.0695,
+      "observed_rate": 0.06955,
+      "eligible_users": 9964
+     },
+     {
+      "day": 2,
+      "cumulative_rate": 0.1114,
+      "observed_rate": 0.111973,
+      "eligible_users": 9922
+     },
+     {
+      "day": 3,
+      "cumulative_rate": 0.1487,
+      "observed_rate": 0.149692,
+      "eligible_users": 9887
+     },
+     {
+      "day": 4,
+      "cumulative_rate": 0.1797,
+      "observed_rate": 0.181292,
+      "eligible_users": 9846
+     },
+     {
+      "day": 5,
+      "cumulative_rate": 0.2069,
+      "observed_rate": 0.208639,
+      "eligible_users": 9816
+     }
+    ]
+   },
+   {
+    "feature": "ai_voice_agent",
+    "is_ai": true,
+    "total_users": 10000,
+    "points": [
+     {
+      "day": 0,
+      "cumulative_rate": 0.0077,
+      "observed_rate": 0.0077,
+      "eligible_users": 10000
+     },
+     {
+      "day": 1,
+      "cumulative_rate": 0.019,
+      "observed_rate": 0.018968,
+      "eligible_users": 9964
+     },
+     {
+      "day": 2,
+      "cumulative_rate": 0.0259,
+      "observed_rate": 0.026003,
+      "eligible_users": 9922
+     },
+     {
+      "day": 3,
+      "cumulative_rate": 0.0347,
+      "observed_rate": 0.034894,
+      "eligible_users": 9887
+     },
+     {
+      "day": 4,
+      "cumulative_rate": 0.0417,
+      "observed_rate": 0.042048,
+      "eligible_users": 9846
+     },
+     {
+      "day": 5,
+      "cumulative_rate": 0.0464,
+      "observed_rate": 0.046862,
+      "eligible_users": 9816
+     }
+    ]
+   }
+  ],
+  "adoption_at": [],
+  "monthly": []
+ },
+ "meta": {
+  "as_of": "2025-12-31",
+  "data_start": "2025-01-02",
+  "data_end": "2025-12-31",
+  "effective_range": {
+   "start": "2025-01-01",
+   "end": "2025-12-31"
+  },
+  "filters": {
+   "features": "ai_assist,ai_voice_agent,call_recording,integrations,sms,voice_calls,whatsapp",
+   "max_day": "90"
+  },
+  "sources": [],
+  "data_version": "phase4b-run-1",
+  "generated_at": "2026-10-06T19:06:36.533746Z",
+  "definitions": {},
+  "caveats": [
+   "cumulative_rate divides by all users, including users who signed up too recently to be observed at day D, so it understates adoption at later days; observed_rate only counts users with at least D days of history."
+  ]
+ }
+}
