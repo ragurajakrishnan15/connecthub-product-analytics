@@ -375,6 +375,18 @@ describe('the page', () => {
     assert.ok(!/\[\s*-?\d+(\.\d+)?(\s*,\s*-?\d+(\.\d+)?){3,}\s*\]/.test(code.replace(/\[\s*(\d+\s*,\s*){1,2}\d+\s*\]/g, '')), 'numeric data array in the script');
   });
 
+  it('loads Chart.js from its own origin: one relative script whose integrity is the vendored file hash, no CDN', async () => {
+    const { createHash } = await import('node:crypto');
+    const tags = [...html.matchAll(/<script\b([^>]*)\bsrc="([^"]+)"([^>]*)>/g)];
+    assert.deepEqual(tags.map(t => t[2]), ['vendor/chart.umd.js']);
+    const vendored = readFileSync(resolve(root, 'vendor', 'chart.umd.js'));
+    const sri = 'sha384-' + createHash('sha384').update(vendored).digest('base64');
+    assert.ok((tags[0][1] + tags[0][3]).includes(`integrity="${sri}"`), 'integrity attribute does not match vendor/chart.umd.js');
+    assert.ok(!/cdnjs|cloudflare|jsdelivr|unpkg/i.test(html), 'the page names a CDN');
+    assert.ok(!/<script[^>]*\bsrc="(https?:)?\/\//.test(html), 'a remote script');
+    assert.match(vendored.subarray(0, 120).toString(), /Chart\.js v4\.4\.1/);
+  });
+
   it('puts no API-sourced text through innerHTML or any HTML-parsing sink', () => {
     for (const sink of [/innerHTML/, /outerHTML/, /insertAdjacentHTML/, /document\.write/, /\beval\s*\(/, /new Function/, /setAttribute\(\s*['"]style/, /srcdoc/]) {
       assert.ok(!sink.test(code), String(sink));

@@ -88,7 +88,8 @@ All set in `api/settings.py`:
 
 Not part of the API contract (not in `docs/openapi.json`). With `API_DASHBOARD_PATH` set (unset by default), the app serves that single HTML file at `GET /` so the page and the API share one origin (no CORS). Any other path outside `/api` is a 404 problem.
 
-- **Startup:** the file is read once. The app refuses to start if it is missing, over 2 MiB, not UTF-8, or contains inline event handlers (`onclick=` etc.), `javascript:` URLs or an external script or stylesheet outside the allow-list.
+- **Startup:** the file is read once. The app refuses to start if it is missing, over 2 MiB, not UTF-8, or contains inline event handlers (`onclick=` etc.), `javascript:` URLs, **any remote script** (no CDN), or a stylesheet outside the allow-list (Google Fonts).
+- **Vendored scripts:** a `<script src="vendor/chart.umd.js" integrity="sha384-…">` next to the page is read at startup and served byte for byte from the same path (`GET /vendor/chart.umd.js`, `ETag`/`304`, public, outside the OpenAPI contract). The `src` must be a plain relative `.js` path that stays inside the page's directory (no scheme, leading slash, query, fragment, `..`, percent-encoding or symlink out), and startup is refused unless the `integrity` attribute matches the file. Only the files the page names are served; every other path is a 404. Provenance and the update procedure are in `vendor/README.md`. The container image copies `index.html` and `vendor/` into `dashboard/`.
 - **Access:** public. The page holds no data; the data endpoints enforce `API_AUTH_MODE` themselves. It is never cached by the response cache.
 - **HTTP:** `ETag` (weak, content hash) with `304` on `If-None-Match`, `Cache-Control: no-cache`. Line endings are normalized to LF so the policy hashes are the same on every checkout.
 - **Content-Security-Policy**, derived from the page at startup (`api/dashboard.py`); `/api/*` keeps `default-src 'none'; frame-ancestors 'none'`:
@@ -96,7 +97,7 @@ Not part of the API contract (not in `docs/openapi.json`). With `API_DASHBOARD_P
 | Directive | Value |
 |---|---|
 | `default-src` | `'none'` |
-| `script-src` | `sha256-` hash of each inline `<script>`, plus the exact Chart.js URL on cdnjs (removed when Chart.js is vendored). **No `'unsafe-inline'`**; inline event handlers are therefore not allowed. |
+| `script-src` | `sha256-` hash of each inline `<script>`, plus `'self'` for the vendored Chart.js (served from this origin, and its `integrity` hash is enforced by the server at startup and by the browser). **No remote host, no `'unsafe-inline'`, no `'unsafe-eval'`**; inline event handlers are therefore not allowed. |
 | `style-src` | `sha256-` hash of each inline `<style>`, plus `https://fonts.googleapis.com` |
 | `style-src-attr` | `'none'` while the page has no `style="…"` attributes (it uses CSS classes). If a page ever has them, each distinct value is allowed by hash with `'unsafe-hashes'`. Styles set from script (`element.style`) are not restricted by CSP. |
 | `font-src` | `https://fonts.gstatic.com` |
