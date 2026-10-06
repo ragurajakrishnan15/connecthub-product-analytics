@@ -150,6 +150,46 @@ def test_responses_change_exactly_with_the_data(built):
     assert a['workspace']['nps_score'] != b['workspace']['nps_score']
 
 
+def test_cache_follows_the_data_version(built):
+    """A validated pipeline run changes data_version, so cached responses are not reused;
+    a rebuild without a validated run keeps serving the cached version (documented)."""
+    settings, owner, db, tmp, env = built
+    added = 7
+    s = settings.model_copy(update={'api_data_version_ttl_s': 0, 'api_cache_ttl_s': 3600})
+    with client_for(s) as c:
+        first = c.get('/api/nps')
+        v1 = first.json()['meta']['data_version']
+        assert first.headers['x-cache'] == 'MISS' and v1
+        assert c.get('/api/nps').headers['x-cache'] == 'HIT'
+
+        with owner.begin() as conn:
+            data_end = conn.execute(text('SELECT MAX(event_date) FROM staging.stg_events')).scalar()
+            user, ws = conn.execute(text('SELECT user_id, workspace_id FROM staging.stg_users '
+                                         'ORDER BY user_id LIMIT 1')).one()
+            conn.execute(text("INSERT INTO bronze.nps_responses VALUES (:i, :u, :w, :d, 0)"),
+                         [{'i': f'cache-nps-{i}', 'u': user, 'w': ws, 'd': data_end}
+                          for i in range(added)])
+        dbt = os.path.join(os.path.dirname(sys.executable), 'dbt.exe' if os.name == 'nt' else 'dbt')
+        run([dbt, 'run', '--select', 'fct_nps_daily', '--project-dir', config.dbt_dir(),
+             '--profiles-dir', config.dbt_dir()],
+            dict(env, POSTGRES_DB=db, DBT_TARGET_PATH=str(tmp / 'target-cache'),
+                 DBT_LOG_PATH=str(tmp / 'logs-cache')))
+        # rebuilt, but no new validated run: the cached version is still served
+        stale = c.get('/api/nps')
+        assert stale.headers['x-cache'] == 'HIT' and stale.content == first.content
+
+        run([sys.executable, '-m', 'pipeline', 'step', 'validate_analytics', '--database', db,
+             '--run-id', 'cache-v2'], env)
+        fresh = c.get('/api/nps', headers={'If-None-Match': first.headers['etag']})
+        assert fresh.status_code == 200 and fresh.headers['x-cache'] == 'MISS'
+        assert fresh.json()['meta']['data_version'] == 'cache-v2' != v1
+        assert fresh.json()['data']['summary']['responses'] == \
+            first.json()['data']['summary']['responses'] + added
+        assert fresh.headers['etag'] != first.headers['etag']
+        assert c.get('/api/nps').headers['x-cache'] == 'HIT'
+        assert {k[2] for k in c.app.state.response_cache.keys()} == {v1, 'cache-v2'}
+
+
 def test_missing_evaluation_and_empty_tables(built):
     settings, owner, *_ = built
     with owner.begin() as conn:

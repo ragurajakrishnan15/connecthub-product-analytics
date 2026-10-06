@@ -28,6 +28,62 @@ docker compose up -d postgres api-init api
 | **Errors** | RFC 9457 `application/problem+json`, with `type` `urn:connecthub:problem:<slug>` and a `request_id`. 503 `data-not-ready` until the pipeline has built and loaded the warehouse; 503 `database-unavailable` (with `Retry-After`); 504 `query-timeout`. |
 | **Auth** | `X-API-Key` when `API_AUTH_MODE=api_key`. `/api/health*` are always open. |
 
+## Caching, ETags and conditional requests
+
+`api/cache.py` (innermost middleware) caches successful responses in process and adds HTTP validators.
+
+### What is cached
+
+| Endpoints | Cached? |
+|---|---|
+| `GET` / `HEAD` of `/api/meta` and the 13 business endpoints below | Yes, when the response is **200 JSON** |
+| Errors (400, 401, 404, 422, 503, 504, 500) | Never |
+| `/api/health`, `/api/health/ready` | Never (`Cache-Control: no-store`) |
+| Docs, `openapi.json` | Never |
+
+### Cache key
+
+The key is **(path, every query parameter, data_version)**:
+- Parameters are compared regardless of order, and repeated parameters are kept, so two different queries never share an entry.
+- No header changes a response body. The API key only gates access, and it is checked **before** the cache: with `API_AUTH_MODE=api_key`, a cached entry is never served to a request without a valid key. Keys hold no credentials.
+
+### Data version and invalidation
+
+- `data_version` is `meta.data_version`: the `run_id` of the last pipeline run whose `validate_analytics` step succeeded (`ops.pipeline_runs`). It is re-read at most every `API_DATA_VERSION_TTL_S` seconds.
+- When a new run validates, the key changes: older entries can no longer be served, and they expire or are evicted.
+- An entry is stored under the `data_version` its own body reports, so key and content always agree.
+- With no validated run (`data_version` null), or when the version can't be read (warehouse not built or unreachable), nothing is cached.
+- A rebuild **without** a validated run (for example a manual `dbt run`, or `pipeline step dbt` alone) does not change `data_version`. Cached responses keep being served until they expire (`API_CACHE_TTL_S`). Run the full pipeline, or at least `validate_analytics`, to publish new data at once.
+
+### Bounds and configuration
+
+All set in `api/settings.py`:
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `API_CACHE_ENABLED` | `true` | Off: no caching, but ETags and 304 still work |
+| `API_CACHE_TTL_S` | 300 | Entry lifetime |
+| `API_CACHE_MAX_ENTRIES` | 512 | Least recently used evicted beyond this |
+| `API_CACHE_MAX_BYTES` | 64 MiB | Body bytes per process; least recently used evicted beyond this; a larger single body is not cached |
+| `API_DATA_VERSION_TTL_S` | 30 | How often the data version is re-read (0 = every request) |
+| `API_CACHE_MAX_AGE_S` | 60 | `Cache-Control: private, max-age=…` on cacheable responses |
+
+**Deployment model:** each uvicorn worker has its own cache (no Redis or other service). Workers agree on ETags, because ETags depend only on content.
+
+### ETag, If-None-Match and 304
+
+- **ETag:** every cacheable 200 carries `ETag: W/"<32 hex>"`: a SHA-256 of the canonical JSON body (sorted keys, no whitespace) **excluding `meta.generated_at`**. Identical content gives the same ETag on every worker and after cache expiry; any content change, including a new `data_version`, gives a different ETag. ETags contain no request ID, timestamp or internal detail.
+- **Weak validator:** the ETag is weak because GZip may re-encode the body and the timestamp may differ. `If-None-Match` uses weak comparison and accepts a list or `*`.
+- **304:** when `If-None-Match` matches, the response is **`304 Not Modified` with no body**, carrying `ETag`, `Cache-Control`, `X-Request-ID` and the security headers. A non-matching tag gets the normal 200.
+- **`X-Cache`:** each cacheable response says `HIT`, `MISS` or `BYPASS`, and the request log line has a matching `cache` field. A hit runs no SQL.
+- **`meta.generated_at`** on a cached response is when that response was computed.
+
+## OpenAPI contract snapshot
+
+- **Snapshot:** `docs/openapi.json` is the committed API contract: every route, method, parameter, response and schema, serialized deterministically.
+- **Test:** `tests/api/test_api_openapi_snapshot.py` fails when the app's schema differs from it, printing a diff.
+- **Making a deliberate change:** change the code, then run `python -m api.openapi --write` (`make openapi`), review the diff of `docs/openapi.json` and commit both together. `python -m api.openapi --check` runs the comparison without pytest.
+
 ## Endpoints
 
 ### `GET /api/overview`

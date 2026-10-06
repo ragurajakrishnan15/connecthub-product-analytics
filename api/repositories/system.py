@@ -56,6 +56,18 @@ def relation_status(conn, relations=REQUIRED_RELATIONS):
     return missing, not_readable
 
 
+def data_version(conn):
+    """run_id of the last fully validated pipeline run (None if there is none).
+
+    The same value as meta.data_version; the response cache keys on it.
+    """
+    return conn.execute(text("""
+        SELECT run_id FROM ops.pipeline_runs
+        WHERE step = :final AND status = 'success'
+        ORDER BY started_at DESC
+        LIMIT 1"""), {'final': FINAL_STEP}).scalar()
+
+
 def last_successful_run(conn):
     """The most recent pipeline run whose final step succeeded, or None."""
     row = conn.execute(text("""

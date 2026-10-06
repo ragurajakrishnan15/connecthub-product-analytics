@@ -5,7 +5,8 @@ App factory: create_app(settings) builds the FastAPI application.
     uvicorn api.main:create_app --factory
 
 Middleware, outermost first: request context (IDs, logging, security headers,
-500s) -> CORS -> GZip -> exception handlers -> routes.
+500s) -> CORS -> GZip -> response cache / ETag (api/cache.py) -> exception
+handlers -> routes.
 """
 import time
 from contextlib import asynccontextmanager
@@ -17,6 +18,7 @@ from starlette.middleware.gzip import GZipMiddleware
 
 from api import __version__, errors
 from api import logging as api_logging
+from api.cache import CacheMiddleware, DataVersion, ResponseCache
 from api.db import create_engine
 from api.middleware import RequestContextMiddleware
 from api.routers import analytics, health, meta
@@ -41,7 +43,11 @@ DESCRIPTION = """Read-only business metrics from the ConnectHub analytics wareho
 
 Every number comes from dbt models and Python analytics that the pipeline builds
 and Great Expectations validates; definitions are in `docs/metric-definitions.md`.
-Errors are RFC 9457 problem documents (`application/problem+json`)."""
+Errors are RFC 9457 problem documents (`application/problem+json`).
+
+Successful data responses carry a weak `ETag`; send it back in `If-None-Match` to get
+`304 Not Modified` while the data is unchanged. Responses are cached per data version
+(the last validated pipeline run, `meta.data_version`)."""
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -71,12 +77,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.started = time.monotonic()
+    app.state.response_cache = ResponseCache(settings.api_cache_ttl_s,
+                                             settings.api_cache_max_entries,
+                                             settings.api_cache_max_bytes)
+    app.state.data_version = DataVersion(settings.api_data_version_ttl_s)
 
     errors.install(app)
     app.include_router(health.router)
     app.include_router(meta.router)
     app.include_router(analytics.router)
 
+    # Innermost: caches the canonical (uncompressed) body; everything outside it
+    # (GZip, CORS, request IDs, logging, security headers) applies to cache hits too.
+    app.add_middleware(CacheMiddleware, settings=settings)
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.add_middleware(
         CORSMiddleware, allow_origins=settings.api_cors_origins, allow_credentials=False,

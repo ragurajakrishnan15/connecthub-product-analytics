@@ -1,5 +1,5 @@
 .PHONY: setup test test-fast lint pipeline pipeline-incremental verify-incremental validate \
-        bench up down airflow-test spark-test api api-role api-up api-test clean
+        bench up down airflow-test spark-test api api-role api-up api-test openapi clean
 
 # Requires Python 3.11 (see .python-version). Configuration comes from the
 # environment: copy .env.example to .env and export its variables first.
@@ -52,6 +52,9 @@ api-up:                   ## postgres + role provisioning + API container
 
 api-test:
 	pytest tests/api
+
+openapi:                  ## regenerate docs/openapi.json after a deliberate API contract change
+	python -m api.openapi --write
 
 # ==================== TESTS ====================
 test:                     ## everything, incl. the ~4 min end-to-end test

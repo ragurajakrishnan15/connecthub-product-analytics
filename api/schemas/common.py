@@ -75,3 +75,18 @@ def problem_responses(*statuses):
     """`responses=` entries documenting problem bodies for the given status codes."""
     return {s: {'model': Problem, 'content': {'application/problem+json': {}}}
             for s in statuses}
+
+
+# Cacheable data endpoints (api/cache.py): validators on 200, and 304 on a matching If-None-Match.
+VALIDATOR_HEADERS = {
+    'ETag': {'description': 'Weak validator of the response content', 'schema': {'type': 'string'}},
+    'Cache-Control': {'description': 'private, max-age=<API_CACHE_MAX_AGE_S>',
+                      'schema': {'type': 'string'}},
+}
+NOT_MODIFIED = {304: {'description': 'Not Modified: If-None-Match matched the current ETag '
+                                     '(no body)', 'headers': VALIDATOR_HEADERS}}
+OK_WITH_VALIDATORS = {200: {'headers': VALIDATOR_HEADERS}}
+
+
+def cacheable_responses(*statuses):
+    return {**OK_WITH_VALIDATORS, **NOT_MODIFIED, **problem_responses(*statuses)}

@@ -129,8 +129,11 @@ connection URLs are masked before anything is written (`pipeline/log.py`).
 [api.md](api.md)). It connects as a dedicated read-only role
 (`python -m api.provision`), reads only the gold serving tables, `analytics.*`
 and `ops.pipeline_runs`, and is layered routers -> services -> repositories
-(SQL only in repositories, bound parameters only). Docker: `api-init`
-(provisioning) and `api` in `docker-compose.yml`.
+(SQL only in repositories, bound parameters only). Successful data responses
+are cached in process per data version (the last validated pipeline run) and
+carry weak ETags for `If-None-Match` / 304; the contract is pinned by the
+`docs/openapi.json` snapshot (see api.md). Docker: `api-init` (provisioning)
+and `api` in `docker-compose.yml`.
 
 ## Not implemented
 
