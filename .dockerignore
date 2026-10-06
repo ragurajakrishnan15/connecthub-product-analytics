@@ -12,4 +12,3 @@ dbt_project/dbt_packages/
 notebooks/
 hex_notebooks/
 lookml/
-index.html

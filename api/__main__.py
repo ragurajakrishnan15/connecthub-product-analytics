@@ -20,6 +20,13 @@ def main():
         print(f'error: invalid API configuration: {describe_validation_error(exc)}',
               file=sys.stderr)
         return 2
+    if settings.api_dashboard_path:
+        from api.dashboard import DashboardError, load_dashboard
+        try:
+            load_dashboard(settings.api_dashboard_path)
+        except DashboardError as exc:
+            print(f'error: invalid API configuration: API_DASHBOARD_PATH: {exc}', file=sys.stderr)
+            return 2
     import uvicorn
     uvicorn.run('api.main:create_app', factory=True, host=settings.api_host,
                 port=settings.api_port, workers=settings.api_workers,

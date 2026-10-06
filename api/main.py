@@ -7,6 +7,9 @@ App factory: create_app(settings) builds the FastAPI application.
 Middleware, outermost first: request context (IDs, logging, security headers,
 500s) -> CORS -> GZip -> response cache / ETag (api/cache.py) -> exception
 handlers -> routes.
+
+With API_DASHBOARD_PATH set, GET / also serves the dashboard page with its own
+Content-Security-Policy (api/dashboard.py); the page is outside the API contract.
 """
 import time
 from contextlib import asynccontextmanager
@@ -19,6 +22,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from api import __version__, errors
 from api import logging as api_logging
 from api.cache import CacheMiddleware, DataVersion, ResponseCache
+from api.dashboard import dashboard_router, load_dashboard
 from api.db import create_engine
 from api.middleware import RequestContextMiddleware
 from api.routers import analytics, health, meta
@@ -86,6 +90,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health.router)
     app.include_router(meta.router)
     app.include_router(analytics.router)
+    if settings.api_dashboard_path:
+        app.state.dashboard = load_dashboard(settings.api_dashboard_path)
+        app.include_router(dashboard_router(app.state.dashboard))
 
     # Innermost: caches the canonical (uncompressed) body; everything outside it
     # (GZip, CORS, request IDs, logging, security headers) applies to cache hits too.

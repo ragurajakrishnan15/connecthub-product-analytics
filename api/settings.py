@@ -7,6 +7,7 @@ Like the pipeline, nothing secret has a default and no .env file is read: the
 process environment is the only source.
 """
 import re
+from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import Field, SecretStr, field_validator, model_validator
@@ -46,6 +47,7 @@ class Settings(BaseSettings):
     api_keys: Annotated[list[SecretStr], NoDecode] = Field(default_factory=list)
     api_dataset_label: str = Field('synthetic', min_length=1, max_length=64)
     api_max_query_string: int = Field(2048, ge=256, le=16384)
+    api_dashboard_path: Path | None = None        # set: serve this index.html at GET /
 
     # --- database pool and session limits (PHASE_4_PLAN.md §6)
     api_db_pool_size: int = Field(5, ge=1, le=50)
@@ -75,6 +77,11 @@ class Settings(BaseSettings):
             if not _ORIGIN.match(origin):
                 raise ValueError(f'invalid CORS origin {origin!r} (expected scheme://host[:port])')
         return origins
+
+    @field_validator('api_dashboard_path', mode='before')
+    @classmethod
+    def _blank_dashboard_path(cls, value):
+        return None if isinstance(value, str) and not value.strip() else value
 
     @field_validator('api_keys', mode='before')
     @classmethod
