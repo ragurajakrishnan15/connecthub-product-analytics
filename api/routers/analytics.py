@@ -16,7 +16,7 @@ from api.db import get_conn
 from api.params import DATE_DOC, MONTH_PATTERN, Granularity, PlanTier, RiskTier, allow_query_params
 from api.schemas.activation import ActivationData
 from api.schemas.adoption import AdoptionData
-from api.schemas.common import Envelope, problem_responses
+from api.schemas.common import Envelope, cacheable_responses
 from api.schemas.customer_health import HealthSummary, WorkspacePage
 from api.schemas.engagement import EngagementData
 from api.schemas.experiments import DecisionCode, ExperimentDetail, ExperimentList, Status
@@ -30,7 +30,7 @@ from api.services import activation, adoption, customer_health, engagement, expe
 from api.services import overview, retention, revenue, support
 
 router = APIRouter(prefix='/api', dependencies=[Depends(require_api_key)])
-ERRORS = problem_responses(400, 401, 422, 503, 504)
+ERRORS = cacheable_responses(400, 401, 422, 503, 504)
 
 Start = Query(None, description=DATE_DOC)
 End = Query(None, description=DATE_DOC)
@@ -129,7 +129,7 @@ def get_experiments(decision: DecisionCode | None = Query(None),
 
 @router.get('/experiments/{experiment_id}', response_model=Envelope[ExperimentDetail],
             tags=['experiments'], dependencies=params(),
-            responses=problem_responses(400, 401, 404, 422, 503, 504),
+            responses=cacheable_responses(400, 401, 404, 422, 503, 504),
             summary='Experiment readout')
 def get_experiment(experiment_id: str = Path(pattern=r'^[a-z0-9_]{1,64}$'),
                    conn: Connection = Depends(get_conn)):

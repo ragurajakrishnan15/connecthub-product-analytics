@@ -15,7 +15,7 @@ import re
 import time
 import uuid
 
-from api.context import db_stats_var, request_id_var
+from api.context import db_stats_var, request_id_var, request_state_var
 from api.errors import problem_response
 from pipeline.log import redact
 
@@ -51,6 +51,8 @@ class RequestContextMiddleware:
         rid_token = request_id_var.set(request_id)
         stats = [0, 0.0]
         db_token = db_stats_var.set(stats)
+        request_state = {}
+        state_token = request_state_var.set(request_state)
         method = scope['method']
         if method == 'HEAD':
             scope = dict(scope, method='GET')
@@ -97,7 +99,9 @@ class RequestContextMiddleware:
                 'duration_ms': round((time.perf_counter() - started) * 1000, 2),
                 'db_queries': stats[0],
                 'db_ms': round(stats[1], 2),
+                'cache': request_state.get('cache'),
                 'client': (scope.get('client') or (None,))[0],
             }})
+            request_state_var.reset(state_token)
             db_stats_var.reset(db_token)
             request_id_var.reset(rid_token)

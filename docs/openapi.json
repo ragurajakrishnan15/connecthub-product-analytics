@@ -1,0 +1,6401 @@
+{
+  "components": {
+    "schemas": {
+      "ActivationData": {
+        "properties": {
+          "activation_rate_14d": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activation Rate 14D"
+          },
+          "complete_windows_through": {
+            "description": "Last signup date whose 14-day window is complete (data_end - 14)",
+            "format": "date",
+            "title": "Complete Windows Through",
+            "type": "string"
+          },
+          "excluded_incomplete_signups": {
+            "description": "Signups in the requested range left out because their 14-day window extends past the last loaded day (0 with include_incomplete=true)",
+            "title": "Excluded Incomplete Signups",
+            "type": "integer"
+          },
+          "funnel": {
+            "items": {
+              "$ref": "#/components/schemas/FunnelStage"
+            },
+            "title": "Funnel",
+            "type": "array"
+          },
+          "granularity": {
+            "title": "Granularity",
+            "type": "string"
+          },
+          "milestones": {
+            "$ref": "#/components/schemas/MilestoneRates"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/ActivationPoint"
+            },
+            "title": "Series",
+            "type": "array"
+          },
+          "signups": {
+            "description": "Signups counted (complete windows unless include_incomplete)",
+            "title": "Signups",
+            "type": "integer"
+          },
+          "time_to_milestone": {
+            "items": {
+              "$ref": "#/components/schemas/MilestoneTiming"
+            },
+            "title": "Time To Milestone",
+            "type": "array"
+          }
+        },
+        "required": [
+          "signups",
+          "excluded_incomplete_signups",
+          "complete_windows_through",
+          "activation_rate_14d",
+          "funnel",
+          "milestones",
+          "time_to_milestone",
+          "granularity",
+          "series"
+        ],
+        "title": "ActivationData",
+        "type": "object"
+      },
+      "ActivationPoint": {
+        "properties": {
+          "activated_14d": {
+            "title": "Activated 14D",
+            "type": "integer"
+          },
+          "activation_rate_14d": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activation Rate 14D"
+          },
+          "is_complete": {
+            "title": "Is Complete",
+            "type": "boolean"
+          },
+          "period_end": {
+            "format": "date",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "signups": {
+            "title": "Signups",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "period_start",
+          "period_end",
+          "is_complete",
+          "signups",
+          "activated_14d",
+          "activation_rate_14d"
+        ],
+        "title": "ActivationPoint",
+        "type": "object"
+      },
+      "AdoptionAt": {
+        "properties": {
+          "day_30": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/api__schemas__adoption__CurvePoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "day_7": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/api__schemas__adoption__CurvePoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "day_90": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/api__schemas__adoption__CurvePoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "feature": {
+            "title": "Feature",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feature",
+          "day_7",
+          "day_30",
+          "day_90"
+        ],
+        "title": "AdoptionAt",
+        "type": "object"
+      },
+      "AdoptionData": {
+        "properties": {
+          "adoption_at": {
+            "items": {
+              "$ref": "#/components/schemas/AdoptionAt"
+            },
+            "title": "Adoption At",
+            "type": "array"
+          },
+          "curves": {
+            "items": {
+              "$ref": "#/components/schemas/Curve"
+            },
+            "title": "Curves",
+            "type": "array"
+          },
+          "monthly": {
+            "items": {
+              "$ref": "#/components/schemas/UsageMonth"
+            },
+            "title": "Monthly",
+            "type": "array"
+          }
+        },
+        "required": [
+          "curves",
+          "adoption_at",
+          "monthly"
+        ],
+        "title": "AdoptionData",
+        "type": "object"
+      },
+      "AgentPerformance": {
+        "properties": {
+          "ai_resolution_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved by the AI agent without escalation / AI-handled calls",
+            "title": "Ai Resolution Rate"
+          },
+          "ai_resolved": {
+            "title": "Ai Resolved",
+            "type": "integer"
+          },
+          "avg_csat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Mean CSAT (1-5) over calls with a score",
+            "title": "Avg Csat"
+          },
+          "avg_handle_time_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Handle Time Seconds"
+          },
+          "calls": {
+            "description": "AI-handled calls (one per evaluation)",
+            "title": "Calls",
+            "type": "integer"
+          },
+          "escalated": {
+            "title": "Escalated",
+            "type": "integer"
+          },
+          "escalation_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Escalation Rate"
+          },
+          "human_handled": {
+            "title": "Human Handled",
+            "type": "integer"
+          },
+          "human_handled_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Human Handled Share"
+          }
+        },
+        "required": [
+          "calls",
+          "ai_resolved",
+          "escalated",
+          "human_handled",
+          "ai_resolution_rate",
+          "escalation_rate",
+          "human_handled_share",
+          "avg_csat",
+          "avg_handle_time_seconds"
+        ],
+        "title": "AgentPerformance",
+        "type": "object"
+      },
+      "ArmCurve": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/api__schemas__experiments__CurvePoint"
+            },
+            "title": "Points",
+            "type": "array"
+          },
+          "variant": {
+            "title": "Variant",
+            "type": "string"
+          }
+        },
+        "required": [
+          "variant",
+          "points"
+        ],
+        "title": "ArmCurve",
+        "type": "object"
+      },
+      "Bayesian": {
+        "properties": {
+          "expected_lift": {
+            "title": "Expected Lift",
+            "type": "number"
+          },
+          "expected_loss": {
+            "title": "Expected Loss",
+            "type": "number"
+          },
+          "lift_ci_95": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Lift Ci 95",
+            "type": "array"
+          },
+          "prob_treatment_better": {
+            "title": "Prob Treatment Better",
+            "type": "number"
+          }
+        },
+        "required": [
+          "prob_treatment_better",
+          "expected_lift",
+          "lift_ci_95",
+          "expected_loss"
+        ],
+        "title": "Bayesian",
+        "type": "object"
+      },
+      "CallTypePerformance": {
+        "properties": {
+          "ai_resolution_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved by the AI agent without escalation / AI-handled calls",
+            "title": "Ai Resolution Rate"
+          },
+          "ai_resolved": {
+            "title": "Ai Resolved",
+            "type": "integer"
+          },
+          "avg_csat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Mean CSAT (1-5) over calls with a score",
+            "title": "Avg Csat"
+          },
+          "avg_handle_time_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Handle Time Seconds"
+          },
+          "call_type": {
+            "title": "Call Type",
+            "type": "string"
+          },
+          "calls": {
+            "description": "AI-handled calls (one per evaluation)",
+            "title": "Calls",
+            "type": "integer"
+          },
+          "escalated": {
+            "title": "Escalated",
+            "type": "integer"
+          },
+          "escalation_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Escalation Rate"
+          },
+          "human_handled": {
+            "title": "Human Handled",
+            "type": "integer"
+          },
+          "human_handled_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Human Handled Share"
+          }
+        },
+        "required": [
+          "calls",
+          "ai_resolved",
+          "escalated",
+          "human_handled",
+          "ai_resolution_rate",
+          "escalation_rate",
+          "human_handled_share",
+          "avg_csat",
+          "avg_handle_time_seconds",
+          "call_type"
+        ],
+        "title": "CallTypePerformance",
+        "type": "object"
+      },
+      "CohortCell": {
+        "properties": {
+          "active_users": {
+            "title": "Active Users",
+            "type": "integer"
+          },
+          "retention_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retention Rate"
+          },
+          "week": {
+            "title": "Week",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "week",
+          "active_users",
+          "retention_rate"
+        ],
+        "title": "CohortCell",
+        "type": "object"
+      },
+      "CohortMatrix": {
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "title": "As Of",
+            "type": "string"
+          },
+          "cohorts": {
+            "items": {
+              "$ref": "#/components/schemas/CohortRow"
+            },
+            "title": "Cohorts",
+            "type": "array"
+          },
+          "weeks": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Weeks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "as_of",
+          "weeks",
+          "cohorts"
+        ],
+        "title": "CohortMatrix",
+        "type": "object"
+      },
+      "CohortMonth": {
+        "properties": {
+          "cohort_users": {
+            "title": "Cohort Users",
+            "type": "integer"
+          },
+          "cohorts": {
+            "title": "Cohorts",
+            "type": "integer"
+          },
+          "month": {
+            "format": "date",
+            "title": "Month",
+            "type": "string"
+          },
+          "week_1_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week 1 Rate"
+          },
+          "week_4_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week 4 Rate"
+          }
+        },
+        "required": [
+          "month",
+          "cohorts",
+          "cohort_users",
+          "week_1_rate",
+          "week_4_rate"
+        ],
+        "title": "CohortMonth",
+        "type": "object"
+      },
+      "CohortRow": {
+        "properties": {
+          "cells": {
+            "description": "One entry per week 0..weeks; null when that week has not ended by as_of",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CohortCell"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "cohort_size": {
+            "title": "Cohort Size",
+            "type": "integer"
+          },
+          "cohort_week": {
+            "format": "date",
+            "title": "Cohort Week",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cohort_week",
+          "cohort_size",
+          "cells"
+        ],
+        "title": "CohortRow",
+        "type": "object"
+      },
+      "Curve": {
+        "properties": {
+          "feature": {
+            "title": "Feature",
+            "type": "string"
+          },
+          "is_ai": {
+            "title": "Is Ai",
+            "type": "boolean"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/api__schemas__adoption__CurvePoint"
+            },
+            "title": "Points",
+            "type": "array"
+          },
+          "total_users": {
+            "title": "Total Users",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "feature",
+          "is_ai",
+          "total_users",
+          "points"
+        ],
+        "title": "Curve",
+        "type": "object"
+      },
+      "DatabaseCheck": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Problem slug when the check failed",
+            "title": "Error"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "DatabaseCheck",
+        "type": "object"
+      },
+      "Dataset": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "synthetic": {
+            "title": "Synthetic",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "label",
+          "synthetic"
+        ],
+        "title": "Dataset",
+        "type": "object"
+      },
+      "DateRange": {
+        "properties": {
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "DateRange",
+        "type": "object"
+      },
+      "EngagementData": {
+        "properties": {
+          "granularity": {
+            "title": "Granularity",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/EngagementPoint"
+            },
+            "title": "Points",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/EngagementSummary"
+          }
+        },
+        "required": [
+          "summary",
+          "granularity",
+          "points"
+        ],
+        "title": "EngagementData",
+        "type": "object"
+      },
+      "EngagementPoint": {
+        "properties": {
+          "avg_active_workspaces": {
+            "title": "Avg Active Workspaces",
+            "type": "number"
+          },
+          "avg_dau": {
+            "title": "Avg Dau",
+            "type": "number"
+          },
+          "avg_stickiness_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Mean of daily DAU/MAU over days with MAU > 0",
+            "title": "Avg Stickiness Rate"
+          },
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "is_complete": {
+            "description": "False if the range cuts the period or it extends past the last loaded day",
+            "title": "Is Complete",
+            "type": "boolean"
+          },
+          "mau_28d_end": {
+            "description": "MAU on the last day of the period",
+            "title": "Mau 28D End",
+            "type": "integer"
+          },
+          "mau_window_complete": {
+            "title": "Mau Window Complete",
+            "type": "boolean"
+          },
+          "period_end": {
+            "format": "date",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "wau_7d_end": {
+            "description": "WAU on the last day of the period",
+            "title": "Wau 7D End",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "period_start",
+          "period_end",
+          "is_complete",
+          "days",
+          "avg_dau",
+          "avg_active_workspaces",
+          "wau_7d_end",
+          "mau_28d_end",
+          "avg_stickiness_rate",
+          "mau_window_complete"
+        ],
+        "title": "EngagementPoint",
+        "type": "object"
+      },
+      "EngagementSummary": {
+        "properties": {
+          "active_workspaces": {
+            "title": "Active Workspaces",
+            "type": "integer"
+          },
+          "dau": {
+            "title": "Dau",
+            "type": "integer"
+          },
+          "day": {
+            "description": "Last day of the effective range",
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "mau_28d": {
+            "title": "Mau 28D",
+            "type": "integer"
+          },
+          "mau_window_complete": {
+            "description": "False when the 28-day window starts before the first loaded day (MAU is then understated)",
+            "title": "Mau Window Complete",
+            "type": "boolean"
+          },
+          "stickiness_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "DAU / MAU(28d) on that day; null if MAU is 0",
+            "title": "Stickiness Rate"
+          },
+          "wau_7d": {
+            "title": "Wau 7D",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "dau",
+          "wau_7d",
+          "mau_28d",
+          "active_workspaces",
+          "stickiness_rate",
+          "mau_window_complete"
+        ],
+        "title": "EngagementSummary",
+        "type": "object"
+      },
+      "Envelope_ActivationData_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ActivationData"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[ActivationData]",
+        "type": "object"
+      },
+      "Envelope_AdoptionData_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdoptionData"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[AdoptionData]",
+        "type": "object"
+      },
+      "Envelope_CohortMatrix_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CohortMatrix"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[CohortMatrix]",
+        "type": "object"
+      },
+      "Envelope_EngagementData_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/EngagementData"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[EngagementData]",
+        "type": "object"
+      },
+      "Envelope_ExperimentDetail_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ExperimentDetail"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[ExperimentDetail]",
+        "type": "object"
+      },
+      "Envelope_ExperimentList_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ExperimentList"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[ExperimentList]",
+        "type": "object"
+      },
+      "Envelope_HealthSummary_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/HealthSummary"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[HealthSummary]",
+        "type": "object"
+      },
+      "Envelope_MetaData_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MetaData"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[MetaData]",
+        "type": "object"
+      },
+      "Envelope_NpsData_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/NpsData"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[NpsData]",
+        "type": "object"
+      },
+      "Envelope_OverviewData_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OverviewData"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[OverviewData]",
+        "type": "object"
+      },
+      "Envelope_RetentionData_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RetentionData"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[RetentionData]",
+        "type": "object"
+      },
+      "Envelope_RevenueData_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RevenueData"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[RevenueData]",
+        "type": "object"
+      },
+      "Envelope_SupportData_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SupportData"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[SupportData]",
+        "type": "object"
+      },
+      "Envelope_WorkspacePage_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/WorkspacePage"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Envelope[WorkspacePage]",
+        "type": "object"
+      },
+      "Evaluation": {
+        "properties": {
+          "bayesian": {
+            "$ref": "#/components/schemas/Bayesian"
+          },
+          "decision_code": {
+            "enum": [
+              "SHIP",
+              "CONTINUE",
+              "HOLD",
+              "REVERT"
+            ],
+            "title": "Decision Code",
+            "type": "string"
+          },
+          "decision_text": {
+            "title": "Decision Text",
+            "type": "string"
+          },
+          "guardrails": {
+            "items": {
+              "$ref": "#/components/schemas/Guardrail"
+            },
+            "title": "Guardrails",
+            "type": "array"
+          },
+          "primary": {
+            "$ref": "#/components/schemas/Primary"
+          },
+          "sample_sizes": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Sample Sizes",
+            "type": "object"
+          },
+          "srm": {
+            "$ref": "#/components/schemas/Srm"
+          }
+        },
+        "required": [
+          "srm",
+          "primary",
+          "bayesian",
+          "guardrails",
+          "sample_sizes",
+          "decision_code",
+          "decision_text"
+        ],
+        "title": "Evaluation",
+        "type": "object"
+      },
+      "ExperimentDetail": {
+        "properties": {
+          "activation_curve": {
+            "items": {
+              "$ref": "#/components/schemas/ArmCurve"
+            },
+            "title": "Activation Curve",
+            "type": "array"
+          },
+          "evaluation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Evaluation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "experiment": {
+            "$ref": "#/components/schemas/ExperimentInfo"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "completed",
+              "not_evaluated"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "experiment",
+          "status",
+          "evaluation",
+          "activation_curve"
+        ],
+        "title": "ExperimentDetail",
+        "type": "object"
+      },
+      "ExperimentInfo": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "eligibility": {
+            "title": "Eligibility",
+            "type": "string"
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "experiment_id": {
+            "title": "Experiment Id",
+            "type": "string"
+          },
+          "hypothesis": {
+            "title": "Hypothesis",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "ab",
+              "aa"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          },
+          "traffic_share": {
+            "title": "Traffic Share",
+            "type": "number"
+          }
+        },
+        "required": [
+          "experiment_id",
+          "kind",
+          "description",
+          "hypothesis",
+          "eligibility",
+          "start",
+          "end",
+          "traffic_share"
+        ],
+        "title": "ExperimentInfo",
+        "type": "object"
+      },
+      "ExperimentList": {
+        "properties": {
+          "experiments": {
+            "items": {
+              "$ref": "#/components/schemas/api__schemas__experiments__ExperimentSummary"
+            },
+            "title": "Experiments",
+            "type": "array"
+          }
+        },
+        "required": [
+          "experiments"
+        ],
+        "title": "ExperimentList",
+        "type": "object"
+      },
+      "Feature": {
+        "properties": {
+          "is_ai": {
+            "title": "Is Ai",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "is_ai"
+        ],
+        "title": "Feature",
+        "type": "object"
+      },
+      "FeatureMonth": {
+        "properties": {
+          "active_users": {
+            "title": "Active Users",
+            "type": "integer"
+          },
+          "active_workspaces": {
+            "title": "Active Workspaces",
+            "type": "integer"
+          },
+          "workspace_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Workspaces using the feature / workspaces using any mapped feature that month",
+            "title": "Workspace Share"
+          }
+        },
+        "required": [
+          "active_workspaces",
+          "active_users",
+          "workspace_share"
+        ],
+        "title": "FeatureMonth",
+        "type": "object"
+      },
+      "FieldError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Loc",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Msg",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "FieldError",
+        "type": "object"
+      },
+      "FunnelStage": {
+        "properties": {
+          "rate_of_previous": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Users / users at the previous stage; null for the first stage or a 0 previous",
+            "title": "Rate Of Previous"
+          },
+          "rate_of_signups": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Of Signups"
+          },
+          "stage": {
+            "enum": [
+              "signed_up",
+              "placed_first_call",
+              "call_and_ai",
+              "activated_14d"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "users": {
+            "title": "Users",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "stage",
+          "users",
+          "rate_of_signups",
+          "rate_of_previous"
+        ],
+        "title": "FunnelStage",
+        "type": "object"
+      },
+      "Guardrail": {
+        "properties": {
+          "absolute_diff": {
+            "title": "Absolute Diff",
+            "type": "number"
+          },
+          "control_mean": {
+            "title": "Control Mean",
+            "type": "number"
+          },
+          "failed": {
+            "description": "Significant decrease (blocks shipping)",
+            "title": "Failed",
+            "type": "boolean"
+          },
+          "metric": {
+            "enum": [
+              "avg_session_minutes_14d",
+              "revenue_60d"
+            ],
+            "title": "Metric",
+            "type": "string"
+          },
+          "p_value": {
+            "title": "P Value",
+            "type": "number"
+          },
+          "relative_lift": {
+            "title": "Relative Lift",
+            "type": "number"
+          },
+          "significant": {
+            "title": "Significant",
+            "type": "boolean"
+          },
+          "treatment_mean": {
+            "title": "Treatment Mean",
+            "type": "number"
+          }
+        },
+        "required": [
+          "metric",
+          "control_mean",
+          "treatment_mean",
+          "absolute_diff",
+          "relative_lift",
+          "p_value",
+          "significant",
+          "failed"
+        ],
+        "title": "Guardrail",
+        "type": "object"
+      },
+      "Headline": {
+        "properties": {
+          "week_1": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week 1"
+          },
+          "week_12": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week 12"
+          },
+          "week_4": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week 4"
+          },
+          "week_8": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week 8"
+          }
+        },
+        "required": [
+          "week_1",
+          "week_4",
+          "week_8",
+          "week_12"
+        ],
+        "title": "Headline",
+        "type": "object"
+      },
+      "HealthSummary": {
+        "properties": {
+          "by_plan": {
+            "items": {
+              "$ref": "#/components/schemas/PlanHealth"
+            },
+            "title": "By Plan",
+            "type": "array"
+          },
+          "histogram": {
+            "items": {
+              "$ref": "#/components/schemas/HistogramBin"
+            },
+            "title": "Histogram",
+            "type": "array"
+          },
+          "mean_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Score"
+          },
+          "snapshot_date": {
+            "format": "date",
+            "title": "Snapshot Date",
+            "type": "string"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/TierCount"
+            },
+            "title": "Tiers",
+            "type": "array"
+          },
+          "weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Weights",
+            "type": "object"
+          },
+          "workspaces": {
+            "title": "Workspaces",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "snapshot_date",
+          "workspaces",
+          "mean_score",
+          "tiers",
+          "histogram",
+          "by_plan",
+          "weights"
+        ],
+        "title": "HealthSummary",
+        "type": "object"
+      },
+      "HealthTier": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "max": {
+            "description": "Upper bound (inclusive for the top tier)",
+            "title": "Max",
+            "type": "number"
+          },
+          "min": {
+            "description": "Inclusive lower bound of the health score",
+            "title": "Min",
+            "type": "number"
+          }
+        },
+        "required": [
+          "label",
+          "min",
+          "max"
+        ],
+        "title": "HealthTier",
+        "type": "object"
+      },
+      "HistogramBin": {
+        "properties": {
+          "bin_end": {
+            "description": "Inclusive",
+            "title": "Bin End",
+            "type": "number"
+          },
+          "bin_start": {
+            "description": "Exclusive (inclusive for the first bin)",
+            "title": "Bin Start",
+            "type": "number"
+          },
+          "tier": {
+            "title": "Tier",
+            "type": "string"
+          },
+          "workspaces": {
+            "title": "Workspaces",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bin_start",
+          "bin_end",
+          "workspaces",
+          "tier"
+        ],
+        "title": "HistogramBin",
+        "type": "object"
+      },
+      "Kpi": {
+        "description": "A headline value with the period it covers and the comparison period.",
+        "properties": {
+          "change_abs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Abs"
+          },
+          "change_rel": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "(value - previous) / previous; null if previous is 0 or null",
+            "title": "Change Rel"
+          },
+          "definition": {
+            "title": "Definition",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "period": {
+            "$ref": "#/components/schemas/Period"
+          },
+          "previous_period": {
+            "$ref": "#/components/schemas/Period"
+          },
+          "previous_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Value"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when undefined (zero denominator, too few responses, or the period is not fully loaded)",
+            "title": "Value"
+          }
+        },
+        "required": [
+          "value",
+          "previous_value",
+          "change_abs",
+          "change_rel",
+          "period",
+          "previous_period",
+          "unit",
+          "definition"
+        ],
+        "title": "Kpi",
+        "type": "object"
+      },
+      "Kpis": {
+        "properties": {
+          "activation_rate_14d": {
+            "$ref": "#/components/schemas/Kpi"
+          },
+          "ai_feature_adoption_rate": {
+            "$ref": "#/components/schemas/Kpi"
+          },
+          "ai_resolution_rate": {
+            "$ref": "#/components/schemas/Kpi"
+          },
+          "dau": {
+            "$ref": "#/components/schemas/Kpi"
+          },
+          "mrr_usd": {
+            "$ref": "#/components/schemas/Kpi"
+          },
+          "nps": {
+            "$ref": "#/components/schemas/Kpi"
+          },
+          "week4_retention_rate": {
+            "$ref": "#/components/schemas/Kpi"
+          }
+        },
+        "required": [
+          "mrr_usd",
+          "dau",
+          "week4_retention_rate",
+          "ai_feature_adoption_rate",
+          "activation_rate_14d",
+          "nps",
+          "ai_resolution_rate"
+        ],
+        "title": "Kpis",
+        "type": "object"
+      },
+      "Liveness": {
+        "properties": {
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          },
+          "uptime_s": {
+            "title": "Uptime S",
+            "type": "number"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "version",
+          "uptime_s"
+        ],
+        "title": "Liveness",
+        "type": "object"
+      },
+      "MetaData": {
+        "properties": {
+          "api_version": {
+            "title": "Api Version",
+            "type": "string"
+          },
+          "data_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data End"
+          },
+          "data_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Start"
+          },
+          "dataset": {
+            "$ref": "#/components/schemas/Dataset"
+          },
+          "experiments": {
+            "items": {
+              "$ref": "#/components/schemas/api__schemas__meta__ExperimentSummary"
+            },
+            "title": "Experiments",
+            "type": "array"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/Feature"
+            },
+            "title": "Features",
+            "type": "array"
+          },
+          "health_snapshot_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Snapshot Date"
+          },
+          "health_tiers": {
+            "items": {
+              "$ref": "#/components/schemas/HealthTier"
+            },
+            "title": "Health Tiers",
+            "type": "array"
+          },
+          "last_successful_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PipelineRun"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "plan_tiers": {
+            "items": {
+              "$ref": "#/components/schemas/PlanTier"
+            },
+            "title": "Plan Tiers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data_start",
+          "data_end",
+          "health_snapshot_date",
+          "last_successful_run",
+          "plan_tiers",
+          "features",
+          "experiments",
+          "health_tiers",
+          "api_version",
+          "dataset"
+        ],
+        "title": "MetaData",
+        "type": "object"
+      },
+      "MilestoneRates": {
+        "description": "Independent milestone rates: each milestone regardless of the others.",
+        "properties": {
+          "invited_team_member_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invited Team Member Rate"
+          },
+          "placed_first_call_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Placed First Call Rate"
+          },
+          "used_ai_feature_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Used Ai Feature Rate"
+          }
+        },
+        "required": [
+          "placed_first_call_rate",
+          "used_ai_feature_rate",
+          "invited_team_member_rate"
+        ],
+        "title": "MilestoneRates",
+        "type": "object"
+      },
+      "MilestoneTiming": {
+        "properties": {
+          "median_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Smallest day by which at least half of those users had reached it",
+            "title": "Median Days"
+          },
+          "milestone": {
+            "enum": [
+              "placed_first_call",
+              "used_ai_feature",
+              "invited_team_member",
+              "activated_14d"
+            ],
+            "title": "Milestone",
+            "type": "string"
+          },
+          "p75_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P75 Days"
+          },
+          "users_reached": {
+            "description": "Users who reached the milestone within 14 days",
+            "title": "Users Reached",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "milestone",
+          "users_reached",
+          "median_days",
+          "p75_days"
+        ],
+        "title": "MilestoneTiming",
+        "type": "object"
+      },
+      "Movement": {
+        "properties": {
+          "churned_usd": {
+            "description": "<= 0",
+            "title": "Churned Usd",
+            "type": "number"
+          },
+          "contraction_usd": {
+            "description": "<= 0",
+            "title": "Contraction Usd",
+            "type": "number"
+          },
+          "expansion_usd": {
+            "title": "Expansion Usd",
+            "type": "number"
+          },
+          "net_new_usd": {
+            "description": "Sum of the components = MRR - previous MRR",
+            "title": "Net New Usd",
+            "type": "number"
+          },
+          "new_usd": {
+            "title": "New Usd",
+            "type": "number"
+          },
+          "reactivation_usd": {
+            "title": "Reactivation Usd",
+            "type": "number"
+          }
+        },
+        "required": [
+          "new_usd",
+          "expansion_usd",
+          "reactivation_usd",
+          "contraction_usd",
+          "churned_usd",
+          "net_new_usd"
+        ],
+        "title": "Movement",
+        "type": "object"
+      },
+      "NpsData": {
+        "properties": {
+          "by_plan": {
+            "items": {
+              "$ref": "#/components/schemas/PlanNps"
+            },
+            "title": "By Plan",
+            "type": "array"
+          },
+          "granularity": {
+            "title": "Granularity",
+            "type": "string"
+          },
+          "min_responses": {
+            "title": "Min Responses",
+            "type": "integer"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/NpsPoint"
+            },
+            "title": "Series",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/NpsValue"
+          }
+        },
+        "required": [
+          "min_responses",
+          "summary",
+          "by_plan",
+          "granularity",
+          "series"
+        ],
+        "title": "NpsData",
+        "type": "object"
+      },
+      "NpsPoint": {
+        "properties": {
+          "detractor_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detractor Share"
+          },
+          "detractors": {
+            "title": "Detractors",
+            "type": "integer"
+          },
+          "is_complete": {
+            "title": "Is Complete",
+            "type": "boolean"
+          },
+          "margin_of_error_95": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "In NPS points; null when nps is null",
+            "title": "Margin Of Error 95"
+          },
+          "nps": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "100 * (promoters - detractors) / responses, -100..100; null below min_responses or with no responses",
+            "title": "Nps"
+          },
+          "passive_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passive Share"
+          },
+          "passives": {
+            "title": "Passives",
+            "type": "integer"
+          },
+          "period_end": {
+            "format": "date",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "promoter_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promoter Share"
+          },
+          "promoters": {
+            "title": "Promoters",
+            "type": "integer"
+          },
+          "responses": {
+            "title": "Responses",
+            "type": "integer"
+          },
+          "suppressed_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "no_responses",
+                  "insufficient_responses"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppressed Reason"
+          }
+        },
+        "required": [
+          "responses",
+          "promoters",
+          "passives",
+          "detractors",
+          "nps",
+          "margin_of_error_95",
+          "promoter_share",
+          "passive_share",
+          "detractor_share",
+          "period_start",
+          "period_end",
+          "is_complete"
+        ],
+        "title": "NpsPoint",
+        "type": "object"
+      },
+      "NpsValue": {
+        "properties": {
+          "detractor_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detractor Share"
+          },
+          "detractors": {
+            "title": "Detractors",
+            "type": "integer"
+          },
+          "margin_of_error_95": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "In NPS points; null when nps is null",
+            "title": "Margin Of Error 95"
+          },
+          "nps": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "100 * (promoters - detractors) / responses, -100..100; null below min_responses or with no responses",
+            "title": "Nps"
+          },
+          "passive_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passive Share"
+          },
+          "passives": {
+            "title": "Passives",
+            "type": "integer"
+          },
+          "promoter_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promoter Share"
+          },
+          "promoters": {
+            "title": "Promoters",
+            "type": "integer"
+          },
+          "responses": {
+            "title": "Responses",
+            "type": "integer"
+          },
+          "suppressed_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "no_responses",
+                  "insufficient_responses"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppressed Reason"
+          }
+        },
+        "required": [
+          "responses",
+          "promoters",
+          "passives",
+          "detractors",
+          "nps",
+          "margin_of_error_95",
+          "promoter_share",
+          "passive_share",
+          "detractor_share"
+        ],
+        "title": "NpsValue",
+        "type": "object"
+      },
+      "OverviewData": {
+        "properties": {
+          "experiments": {
+            "$ref": "#/components/schemas/OverviewExperiments"
+          },
+          "health": {
+            "$ref": "#/components/schemas/OverviewHealth"
+          },
+          "kpis": {
+            "$ref": "#/components/schemas/Kpis"
+          }
+        },
+        "required": [
+          "kpis",
+          "health",
+          "experiments"
+        ],
+        "title": "OverviewData",
+        "type": "object"
+      },
+      "OverviewExperiments": {
+        "properties": {
+          "by_decision": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Decision",
+            "type": "object"
+          },
+          "evaluated": {
+            "title": "Evaluated",
+            "type": "integer"
+          },
+          "registered": {
+            "title": "Registered",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "registered",
+          "evaluated",
+          "by_decision"
+        ],
+        "title": "OverviewExperiments",
+        "type": "object"
+      },
+      "OverviewHealth": {
+        "properties": {
+          "snapshot_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Date"
+          },
+          "tiers": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TierShare"
+            },
+            "title": "Tiers",
+            "type": "object"
+          },
+          "workspaces": {
+            "title": "Workspaces",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "snapshot_date",
+          "workspaces",
+          "tiers"
+        ],
+        "title": "OverviewHealth",
+        "type": "object"
+      },
+      "Period": {
+        "description": "An inclusive date range a value was measured over.",
+        "properties": {
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "Period",
+        "type": "object"
+      },
+      "PipelineCheck": {
+        "properties": {
+          "last_success_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Success At"
+          },
+          "last_success_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Success Run Id"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "last_success_run_id",
+          "last_success_at"
+        ],
+        "title": "PipelineCheck",
+        "type": "object"
+      },
+      "PipelineRun": {
+        "properties": {
+          "duration_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Sum of step durations",
+            "title": "Duration S"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "started_at",
+          "finished_at",
+          "duration_s"
+        ],
+        "title": "PipelineRun",
+        "type": "object"
+      },
+      "PlanHealth": {
+        "properties": {
+          "mean_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Score"
+          },
+          "plan_tier": {
+            "title": "Plan Tier",
+            "type": "string"
+          },
+          "tiers": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Tiers",
+            "type": "object"
+          },
+          "workspaces": {
+            "title": "Workspaces",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "plan_tier",
+          "workspaces",
+          "mean_score",
+          "tiers"
+        ],
+        "title": "PlanHealth",
+        "type": "object"
+      },
+      "PlanNps": {
+        "properties": {
+          "detractor_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detractor Share"
+          },
+          "detractors": {
+            "title": "Detractors",
+            "type": "integer"
+          },
+          "margin_of_error_95": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "In NPS points; null when nps is null",
+            "title": "Margin Of Error 95"
+          },
+          "nps": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "100 * (promoters - detractors) / responses, -100..100; null below min_responses or with no responses",
+            "title": "Nps"
+          },
+          "passive_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passive Share"
+          },
+          "passives": {
+            "title": "Passives",
+            "type": "integer"
+          },
+          "plan_tier": {
+            "title": "Plan Tier",
+            "type": "string"
+          },
+          "promoter_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promoter Share"
+          },
+          "promoters": {
+            "title": "Promoters",
+            "type": "integer"
+          },
+          "responses": {
+            "title": "Responses",
+            "type": "integer"
+          },
+          "suppressed_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "no_responses",
+                  "insufficient_responses"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppressed Reason"
+          }
+        },
+        "required": [
+          "responses",
+          "promoters",
+          "passives",
+          "detractors",
+          "nps",
+          "margin_of_error_95",
+          "promoter_share",
+          "passive_share",
+          "detractor_share",
+          "plan_tier"
+        ],
+        "title": "PlanNps",
+        "type": "object"
+      },
+      "PlanRevenue": {
+        "properties": {
+          "arpa_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arpa Usd"
+          },
+          "mrr_usd": {
+            "title": "Mrr Usd",
+            "type": "number"
+          },
+          "paying_workspaces": {
+            "title": "Paying Workspaces",
+            "type": "integer"
+          },
+          "share_of_mrr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Of Mrr"
+          }
+        },
+        "required": [
+          "mrr_usd",
+          "paying_workspaces",
+          "share_of_mrr",
+          "arpa_usd"
+        ],
+        "title": "PlanRevenue",
+        "type": "object"
+      },
+      "PlanTier": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "seat_price_usd": {
+            "description": "Monthly price per active seat",
+            "title": "Seat Price Usd",
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "seat_price_usd"
+        ],
+        "title": "PlanTier",
+        "type": "object"
+      },
+      "PooledWeek": {
+        "properties": {
+          "active_users": {
+            "title": "Active Users",
+            "type": "integer"
+          },
+          "cohorts_included": {
+            "title": "Cohorts Included",
+            "type": "integer"
+          },
+          "retention_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Active users / cohort users over the cohorts whose week N has ended; null if none",
+            "title": "Retention Rate"
+          },
+          "users_included": {
+            "title": "Users Included",
+            "type": "integer"
+          },
+          "week": {
+            "title": "Week",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "week",
+          "retention_rate",
+          "cohorts_included",
+          "users_included",
+          "active_users"
+        ],
+        "title": "PooledWeek",
+        "type": "object"
+      },
+      "Primary": {
+        "properties": {
+          "absolute_diff": {
+            "title": "Absolute Diff",
+            "type": "number"
+          },
+          "ci_lower": {
+            "description": "95% CI of the absolute difference",
+            "title": "Ci Lower",
+            "type": "number"
+          },
+          "ci_upper": {
+            "title": "Ci Upper",
+            "type": "number"
+          },
+          "control_rate": {
+            "title": "Control Rate",
+            "type": "number"
+          },
+          "metric": {
+            "const": "activated_14d",
+            "default": "activated_14d",
+            "title": "Metric",
+            "type": "string"
+          },
+          "p_value": {
+            "title": "P Value",
+            "type": "number"
+          },
+          "relative_lift": {
+            "title": "Relative Lift",
+            "type": "number"
+          },
+          "significant": {
+            "title": "Significant",
+            "type": "boolean"
+          },
+          "treatment_rate": {
+            "title": "Treatment Rate",
+            "type": "number"
+          },
+          "z_statistic": {
+            "title": "Z Statistic",
+            "type": "number"
+          }
+        },
+        "required": [
+          "control_rate",
+          "treatment_rate",
+          "absolute_diff",
+          "relative_lift",
+          "ci_lower",
+          "ci_upper",
+          "z_statistic",
+          "p_value",
+          "significant"
+        ],
+        "title": "Primary",
+        "type": "object"
+      },
+      "PrimaryHeadline": {
+        "properties": {
+          "control_rate": {
+            "title": "Control Rate",
+            "type": "number"
+          },
+          "metric": {
+            "const": "activated_14d",
+            "default": "activated_14d",
+            "title": "Metric",
+            "type": "string"
+          },
+          "p_value": {
+            "title": "P Value",
+            "type": "number"
+          },
+          "relative_lift": {
+            "title": "Relative Lift",
+            "type": "number"
+          },
+          "significant": {
+            "title": "Significant",
+            "type": "boolean"
+          },
+          "treatment_rate": {
+            "title": "Treatment Rate",
+            "type": "number"
+          }
+        },
+        "required": [
+          "control_rate",
+          "treatment_rate",
+          "relative_lift",
+          "p_value",
+          "significant"
+        ],
+        "title": "PrimaryHeadline",
+        "type": "object"
+      },
+      "Problem": {
+        "description": "RFC 9457 problem document (media type application/problem+json).",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FieldError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errors"
+          },
+          "instance": {
+            "title": "Instance",
+            "type": "string"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "status": {
+            "title": "Status",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "examples": [
+              "urn:connecthub:problem:data-not-ready"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "instance",
+          "request_id"
+        ],
+        "title": "Problem",
+        "type": "object"
+      },
+      "Readiness": {
+        "properties": {
+          "checks": {
+            "$ref": "#/components/schemas/ReadinessChecks"
+          },
+          "data_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data End"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "not_ready"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "checks",
+          "data_end"
+        ],
+        "title": "Readiness",
+        "type": "object"
+      },
+      "ReadinessChecks": {
+        "properties": {
+          "database": {
+            "$ref": "#/components/schemas/DatabaseCheck"
+          },
+          "pipeline": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PipelineCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "relations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RelationsCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "database",
+          "relations",
+          "pipeline"
+        ],
+        "title": "ReadinessChecks",
+        "type": "object"
+      },
+      "RelationsCheck": {
+        "properties": {
+          "missing": {
+            "description": "Required relations that do not exist",
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "not_readable": {
+            "description": "Relations the API role cannot SELECT",
+            "items": {
+              "type": "string"
+            },
+            "title": "Not Readable",
+            "type": "array"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "required": {
+            "title": "Required",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ok",
+          "required",
+          "missing",
+          "not_readable"
+        ],
+        "title": "RelationsCheck",
+        "type": "object"
+      },
+      "ResponseMeta": {
+        "description": "Context for every data response: what the numbers describe and where they came from.",
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last loaded event date the data describes",
+            "title": "As Of"
+          },
+          "caveats": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Caveats",
+            "type": "array"
+          },
+          "data_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last date with data in the warehouse",
+            "title": "Data End"
+          },
+          "data_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "First date with data in the warehouse",
+            "title": "Data Start"
+          },
+          "data_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "run_id of the last fully validated pipeline run (null if none)",
+            "title": "Data Version"
+          },
+          "definitions": {
+            "description": "Where the metric definitions are documented",
+            "title": "Definitions",
+            "type": "string"
+          },
+          "effective_range": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateRange"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Date range actually used, after defaults and clamping"
+          },
+          "filters": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Filters",
+            "type": "object"
+          },
+          "generated_at": {
+            "description": "When this response was produced (UTC)",
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "sources": {
+            "description": "Warehouse relations the response was built from",
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "as_of",
+          "data_start",
+          "data_end",
+          "sources",
+          "data_version",
+          "generated_at",
+          "definitions"
+        ],
+        "title": "ResponseMeta",
+        "type": "object"
+      },
+      "RetentionData": {
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "title": "As Of",
+            "type": "string"
+          },
+          "by_cohort_month": {
+            "items": {
+              "$ref": "#/components/schemas/CohortMonth"
+            },
+            "title": "By Cohort Month",
+            "type": "array"
+          },
+          "cohorts": {
+            "description": "Cohorts with a complete first week as of as_of",
+            "title": "Cohorts",
+            "type": "integer"
+          },
+          "headline": {
+            "$ref": "#/components/schemas/Headline"
+          },
+          "pooled_curve": {
+            "items": {
+              "$ref": "#/components/schemas/PooledWeek"
+            },
+            "title": "Pooled Curve",
+            "type": "array"
+          },
+          "users_in_cohorts": {
+            "title": "Users In Cohorts",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "as_of",
+          "cohorts",
+          "users_in_cohorts",
+          "pooled_curve",
+          "headline",
+          "by_cohort_month"
+        ],
+        "title": "RetentionData",
+        "type": "object"
+      },
+      "RevenueData": {
+        "properties": {
+          "latest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RevenueMonth"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last month of the range (may be incomplete)"
+          },
+          "latest_complete": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RevenueMonth"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last complete month of the range"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueMonth"
+            },
+            "title": "Series",
+            "type": "array"
+          }
+        },
+        "required": [
+          "latest",
+          "latest_complete",
+          "series"
+        ],
+        "title": "RevenueData",
+        "type": "object"
+      },
+      "RevenueMonth": {
+        "properties": {
+          "arpa_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "MRR / paying workspaces (revenue per paying workspace); null with no paying workspace",
+            "title": "Arpa Usd"
+          },
+          "billed_seats": {
+            "title": "Billed Seats",
+            "type": "integer"
+          },
+          "by_plan": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/PlanRevenue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Plan"
+          },
+          "is_complete": {
+            "description": "False while the month extends past the last loaded day",
+            "title": "Is Complete",
+            "type": "boolean"
+          },
+          "month": {
+            "format": "date",
+            "title": "Month",
+            "type": "string"
+          },
+          "movement": {
+            "$ref": "#/components/schemas/Movement"
+          },
+          "mrr_growth_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "(MRR - previous MRR) / previous MRR",
+            "title": "Mrr Growth Rate"
+          },
+          "mrr_usd": {
+            "title": "Mrr Usd",
+            "type": "number"
+          },
+          "paying_workspaces": {
+            "title": "Paying Workspaces",
+            "type": "integer"
+          },
+          "previous_mrr_usd": {
+            "description": "Last month's MRR of the workspaces counted here",
+            "title": "Previous Mrr Usd",
+            "type": "number"
+          }
+        },
+        "required": [
+          "month",
+          "is_complete",
+          "mrr_usd",
+          "previous_mrr_usd",
+          "mrr_growth_rate",
+          "paying_workspaces",
+          "arpa_usd",
+          "billed_seats",
+          "movement"
+        ],
+        "title": "RevenueMonth",
+        "type": "object"
+      },
+      "Srm": {
+        "properties": {
+          "actual_ratio": {
+            "title": "Actual Ratio",
+            "type": "number"
+          },
+          "control_count": {
+            "title": "Control Count",
+            "type": "integer"
+          },
+          "detected": {
+            "title": "Detected",
+            "type": "boolean"
+          },
+          "p_value": {
+            "title": "P Value",
+            "type": "number"
+          },
+          "treatment_count": {
+            "title": "Treatment Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "control_count",
+          "treatment_count",
+          "actual_ratio",
+          "p_value",
+          "detected"
+        ],
+        "title": "Srm",
+        "type": "object"
+      },
+      "SrmHeadline": {
+        "properties": {
+          "detected": {
+            "title": "Detected",
+            "type": "boolean"
+          },
+          "p_value": {
+            "title": "P Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "p_value",
+          "detected"
+        ],
+        "title": "SrmHeadline",
+        "type": "object"
+      },
+      "SupportData": {
+        "properties": {
+          "ai_agent": {
+            "$ref": "#/components/schemas/AgentPerformance"
+          },
+          "by_call_type": {
+            "items": {
+              "$ref": "#/components/schemas/CallTypePerformance"
+            },
+            "title": "By Call Type",
+            "type": "array"
+          },
+          "granularity": {
+            "title": "Granularity",
+            "type": "string"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/SupportPoint"
+            },
+            "title": "Series",
+            "type": "array"
+          },
+          "tickets": {
+            "$ref": "#/components/schemas/Tickets"
+          }
+        },
+        "required": [
+          "tickets",
+          "ai_agent",
+          "by_call_type",
+          "granularity",
+          "series"
+        ],
+        "title": "SupportData",
+        "type": "object"
+      },
+      "SupportPoint": {
+        "properties": {
+          "ai_resolution_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Resolution Rate"
+          },
+          "avg_csat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Csat"
+          },
+          "calls": {
+            "title": "Calls",
+            "type": "integer"
+          },
+          "is_complete": {
+            "title": "Is Complete",
+            "type": "boolean"
+          },
+          "period_end": {
+            "format": "date",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "tickets_created": {
+            "title": "Tickets Created",
+            "type": "integer"
+          },
+          "tickets_resolved": {
+            "title": "Tickets Resolved",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "period_start",
+          "period_end",
+          "is_complete",
+          "tickets_created",
+          "tickets_resolved",
+          "calls",
+          "ai_resolution_rate",
+          "avg_csat"
+        ],
+        "title": "SupportPoint",
+        "type": "object"
+      },
+      "Tickets": {
+        "properties": {
+          "active_user_days": {
+            "description": "Sum of daily active users over the range",
+            "title": "Active User Days",
+            "type": "integer"
+          },
+          "created": {
+            "title": "Created",
+            "type": "integer"
+          },
+          "resolved": {
+            "title": "Resolved",
+            "type": "integer"
+          },
+          "resolved_to_created_ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Count ratio, not a per-ticket resolution rate (events have no ticket ID)",
+            "title": "Resolved To Created Ratio"
+          },
+          "tickets_per_1k_active_user_days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tickets Per 1K Active User Days"
+          }
+        },
+        "required": [
+          "created",
+          "resolved",
+          "resolved_to_created_ratio",
+          "active_user_days",
+          "tickets_per_1k_active_user_days"
+        ],
+        "title": "Tickets",
+        "type": "object"
+      },
+      "TierCount": {
+        "properties": {
+          "max": {
+            "title": "Max",
+            "type": "number"
+          },
+          "min": {
+            "title": "Min",
+            "type": "number"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          },
+          "tier": {
+            "title": "Tier",
+            "type": "string"
+          },
+          "workspaces": {
+            "title": "Workspaces",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tier",
+          "min",
+          "max",
+          "workspaces",
+          "share"
+        ],
+        "title": "TierCount",
+        "type": "object"
+      },
+      "TierShare": {
+        "properties": {
+          "share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          },
+          "workspaces": {
+            "title": "Workspaces",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "workspaces",
+          "share"
+        ],
+        "title": "TierShare",
+        "type": "object"
+      },
+      "UsageMonth": {
+        "properties": {
+          "active_workspaces": {
+            "description": "Workspaces with any event",
+            "title": "Active Workspaces",
+            "type": "integer"
+          },
+          "ai_active_workspaces": {
+            "title": "Ai Active Workspaces",
+            "type": "integer"
+          },
+          "ai_adoption_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "AI-active / feature-active workspaces (semantic metric ai_feature_adoption)",
+            "title": "Ai Adoption Rate"
+          },
+          "by_feature": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FeatureMonth"
+            },
+            "title": "By Feature",
+            "type": "object"
+          },
+          "feature_active_workspaces": {
+            "description": "Workspaces using any mapped feature",
+            "title": "Feature Active Workspaces",
+            "type": "integer"
+          },
+          "is_complete": {
+            "title": "Is Complete",
+            "type": "boolean"
+          },
+          "month": {
+            "format": "date",
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "is_complete",
+          "active_workspaces",
+          "feature_active_workspaces",
+          "ai_active_workspaces",
+          "ai_adoption_rate",
+          "by_feature"
+        ],
+        "title": "UsageMonth",
+        "type": "object"
+      },
+      "WorkspaceHealth": {
+        "properties": {
+          "active_users_30d": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Users 30D"
+          },
+          "dau_over_seats_ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dau Over Seats Ratio"
+          },
+          "features_adopted_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Features Adopted Count"
+          },
+          "health_score": {
+            "title": "Health Score",
+            "type": "number"
+          },
+          "mrr_change_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mrr Change Usd"
+          },
+          "mrr_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mrr Usd"
+          },
+          "nps_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nps Score"
+          },
+          "pct_ai_calls_automated": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Ai Calls Automated"
+          },
+          "plan_tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Tier"
+          },
+          "risk_tier": {
+            "title": "Risk Tier",
+            "type": "string"
+          },
+          "seat_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat Count"
+          },
+          "support_tickets_last_30d": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Support Tickets Last 30D"
+          },
+          "used_ai_feature_30d": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Used Ai Feature 30D"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "workspace_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspace Name"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "workspace_name",
+          "plan_tier",
+          "health_score",
+          "risk_tier",
+          "seat_count",
+          "active_users_30d",
+          "dau_over_seats_ratio",
+          "features_adopted_count",
+          "used_ai_feature_30d",
+          "pct_ai_calls_automated",
+          "nps_score",
+          "support_tickets_last_30d",
+          "mrr_usd",
+          "mrr_change_usd"
+        ],
+        "title": "WorkspaceHealth",
+        "type": "object"
+      },
+      "WorkspacePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceHealth"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Offset of the next page; null on the last page",
+            "title": "Next Offset"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "order": {
+            "title": "Order",
+            "type": "string"
+          },
+          "snapshot_date": {
+            "format": "date",
+            "title": "Snapshot Date",
+            "type": "string"
+          },
+          "sort": {
+            "title": "Sort",
+            "type": "string"
+          },
+          "total": {
+            "description": "Workspaces matching the filters",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "snapshot_date",
+          "total",
+          "limit",
+          "offset",
+          "next_offset",
+          "sort",
+          "order",
+          "items"
+        ],
+        "title": "WorkspacePage",
+        "type": "object"
+      },
+      "api__schemas__adoption__CurvePoint": {
+        "properties": {
+          "cumulative_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Users who adopted by day D / ALL users (right-censored: understates later days)",
+            "title": "Cumulative Rate"
+          },
+          "day": {
+            "title": "Day",
+            "type": "integer"
+          },
+          "eligible_users": {
+            "title": "Eligible Users",
+            "type": "integer"
+          },
+          "observed_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Adopters by day D among users with at least D days of history / those users; null if none",
+            "title": "Observed Rate"
+          }
+        },
+        "required": [
+          "day",
+          "cumulative_rate",
+          "observed_rate",
+          "eligible_users"
+        ],
+        "title": "CurvePoint",
+        "type": "object"
+      },
+      "api__schemas__experiments__CurvePoint": {
+        "properties": {
+          "activated": {
+            "title": "Activated",
+            "type": "integer"
+          },
+          "activation_rate": {
+            "title": "Activation Rate",
+            "type": "number"
+          },
+          "day": {
+            "title": "Day",
+            "type": "integer"
+          },
+          "users_in_window": {
+            "title": "Users In Window",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "activation_rate",
+          "activated",
+          "users_in_window"
+        ],
+        "title": "CurvePoint",
+        "type": "object"
+      },
+      "api__schemas__experiments__ExperimentSummary": {
+        "properties": {
+          "decision_code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "SHIP",
+                  "CONTINUE",
+                  "HOLD",
+                  "REVERT"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Code"
+          },
+          "decision_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Text"
+          },
+          "experiment": {
+            "$ref": "#/components/schemas/ExperimentInfo"
+          },
+          "primary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrimaryHeadline"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sample": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Assigned users per arm",
+            "title": "Sample"
+          },
+          "srm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SrmHeadline"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "description": "completed when the experiment end <= last loaded day, running before that; not_evaluated with no persisted result",
+            "enum": [
+              "running",
+              "completed",
+              "not_evaluated"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "experiment",
+          "status",
+          "decision_code",
+          "decision_text",
+          "primary",
+          "srm",
+          "sample"
+        ],
+        "title": "ExperimentSummary",
+        "type": "object"
+      },
+      "api__schemas__meta__ExperimentSummary": {
+        "properties": {
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "experiment_id": {
+            "title": "Experiment Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "ab",
+              "aa"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "experiment_id",
+          "kind",
+          "start",
+          "end"
+        ],
+        "title": "ExperimentSummary",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Read-only business metrics from the ConnectHub analytics warehouse.\n\nEvery number comes from dbt models and Python analytics that the pipeline builds\nand Great Expectations validates; definitions are in `docs/metric-definitions.md`.\nErrors are RFC 9457 problem documents (`application/problem+json`).\n\nSuccessful data responses carry a weak `ETag`; send it back in `If-None-Match` to get\n`304 Not Modified` while the data is unchanged. Responses are cached per data version\n(the last validated pipeline run, `meta.data_version`).",
+    "title": "ConnectHub Analytics API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/activation": {
+      "get": {
+        "description": "Source gold.fct_activation_daily / fct_activation_milestone_days, by signup date.\nDefault range: the 90 signup days ending at the last date with a complete 14-day window.",
+        "operationId": "get_activation_api_activation_get",
+        "parameters": [
+          {
+            "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+              "title": "Start"
+            }
+          },
+          {
+            "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+              "title": "End"
+            }
+          },
+          {
+            "description": "Billed plan tier filter",
+            "in": "query",
+            "name": "plan_tier",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "Free",
+                    "Essentials",
+                    "Professional",
+                    "Enterprise"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Billed plan tier filter",
+              "title": "Plan Tier"
+            }
+          },
+          {
+            "in": "query",
+            "name": "granularity",
+            "required": false,
+            "schema": {
+              "default": "week",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ],
+              "title": "Granularity",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Include signups whose 14-day window is not complete",
+            "in": "query",
+            "name": "include_incomplete",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Include signups whose 14-day window is not complete",
+              "title": "Include Incomplete",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_ActivationData_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "14-day activation funnel",
+        "tags": [
+          "activation"
+        ]
+      }
+    },
+    "/api/cohorts": {
+      "get": {
+        "description": "Complete cells only; an ended week with no activity is 0; an unfinished week is null.",
+        "operationId": "get_cohorts_api_cohorts_get",
+        "parameters": [
+          {
+            "description": "Default: last loaded day",
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Default: last loaded day",
+              "title": "As Of"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cohort_start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cohort Start"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cohort_end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cohort End"
+            }
+          },
+          {
+            "in": "query",
+            "name": "weeks",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Weeks",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_CohortMatrix_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Retention cohort matrix",
+        "tags": [
+          "retention"
+        ]
+      }
+    },
+    "/api/customer-health": {
+      "get": {
+        "description": "Latest snapshot of analytics.workspace_health_scores.",
+        "operationId": "get_customer_health_api_customer_health_get",
+        "parameters": [
+          {
+            "description": "Billed plan tier filter",
+            "in": "query",
+            "name": "plan_tier",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "Free",
+                    "Essentials",
+                    "Professional",
+                    "Enterprise"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Billed plan tier filter",
+              "title": "Plan Tier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_HealthSummary_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Health tier distribution",
+        "tags": [
+          "customer-health"
+        ]
+      }
+    },
+    "/api/customer-health/workspaces": {
+      "get": {
+        "description": "Sorted by an allow-listed column, then workspace_id (stable pagination).",
+        "operationId": "get_health_workspaces_api_customer_health_workspaces_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tier",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "Critical",
+                    "At Risk",
+                    "Healthy",
+                    "Champion"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tier"
+            }
+          },
+          {
+            "description": "Billed plan tier filter",
+            "in": "query",
+            "name": "plan_tier",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "Free",
+                    "Essentials",
+                    "Professional",
+                    "Enterprise"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Billed plan tier filter",
+              "title": "Plan Tier"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "health_score",
+              "enum": [
+                "health_score",
+                "mrr_usd",
+                "seat_count",
+                "active_users_30d"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {
+              "default": "asc",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "title": "Order",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 10000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_WorkspacePage_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Workspaces by health score (paginated)",
+        "tags": [
+          "customer-health"
+        ]
+      }
+    },
+    "/api/engagement": {
+      "get": {
+        "description": "Source gold.fct_daily_active_users. Default range: the 365 days ending at the last\nloaded day.",
+        "operationId": "get_engagement_api_engagement_get",
+        "parameters": [
+          {
+            "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+              "title": "Start"
+            }
+          },
+          {
+            "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+              "title": "End"
+            }
+          },
+          {
+            "in": "query",
+            "name": "granularity",
+            "required": false,
+            "schema": {
+              "default": "week",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ],
+              "title": "Granularity",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_EngagementData_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "DAU / WAU / MAU trend",
+        "tags": [
+          "engagement"
+        ]
+      }
+    },
+    "/api/experiments": {
+      "get": {
+        "description": "Registered experiments with their persisted evaluation (analytics.experiment_results).",
+        "operationId": "get_experiments_api_experiments_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "decision",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "SHIP",
+                    "CONTINUE",
+                    "HOLD",
+                    "REVERT"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Decision"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "running",
+                    "completed",
+                    "not_evaluated"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_ExperimentList_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Experiment portfolio",
+        "tags": [
+          "experiments"
+        ]
+      }
+    },
+    "/api/experiments/{experiment_id}": {
+      "get": {
+        "description": "Persisted evaluation plus the cumulative activation curve per arm.",
+        "operationId": "get_experiment_api_experiments__experiment_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experiment_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z0-9_]{1,64}$",
+              "title": "Experiment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_ExperimentDetail_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Experiment readout",
+        "tags": [
+          "experiments"
+        ]
+      }
+    },
+    "/api/feature-adoption": {
+      "get": {
+        "description": "Sources gold.fct_feature_adoption, fct_feature_usage_monthly, fct_activity_monthly.",
+        "operationId": "get_feature_adoption_api_feature_adoption_get",
+        "parameters": [
+          {
+            "description": "Repeatable",
+            "in": "query",
+            "name": "features",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 10,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeatable",
+              "title": "Features"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_day",
+            "required": false,
+            "schema": {
+              "default": 90,
+              "maximum": 90,
+              "minimum": 0,
+              "title": "Max Day",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "YYYY-MM",
+            "in": "query",
+            "name": "start_month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM",
+              "title": "Start Month"
+            }
+          },
+          {
+            "description": "YYYY-MM",
+            "in": "query",
+            "name": "end_month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM",
+              "title": "End Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_AdoptionData_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Feature adoption curves and monthly usage",
+        "tags": [
+          "feature-adoption"
+        ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "description": "No database access. Used by the container healthcheck.",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Liveness"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          }
+        },
+        "summary": "Liveness: the process is up",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/health/ready": {
+      "get": {
+        "description": "Checks that the database answers, every relation the API reads exists and\nis readable by the API role, and a fully validated pipeline run exists.\n200 when ready, 503 otherwise; never cached.",
+        "operationId": "ready_api_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
+                }
+              }
+            },
+            "description": "Not ready"
+          }
+        },
+        "summary": "Readiness: the API can serve correct data",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/meta": {
+      "get": {
+        "description": "Everything a client needs to configure itself without literals: the data\nwindow, the latest health snapshot, the last fully validated pipeline run,\nplan tiers with seat prices, features, registered experiments and health\ntiers. 503 `data-not-ready` until the pipeline has built the warehouse.",
+        "operationId": "meta_api_meta_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_MetaData_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Data window, freshness and dimension metadata",
+        "tags": [
+          "meta"
+        ]
+      }
+    },
+    "/api/nps": {
+      "get": {
+        "description": "Source gold.fct_nps_daily. Default range: the 90 days ending at the last loaded day.",
+        "operationId": "get_nps_api_nps_get",
+        "parameters": [
+          {
+            "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+              "title": "Start"
+            }
+          },
+          {
+            "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+              "title": "End"
+            }
+          },
+          {
+            "description": "Billed plan tier filter",
+            "in": "query",
+            "name": "plan_tier",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "Free",
+                    "Essentials",
+                    "Professional",
+                    "Enterprise"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Billed plan tier filter",
+              "title": "Plan Tier"
+            }
+          },
+          {
+            "in": "query",
+            "name": "granularity",
+            "required": false,
+            "schema": {
+              "default": "month",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ],
+              "title": "Granularity",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_responses",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 1000,
+              "minimum": 10,
+              "title": "Min Responses",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_NpsData_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Net Promoter Score",
+        "tags": [
+          "nps"
+        ]
+      }
+    },
+    "/api/overview": {
+      "get": {
+        "description": "MRR, DAU, week-4 retention, AI feature adoption, 14-day activation, NPS and AI resolution\nrate, each over a stated period ending at the last loaded day and compared with the period\nbefore; plus health tier counts and experiment decisions.",
+        "operationId": "get_overview_api_overview_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_OverviewData_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Headline KPIs",
+        "tags": [
+          "overview"
+        ]
+      }
+    },
+    "/api/retention": {
+      "get": {
+        "description": "Source gold.fct_retention_cohorts through analytics/retention.py.",
+        "operationId": "get_retention_api_retention_get",
+        "parameters": [
+          {
+            "description": "Default: last loaded day",
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Default: last loaded day",
+              "title": "As Of"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cohort_start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cohort Start"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cohort_end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cohort End"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_RetentionData_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Pooled weekly retention",
+        "tags": [
+          "retention"
+        ]
+      }
+    },
+    "/api/revenue": {
+      "get": {
+        "description": "Source gold.fct_revenue_monthly. Default: the 12 months ending at the latest month.",
+        "operationId": "get_revenue_api_revenue_get",
+        "parameters": [
+          {
+            "description": "YYYY-MM",
+            "in": "query",
+            "name": "start_month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM",
+              "title": "Start Month"
+            }
+          },
+          {
+            "description": "YYYY-MM",
+            "in": "query",
+            "name": "end_month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM",
+              "title": "End Month"
+            }
+          },
+          {
+            "description": "Billed plan tier filter",
+            "in": "query",
+            "name": "plan_tier",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "Free",
+                    "Essentials",
+                    "Professional",
+                    "Enterprise"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Billed plan tier filter",
+              "title": "Plan Tier"
+            }
+          },
+          {
+            "in": "query",
+            "name": "group_by",
+            "required": false,
+            "schema": {
+              "default": "plan_tier",
+              "enum": [
+                "none",
+                "plan_tier"
+              ],
+              "title": "Group By",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_RevenueData_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Monthly recurring revenue",
+        "tags": [
+          "revenue"
+        ]
+      }
+    },
+    "/api/support": {
+      "get": {
+        "description": "Sources gold.fct_support_daily, fct_agent_performance_daily. Default range: the 90 days\nending at the last loaded day.",
+        "operationId": "get_support_api_support_get",
+        "parameters": [
+          {
+            "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+              "title": "Start"
+            }
+          },
+          {
+            "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive, YYYY-MM-DD. Defaults are relative to the last loaded day, not today.",
+              "title": "End"
+            }
+          },
+          {
+            "description": "Billed plan tier filter",
+            "in": "query",
+            "name": "plan_tier",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "Free",
+                    "Essentials",
+                    "Professional",
+                    "Enterprise"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Billed plan tier filter",
+              "title": "Plan Tier"
+            }
+          },
+          {
+            "in": "query",
+            "name": "call_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 32,
+                  "pattern": "^[a-z_]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Call Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "granularity",
+            "required": false,
+            "schema": {
+              "default": "week",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ],
+              "title": "Granularity",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope_SupportData_"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified: If-None-Match matched the current ETag (no body)",
+            "headers": {
+              "Cache-Control": {
+                "description": "private, max-age=<API_CACHE_MAX_AGE_S>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of the response content",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Support tickets and AI-agent performance",
+        "tags": [
+          "support"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "description": "Liveness and readiness (no authentication).",
+      "name": "health"
+    },
+    {
+      "description": "Data window, freshness and dimension metadata.",
+      "name": "meta"
+    },
+    {
+      "description": "Headline KPIs.",
+      "name": "overview"
+    },
+    {
+      "description": "Daily, weekly and monthly active users.",
+      "name": "engagement"
+    },
+    {
+      "description": "14-day activation funnel by signup date.",
+      "name": "activation"
+    },
+    {
+      "description": "Weekly retention cohorts.",
+      "name": "retention"
+    },
+    {
+      "description": "Monthly recurring revenue and movement.",
+      "name": "revenue"
+    },
+    {
+      "description": "Feature adoption curves and monthly usage.",
+      "name": "feature-adoption"
+    },
+    {
+      "description": "Persisted A/B experiment evaluations.",
+      "name": "experiments"
+    },
+    {
+      "description": "Net Promoter Score.",
+      "name": "nps"
+    },
+    {
+      "description": "Support tickets and AI voice-agent performance.",
+      "name": "support"
+    },
+    {
+      "description": "Workspace health scores and tiers.",
+      "name": "customer-health"
+    }
+  ]
+}

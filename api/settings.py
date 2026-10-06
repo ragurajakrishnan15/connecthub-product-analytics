@@ -57,6 +57,14 @@ class Settings(BaseSettings):
     api_lock_timeout_ms: int = Field(2000, ge=100, le=60000)
     api_ready_timeout_ms: int = Field(1000, ge=100, le=10000)
 
+    # --- response cache and HTTP validation (PHASE_4_PLAN.md §8.2; docs/api.md "Caching")
+    api_cache_enabled: bool = True
+    api_cache_ttl_s: int = Field(300, ge=1, le=86400)
+    api_cache_max_entries: int = Field(512, ge=1, le=100000)
+    api_cache_max_bytes: int = Field(64 * 1024 * 1024, ge=1024 * 1024, le=2 * 1024 ** 3)
+    api_data_version_ttl_s: float = Field(30, ge=0, le=3600)
+    api_cache_max_age_s: int = Field(60, ge=0, le=3600)
+
     @field_validator('api_cors_origins', mode='before')
     @classmethod
     def _parse_origins(cls, value):
