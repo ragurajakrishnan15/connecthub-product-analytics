@@ -1,14 +1,22 @@
 # ConnectHub Product Analytics Platform
 
-**[Live Dashboard →](https://yourusername.github.io/connecthub-product-analytics/)**
+End-to-end product analytics for a B2B SaaS communications platform — from deterministic synthetic event data through a PostgreSQL warehouse and incremental dbt models to a read-only analytics API and an interactive dashboard.
 
-End-to-end product analytics for a B2B SaaS communications platform — from raw event ingestion through a lakehouse architecture to interactive dashboards and an AI-powered analyst.
+## The Dashboard
 
-## See It Live
+`index.html` is a single-page dashboard that the analytics API serves from its own origin. **Every number on it comes from the API**, which reads the warehouse: nothing is hard-coded, and each panel shows its own loading, empty or error state. It needs a built warehouse and a running API (see [Quick Start](#quick-start)), so there is no hosted demo: a static host such as GitHub Pages cannot serve it.
 
-The live dashboard lets you experience the platform as a product team would — explore KPIs, retention cohorts, activation funnels, experiment results, customer health scores, and ask the AI Analyst any question about the data.
+| Tab | What it shows |
+|---|---|
+| Overview | KPI cards, daily active users, feature adoption, revenue by plan, AI-agent resolution rate, and a Voice of Customer section (NPS, support tickets, CSAT) |
+| Retention | Weekly cohort retention matrix |
+| Activation | 14-day activation funnel and time to each milestone |
+| Experiments | A selector over the registered experiments, with lift, Bayesian probability, SRM and guardrail checks, the verdict and the conversion curve (the A/A check is labelled as one) |
+| Customer Health | Health tier counts, score distribution and the lowest-scoring workspaces |
+| AI Analyst | A placeholder. The analyst is not implemented; the tab says so and shows no answers |
 
-**[Open the Dashboard →](https://yourusername.github.io/connecthub-product-analytics/)**
+The data is synthetic (the page says so), and the numbers are small by design: the default dataset is 10,000 users.
+See [docs/api.md](docs/api.md#dashboard-page-get-) for how the page is served and what each panel reads.
 
 ## What This Demonstrates
 
@@ -17,12 +25,14 @@ The live dashboard lets you experience the platform as a product team would — 
 - **Data Engineering**: deterministic synthetic data → PostgreSQL bronze → incremental dbt (staging → intermediate → gold), orchestrated by Airflow
 - **Data Quality**: Great Expectations contracts after every stage; critical failures stop the pipeline
 - **Operations**: idempotent steps, structured JSON logs with run IDs, run history in `ops.pipeline_runs`, benchmarks
+- **Serving**: a read-only FastAPI service (dedicated database role, bound parameters, per-data-version cache with ETags, a pinned OpenAPI contract) and a dashboard that renders only what the API returns
+- **Secure front end**: same-origin serving, a Content-Security-Policy derived from the page (no `unsafe-inline`, no `unsafe-eval`, no CDN for scripts: Chart.js is vendored and integrity-checked), API text written to the page as text only, an optional API key kept in `sessionStorage`
 - **Visualization** (illustrative, unvalidated): Hex notebooks, LookML, Plotly
 
-A read-only analytics API (`api/`, FastAPI) serves the metrics from the warehouse; see [docs/api.md](docs/api.md).
+The API (`api/`) is documented in [docs/api.md](docs/api.md); the dashboard is part of the same service.
 
-Not implemented: Kafka/Kinesis/S3 ingestion, Apache Iceberg and the AI analyst. The dashboard in `index.html` still
-shows static numbers (it is not yet connected to the API). See [docs/architecture.md](docs/architecture.md).
+Not implemented: Kafka/Kinesis/S3 ingestion, Apache Iceberg and the AI analyst (the dashboard tab is a placeholder),
+and an automated browser test suite for the dashboard. See [docs/architecture.md](docs/architecture.md).
 
 ## Architecture
 
@@ -30,21 +40,26 @@ shows static numbers (it is not yet connected to the API). See [docs/architectur
 generate (parquet) → assign (experiments.*) → ingest (bronze.*) → validate
     → dbt build (staging / intermediate / gold) → validate
     → analytics (health scores, retention, experiment results) → validate
+
+warehouse (gold, analytics, ops.pipeline_runs) → api/ (FastAPI, read-only role) → dashboard in the browser (same origin)
 ```
 
-Each arrow is one idempotent step of `python -m pipeline`; the Airflow DAG `connecthub_pipeline` runs the same steps.
+Each arrow of the pipeline is one idempotent step of `python -m pipeline`; the Airflow DAG `connecthub_pipeline` runs the
+same steps. The API and the dashboard only read what the pipeline built: the browser talks to the API and never to the
+database.
 Metric definitions: [docs/metric-definitions.md](docs/metric-definitions.md).
 
 ## Tech Stack
 
-Python 3.11 | SQL | PostgreSQL 15 | dbt 1.7 | Apache Airflow 2.8 | Great Expectations 0.18 | pandas | NumPy | SciPy | scikit-learn | PySpark (isolated) | Docker
+Python 3.11 | SQL | PostgreSQL 15 | dbt 1.7 | Apache Airflow 2.8 | Great Expectations 0.18 | FastAPI | pandas | NumPy | SciPy | scikit-learn | PySpark (isolated) | Docker | Chart.js 4.4.1 (vendored; plain HTML and JavaScript, no build step) | Node.js (dashboard tests only)
 
 ## Quick Start
 
 ### Requirements
 
 - **Python 3.11** (pinned in `.python-version`). dbt-core 1.7 and Airflow 2.8 do not support Python 3.12+.
-- Docker Desktop (PostgreSQL warehouse; Airflow and Spark images)
+- Docker Desktop (PostgreSQL warehouse, the API and dashboard; Airflow and Spark images)
+- Node.js, optional: only the dashboard's JavaScript tests need it (`tests/dashboard`, run by `pytest`; developed with Node 24). Without Node that one test is skipped.
 
 ### Configuration
 
@@ -98,13 +113,29 @@ python scripts/benchmark.py --users 10000                   # timings and memory
 All return `0` on success, `1` on errors or failed checks (with a message on stderr), and `2` on usage errors;
 `evaluate --fail-on-srm` returns `3` when a sample ratio mismatch is found.
 
-### Analytics API
+### Analytics API and dashboard
 
 ```bash
 python -m api.provision                     # once: read-only database role (set API_DB_PASSWORD in .env)
-python -m api                               # http://127.0.0.1:8000/api/docs
-docker compose up -d postgres api-init api  # or in Docker
+docker compose up -d postgres api-init api  # API and dashboard in Docker
 ```
+
+Open **http://127.0.0.1:8000/** for the dashboard and `/api/docs` for the interactive API reference. The port is
+`API_PORT` in `.env`; set it to something else if 8000 is taken. Run the pipeline first: until it has built and
+validated the warehouse, each dashboard panel shows "Warehouse not ready" with a Retry button.
+
+Without Docker, run the API from the repository root and tell it which page to serve:
+
+```bash
+API_DASHBOARD_PATH=index.html python -m api                 # bash
+$env:API_DASHBOARD_PATH = 'index.html'; python -m api       # PowerShell
+```
+
+`API_DASHBOARD_PATH` is unset by default, in which case the API serves no page (the compose service sets it for you).
+The page must be opened through the API: opened as a file, its panels show an error. If the API runs with
+`API_AUTH_MODE=api_key`, the page asks for a key when the API answers 401 and keeps it for that browser tab only.
+The dashboard loads Chart.js from this repository (`vendor/`), not from a CDN; only the page's fonts still come from
+Google Fonts.
 
 Endpoints: `/api/health`, `/api/health/ready`, `/api/meta`, `/api/overview`, `/api/engagement`, `/api/activation`,
 `/api/retention`, `/api/cohorts`, `/api/revenue`, `/api/feature-adoption`, `/api/experiments[/{id}]`, `/api/nps`,
@@ -182,9 +213,10 @@ connecthub-product-analytics/
 ├── dags/                           # Airflow DAG
 ├── docker/                         # Airflow and Spark images
 ├── spark_jobs/                     # PySpark jobs (isolated, verified against dbt)
-├── tests/                          # pytest: unit, integration, end-to-end
-├── docs/                           # Architecture, metric definitions, playbooks
-├── index.html                      # Static dashboard prototype (not connected to data)
+├── tests/                          # pytest: unit, integration, end-to-end; tests/dashboard: Node tests for the page
+├── docs/                           # Architecture, API reference, metric definitions, playbooks
+├── index.html                      # The dashboard: one file, served by the API at / (reads only the API)
+├── vendor/                         # Vendored Chart.js 4.4.1 (MIT), its license and provenance
 └── hex_notebooks/, lookml/, notebooks/   # Illustrative analysis artefacts
 ```
 
@@ -203,6 +235,11 @@ connecthub-product-analytics/
 - **Bayesian A/B** — Beta-Binomial model with probability of improvement
 - **Evaluation** — End-to-end pipeline with guardrail metrics and decision logic
 
+### Serving
+- **Analytics API** (`api/`) — Read-only endpoints over the gold serving tables, with caching, ETags and a committed OpenAPI contract ([docs/api.md](docs/api.md))
+- **Dashboard** (`index.html`) — One file in three layers: a data layer (same-origin requests, ETag revalidation, error and key handling), pure panel models (API data to display), and panels with loading, empty and error states. Tested in Node without a browser (`tests/dashboard`)
+- **Dashboard serving** (`api/dashboard.py`) — Reads the page at startup, derives its Content-Security-Policy from it, and refuses to start on inline handlers, remote scripts or a vendored script whose hash does not match
+
 ## License
 
-MIT
+MIT. The vendored Chart.js in `vendor/` is MIT too (see `vendor/LICENSE-chartjs.md`).

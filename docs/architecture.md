@@ -24,10 +24,16 @@ analytics/, experimentation/evaluate.py health scores, retention summary, experi
         │  analytics.workspace_health_scores, analytics.experiment_results
         ▼
 quality/                                validate analytics outputs
+        ▼  (the warehouse is now built; everything below only reads it)
+api/ (FastAPI, read-only DB role)       GET /api/* from the gold serving tables, analytics.*, ops.pipeline_runs
+        ▼  HTTP, same origin
+index.html (browser)                    the dashboard: renders only what the API returns
 ```
 
-Each box is one **pipeline step** (`pipeline/steps.py`), run the same way
-everywhere:
+Each box down to the last validation is one **pipeline step**
+(`pipeline/steps.py`), run the same way everywhere. The API and the dashboard
+are not steps: they serve what the steps built (see
+[Analytics API](#analytics-api) and [Dashboard](#dashboard)).
 
 | Where | How |
 |---|---|
@@ -133,10 +139,64 @@ and `ops.pipeline_runs`, and is layered routers -> services -> repositories
 are cached in process per data version (the last validated pipeline run) and
 carry weak ETags for `If-None-Match` / 304; the contract is pinned by the
 `docs/openapi.json` snapshot (see api.md). Docker: `api-init` (provisioning)
-and `api` in `docker-compose.yml`.
+and `api` in `docker-compose.yml`. With `API_DASHBOARD_PATH` set, the same
+service also serves the dashboard page (next section); that page is outside the
+API contract and the snapshot.
+
+## Dashboard
+
+`index.html` is a single-page dashboard with no build step. When
+`API_DASHBOARD_PATH` is set (the compose service sets it), the API serves it at
+`GET /`, so the page and the data share one origin and the browser needs no CORS
+and no credentials: it talks to the API, never to PostgreSQL. Every number it
+shows comes from an API response; there are no hard-coded or placeholder values.
+
+**Three layers in the one file**
+
+| Layer | What it does | Tested by |
+|---|---|---|
+| Data layer | The only code that calls the API: same-origin, credential-less `GET`s; per-URL ETag revalidation (`If-None-Match`, a 304 reuses the stored response); problem+json errors mapped to a small set of kinds; timeouts and cancellation; empty-response detection; an API-key dialog | `tests/dashboard/data_layer.test.mjs` (Node, fake `fetch`; also cross-checks every endpoint and parameter against `docs/openapi.json`) |
+| Panel models | Pure functions from an API response to what is displayed: unit-aware formatting, chart datasets, table rows, the experiment verdict | `tests/dashboard/panel_models.test.mjs` (trimmed real responses as fixtures) |
+| Panels | DOM and Chart.js. Each panel owns its loading, empty and error state (request id and a Retry button), drops a response that arrives after a newer request, and loads lazily (the Overview at start, other tabs when first opened) | the page-level checks in the same file, plus a manual browser run |
+
+The Node tests extract the data layer and the models straight out of
+`index.html`, so they run exactly what ships. A single failing endpoint never
+blanks another panel.
+
+**Serving and the Content-Security-Policy** (`api/dashboard.py`). The page is
+read once at startup and its CSP is derived from it: the SHA-256 of the inline
+script and style, `'self'` for the vendored script, `style-src-attr 'none'`
+and `connect-src 'self'`. There is no `unsafe-inline`, `unsafe-eval` or remote
+script host. Startup is refused for inline event handlers, `javascript:` URLs,
+any remote script, or a script whose `integrity` attribute does not match its
+file. `/api/*` keeps its own strict policy.
+
+**No CDN for scripts.** Chart.js 4.4.1 lives in `vendor/` (the registry-verified
+npm build, MIT license and provenance alongside) and is served from the same
+origin at `/vendor/chart.umd.js`; only the files the page names are served.
+Google Fonts is the one remaining external dependency (stylesheet and fonts
+only).
+
+**Trust boundaries.** API strings are written to the page as text, never as
+HTML (no `innerHTML`; tests enforce it). With `API_AUTH_MODE=api_key` the page
+prompts for a key on a 401, keeps it in `sessionStorage` (this tab only), sends
+it only as `X-API-Key` to its own origin, and forgets a rejected key. The page
+itself is public; the data endpoints enforce the key. Database credentials and
+server settings never reach the browser.
+
+**Panels and endpoints.** The mapping of each panel to its endpoint, and the
+data-layer and key behavior, are in [api.md](api.md#dashboard-page-get-). Dates
+never come from the clock: the 12-month support and NPS windows are computed
+from `/api/meta`'s data window, and every other panel uses the API's own
+defaults, which are relative to the last loaded day.
 
 ## Not implemented
 
-Kafka / Kinesis / S3 ingestion, Apache Iceberg, the live dashboard's data
-connection and the AI analyst. `index.html` still shows static numbers. LookML
-and Hex files are illustrative and unvalidated.
+Kafka / Kinesis / S3 ingestion, Apache Iceberg and the AI analyst. The dashboard
+has an "AI Analyst" tab, but it is a placeholder: a grounded analyst would be a
+server-side endpoint that keeps its key out of the browser, and does not exist
+yet. There is also no automated browser test suite for the dashboard (the Node
+tests cover the logic and the page's static properties; rendering was verified
+by running the page in a real browser, manually), no hosted deployment, and no
+sign-in beyond the optional API key. LookML and Hex files are illustrative and
+unvalidated.
