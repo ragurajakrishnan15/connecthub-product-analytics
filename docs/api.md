@@ -84,6 +84,28 @@ All set in `api/settings.py`:
 - **Test:** `tests/api/test_api_openapi_snapshot.py` fails when the app's schema differs from it, printing a diff.
 - **Making a deliberate change:** change the code, then run `python -m api.openapi --write` (`make openapi`), review the diff of `docs/openapi.json` and commit both together. `python -m api.openapi --check` runs the comparison without pytest.
 
+## Dashboard page (`GET /`)
+
+Not part of the API contract (not in `docs/openapi.json`). With `API_DASHBOARD_PATH` set (unset by default), the app serves that single HTML file at `GET /` so the page and the API share one origin (no CORS). Any other path outside `/api` is a 404 problem.
+
+- **Startup:** the file is read once. The app refuses to start if it is missing, over 2 MiB, not UTF-8, or contains inline event handlers (`onclick=` etc.), `javascript:` URLs or an external script or stylesheet outside the allow-list.
+- **Access:** public. The page holds no data; the data endpoints enforce `API_AUTH_MODE` themselves. It is never cached by the response cache.
+- **HTTP:** `ETag` (weak, content hash) with `304` on `If-None-Match`, `Cache-Control: no-cache`. Line endings are normalized to LF so the policy hashes are the same on every checkout.
+- **Content-Security-Policy**, derived from the page at startup (`api/dashboard.py`); `/api/*` keeps `default-src 'none'; frame-ancestors 'none'`:
+
+| Directive | Value |
+|---|---|
+| `default-src` | `'none'` |
+| `script-src` | `sha256-` hash of each inline `<script>`, plus the exact Chart.js URL on cdnjs (removed when Chart.js is vendored). **No `'unsafe-inline'`**; inline event handlers are therefore not allowed. |
+| `style-src` | `sha256-` hash of each inline `<style>`, plus `https://fonts.googleapis.com` |
+| `style-src-attr` | `'unsafe-hashes'` with the hash of each distinct `style="…"` value in the markup. Styles set from script (`element.style`) are not restricted by CSP. |
+| `font-src` | `https://fonts.gstatic.com` |
+| `connect-src` | `'self'` |
+| `base-uri`, `form-action` | `'none'` |
+| `frame-ancestors` | `'none'` |
+
+Changing the page changes its hashes automatically on the next start. Because the page's own styles are hashed, markup generated at runtime must set styles through the DOM (`element.style`), not `style=""` strings.
+
 ## Endpoints
 
 ### `GET /api/overview`

@@ -608,15 +608,15 @@ body {
       <div class="ai-msg ai">Hi! I'm the ConnectHub AI Analyst. I have full context on the product metrics, retention cohorts, experiments, and customer health data. Ask me anything — why retention dropped, which features drive activation, how experiments performed, or what's driving churn risk.</div>
     </div>
     <div class="ai-suggestions" id="ai-suggestions">
-      <button class="ai-chip" onclick="askSuggestion(this)">Why did retention improve this quarter?</button>
-      <button class="ai-chip" onclick="askSuggestion(this)">Which features drive the most retention?</button>
-      <button class="ai-chip" onclick="askSuggestion(this)">Should we ship the onboarding experiment?</button>
-      <button class="ai-chip" onclick="askSuggestion(this)">What's driving churn in Enterprise accounts?</button>
-      <button class="ai-chip" onclick="askSuggestion(this)">How does AI Assist adoption correlate with NPS?</button>
+      <button class="ai-chip">Why did retention improve this quarter?</button>
+      <button class="ai-chip">Which features drive the most retention?</button>
+      <button class="ai-chip">Should we ship the onboarding experiment?</button>
+      <button class="ai-chip">What's driving churn in Enterprise accounts?</button>
+      <button class="ai-chip">How does AI Assist adoption correlate with NPS?</button>
     </div>
     <div class="ai-input-row">
-      <input class="ai-input" id="ai-input" placeholder="Ask about metrics, retention, experiments..." onkeydown="if(event.key==='Enter')sendMessage()">
-      <button class="ai-send" id="ai-send" onclick="sendMessage()">Send</button>
+      <input class="ai-input" id="ai-input" placeholder="Ask about metrics, retention, experiments...">
+      <button class="ai-send" id="ai-send">Send</button>
     </div>
   </div>
 </div>
@@ -628,6 +628,12 @@ body {
 </div>
 
 <script>
+// The Content-Security-Policy blocks inline style attributes in generated markup (innerHTML),
+// but not styles set through the DOM, so generated markup carries data-style and this applies it.
+function applyStyles(root) {
+  root.querySelectorAll('[data-style]').forEach(el => { el.style.cssText = el.dataset.style; });
+}
+
 // ===== TAB NAVIGATION =====
 document.querySelectorAll('.nav-tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -731,17 +737,19 @@ new Chart(document.getElementById('chart-agent'), {
   cohorts.forEach((c,i) => {
     html += '<tr><td class="row-label">'+c+'</td>';
     data[i].forEach(v => {
-      if(v===null) { html += '<td style="color:var(--text-3)">—</td>'; }
+      if(v===null) { html += '<td data-style="color:var(--text-3)">—</td>'; }
       else {
         const intensity = Math.max(0.08, v/100);
         const color = v>=50?'rgba(99,102,241,'+intensity+')': v>=30?'rgba(96,165,250,'+intensity+')':'rgba(251,191,36,'+intensity+')';
-        html += '<td style="background:'+color+'">'+v+'%</td>';
+        html += '<td data-style="background:'+color+'">'+v+'%</td>';
       }
     });
     html += '</tr>';
   });
   html += '</tbody></table>';
-  document.getElementById('heatmap-container').innerHTML = html;
+  const heatmap = document.getElementById('heatmap-container');
+  heatmap.innerHTML = html;
+  applyStyles(heatmap);
 })();
 
 // ===== FEATURES → RETENTION =====
@@ -773,12 +781,14 @@ new Chart(document.getElementById('chart-feat-retention'), {
     const w = (s.value/max*100);
     html += `<div class="funnel-stage">
       <div class="funnel-label">${s.name}</div>
-      <div style="flex:1"><div class="funnel-bar" style="width:${w}%;opacity:${0.5+w/200}"></div></div>
+      <div data-style="flex:1"><div class="funnel-bar" data-style="width:${w}%;opacity:${0.5+w/200}"></div></div>
       <div class="funnel-value">${(s.value/1000).toFixed(0)}K</div>
       <div class="funnel-pct">${s.pct}</div>
     </div>`;
   });
-  document.getElementById('funnel-container').innerHTML = html;
+  const funnel = document.getElementById('funnel-container');
+  funnel.innerHTML = html;
+  applyStyles(funnel);
 })();
 
 // ===== TIME TO ACTIVATION =====
@@ -845,16 +855,18 @@ document.getElementById('chart-health-dist').__chartjs = true;
   rows.forEach(r => {
     const barColor = r.score<30?'var(--red)':r.score<60?'var(--orange)':r.score<80?'var(--blue)':'var(--green)';
     html += `<tr>
-      <td style="font-weight:500">${r.name}</td>
+      <td data-style="font-weight:500">${r.name}</td>
       <td>${r.plan}</td>
-      <td><div class="health-bar-bg"><div class="health-bar-fill" style="width:${r.score}%;background:${barColor}"></div></div>${r.score}</td>
+      <td><div class="health-bar-bg"><div class="health-bar-fill" data-style="width:${r.score}%;background:${barColor}"></div></div>${r.score}</td>
       <td>${r.seats}</td>
       <td>${(r.dau*100).toFixed(0)}%</td>
       <td>${r.ai}</td>
       <td><span class="health-badge ${r.status}">${r.status.replace('-',' ')}</span></td>
     </tr>`;
   });
-  document.getElementById('health-table-body').innerHTML = html;
+  const healthBody = document.getElementById('health-table-body');
+  healthBody.innerHTML = html;
+  applyStyles(healthBody);
 })();
 
 // ===== AI ANALYST =====
@@ -935,6 +947,11 @@ async function initAI() {
   } catch(e) { /* sample not available */ }
 }
 initAI();
+
+// The Content-Security-Policy forbids inline event handlers, so they are bound here.
+document.querySelectorAll('.ai-chip').forEach(chip => chip.addEventListener('click', () => askSuggestion(chip)));
+document.getElementById('ai-send').addEventListener('click', sendMessage);
+document.getElementById('ai-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
 
 function askSuggestion(el) {
   document.getElementById('ai-input').value = el.textContent;

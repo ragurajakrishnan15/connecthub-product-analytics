@@ -21,6 +21,8 @@ COPY analytics/__init__.py analytics/features.py analytics/health_scoring.py \
      analytics/retention.py analytics/
 COPY experimentation/__init__.py experimentation/experiments.py experimentation/decision.py \
      experimentation/
+# The dashboard page served at GET / (API_DASHBOARD_PATH in docker-compose.yml)
+COPY index.html dashboard/index.html
 
 RUN useradd --system --uid 10001 --no-create-home app
 USER app
