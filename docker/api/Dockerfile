@@ -21,8 +21,10 @@ COPY analytics/__init__.py analytics/features.py analytics/health_scoring.py \
      analytics/retention.py analytics/
 COPY experimentation/__init__.py experimentation/experiments.py experimentation/decision.py \
      experimentation/
-# The dashboard page served at GET / (API_DASHBOARD_PATH in docker-compose.yml)
+# The dashboard page served at GET / (API_DASHBOARD_PATH in docker-compose.yml) and the
+# vendored scripts it loads from the same origin (vendor/README.md)
 COPY index.html dashboard/index.html
+COPY vendor/ dashboard/vendor/
 
 RUN useradd --system --uid 10001 --no-create-home app
 USER app

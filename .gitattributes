@@ -1,3 +1,6 @@
 # Shell scripts run inside Linux containers: keep LF even on Windows checkouts.
 *.sh text eol=lf
 Dockerfile text eol=lf
+# Vendored third-party files are served byte-for-byte and checked against an SRI hash:
+# Git must never convert their line endings.
+vendor/** -text

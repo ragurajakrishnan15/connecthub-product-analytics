@@ -5,7 +5,7 @@
 3. **Starting commit:** `193be5f` (Phase 4D). Phases 4A–4D (`0a35c91`, `3fa11e3`, `307ed88`, `193be5f`) are all in the history.
 4. **Final commit:** the commit that contains this report (`git log -1`; a file cannot contain its own commit's hash). The implementation is complete at `ad8c73b`; this report is the only change after it.
 5. **Result:** `index.html` now renders **only data returned by the Phase 4 API**. No analytics number is a literal in the page. The AI Analyst is deferred to Phase 6.
-6. **Not done:** pushing, merging, tagging, rewriting history, installing Playwright/Chromium (see §11), vendoring Chart.js (§15), the AI analyst.
+6. **Not done:** pushing, merging, tagging, rewriting history, installing Playwright/Chromium (see §11), vendoring Chart.js (done afterwards, see §19), the AI analyst.
 
 | Commit | Step |
 |---|---|
@@ -23,7 +23,7 @@
 |---|---|---|
 | Data | Every KPI, series, table row and "AI answer" was a literal in `index.html` | Every displayed value comes from one of 13 API endpoints, through one client |
 | Serving | `index.html` had to be opened as a file | `GET /` on the API container serves it, same origin, with its own CSP |
-| CSP | n/a (API-only policy) | Derived from the page at startup: script and style hashes, one exact CDN URL, `style-src-attr 'none'`, no `unsafe-inline`, no `unsafe-hashes` |
+| CSP | n/a (API-only policy) | Derived from the page at startup: script and style hashes, one exact CDN URL (since replaced by `'self'`, see §19), `style-src-attr 'none'`, no `unsafe-inline`, no `unsafe-hashes` |
 | Failure handling | None (nothing could fail) | Per-panel loading, empty and error states, request id, Retry; stale responses dropped |
 | API key | n/a | 401 dialog, `sessionStorage`, `X-API-Key` header only, one retry |
 | AI Analyst | Canned answers with invented numbers | "AI Analyst coming in Phase 6" placeholder, nothing interactive |
@@ -192,7 +192,7 @@ The API and Postgres containers are healthy and `/api/health/ready` is `ready`. 
 
 1. **No committed browser test.** The 54-check browser run and the dialog check are scratch scripts. The Node tests prove the logic and the page's static properties, not rendering. A Playwright suite is the follow-up once storage is sorted.
 2. **Only one browser engine was exercised** (Chromium-based Edge, headless). Firefox and Safari are untested. No mobile-layout or accessibility audit was done.
-3. **Chart.js still loads from cdnjs.** The CSP allows that one exact URL; vendoring it (so the page needs no CDN) is still pending. If the CDN is blocked, panels show an error state rather than the script halting; that path is guarded in code but not exercised in a browser.
+3. **Chart.js loaded from cdnjs at the time of this report.** *Resolved afterwards: Chart.js is now vendored and served from the same origin (§19).* The guard for a missing `Chart` global (panels show an error state rather than the script halting) is still not exercised in a browser.
 4. **Fonts still load from Google Fonts** (`fonts.googleapis.com`, `fonts.gstatic.com`).
 5. **The Node tests are skipped if Node is missing**, silently, as one skipped-by-condition test.
 6. **Small dataset, and the page shows it as it is.** 10K users: DAU 671, MRR $61,870, 30% of workspaces Critical. Not exercised at larger scale.
@@ -231,7 +231,22 @@ node --test tests/dashboard                        # 157 Node tests (also run by
 ## 18. Next steps (not started)
 
 1. Move Docker storage off C: (your decision on the three `docker_data.vhdx` files), then install Playwright (Chromium only) and turn the §9 driver into a committed suite.
-2. Vendor Chart.js (and optionally the fonts) and drop the CDN hosts from the CSP.
+2. ~~Vendor Chart.js~~ (done, §19). Optionally vendor the fonts too and drop the Google hosts from the CSP.
 3. Update `README.md` and `docs/architecture.md`.
 4. Phase 6: the grounded AI analyst.
 5. Your call: merging `phase-4`/`phase-5`, and what to do about the `origin` remote.
+
+---
+
+## 19. Addendum: Chart.js vendored (after commit `1962fba`)
+
+Chart.js no longer loads from a CDN. It is served by the API from the same origin, so the dashboard needs no external script host.
+
+- **File:** `vendor/chart.umd.js`, 205,087 bytes, SHA-256 `0ee28337f25838a7a5d6b1e8b2b02279ab10e80e17c217a99893a7a717f2ba05`. It is npm `chart.js@4.4.1` `dist/chart.umd.js` (tarball integrity checked against the registry) with exactly one change: its final `//# sourceMappingURL=chart.umd.js.map` line is removed, so browsers do not request a map the server does not ship. Appending that line reproduces the npm file byte for byte (SHA-256 `74401d73…`, tested). The MIT banner is kept; `vendor/LICENSE-chartjs.md` is the license from the same package. `vendor/README.md` records the provenance and the update steps.
+- **Why npm's build and not cdnjs's `chart.umd.min.js`:** the cdnjs `.min.js` is a separately re-minified build with no license banner (same version and the same exported API, but not the registry artifact). The npm file equals cdnjs's own `chart.umd.js`.
+- **Serving:** `index.html` has `<script src="vendor/chart.umd.js" integrity="sha384-…">`. `api/dashboard.py` reads the file at startup and serves it at `GET /vendor/chart.umd.js` (`ETag`/`304`, public, outside OpenAPI). Startup is refused unless the `src` is a plain relative `.js` path inside the page's directory and its `integrity` matches the file; any remote script is refused; only the named file is served (README, license and `.map` are 404). The Dockerfile copies `vendor/` into the image. `.gitattributes` marks `vendor/**` as `-text` so Git never converts its line endings.
+- **CSP:** only `script-src` changed, from `'sha256-<inline>' https://cdnjs.cloudflare.com/…/chart.umd.min.js` to `'sha256-<inline>' 'self'`. The inline-script hash is identical; there is no `unsafe-inline`, `unsafe-eval`, wildcard or remote script host. Everything else, including `style-src-attr 'none'` and `connect-src 'self'`, is unchanged.
+- **Tests:** full `pytest` **337 passed, 2 skipped, 0 failed** (was 293 + 2), of which `tests/api` is 214 (the dashboard serving and vendoring tests are 72, up from 28) and the Node tests are 158 (was 157). Ruff passes and the OpenAPI snapshot is unchanged.
+- **Browser (headless Edge, real CSP):** 54/54 end-to-end checks, 0 CSP violations, 0 JS errors, 0 integrity or source-map warnings; all overview charts drawn from the vendored file; `Chart.version` is `4.4.1`. The browser's own Resource Timing list shows only Google Fonts, `/vendor/chart.umd.js` and API calls: no CDN, no `.map`.
+- **Phase 4 and warehouse:** untouched. The warehouse fingerprint is identical to Step 0 after the full suite (35 relations, 2,112,759 rows); 15 live endpoint calls are identical to the baseline with the same ETags. The only Phase 4 code touched is the dashboard loader added in Step 1 (`api/dashboard.py`).
+- **Still external:** Google Fonts (`fonts.googleapis.com`, `fonts.gstatic.com`). Vendoring the fonts is optional follow-up work.
