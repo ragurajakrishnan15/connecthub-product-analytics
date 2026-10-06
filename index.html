@@ -390,6 +390,71 @@ body {
   .topbar-sub, .topbar-date { display: none; }
   .ai-msg { max-width: 95%; }
 }
+/* Layout helpers (the page's Content-Security-Policy allows no style attributes) */
+.mb-24 { margin-bottom: 24px; }
+.mb-20 { margin-bottom: 20px; }
+.mt-8 { margin-top: 8px; }
+.kpi-row.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.kpi-sub { font-size: 12px; color: var(--text-3); line-height: 1.4; }
+.kpi-change.flat { color: var(--text-2); background: var(--surface-3); }
+.tier-champion { color: var(--green); }
+.tier-healthy { color: var(--blue); }
+.tier-at-risk { color: var(--orange); }
+.tier-critical { color: var(--red); }
+.section-title { font-size: 15px; font-weight: 700; margin: 8px 0 14px; }
+.section-note { font-size: 12px; font-weight: 500; color: var(--text-3); margin-left: 8px; }
+.funnel-track { flex: 1; }
+.cell-strong { font-weight: 500; }
+.cell-muted { color: var(--text-3); }
+
+/* Panel states: loading, empty and error (every data panel uses these) */
+.panel-state {
+  display: none; padding: 28px 12px; text-align: center;
+  color: var(--text-2); font-size: 13px; line-height: 1.5;
+}
+.panel[data-state]:not([data-state="ready"]) > .panel-state { display: block; }
+.panel[data-state]:not([data-state="ready"]):not([data-keep]) > :not(.chart-title):not(.chart-subtitle):not(.panel-state) { display: none; }
+.panel[data-state="loading"] > .panel-state { color: var(--text-3); animation: pulse 1.5s infinite; }
+.panel[data-keep] > .panel-state { grid-column: 1 / -1; padding: 10px 12px; }
+.panel-state .state-title { font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.panel[data-state="error"] > .panel-state .state-title { color: var(--red); }
+.panel-state .state-id { font-size: 11px; color: var(--text-3); margin-top: 6px; font-family: 'JetBrains Mono', monospace; }
+.panel-state button {
+  margin-top: 10px; padding: 6px 14px; border-radius: 8px; cursor: pointer;
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--border); font-size: 12px;
+}
+.panel-state button:hover { border-color: var(--accent); }
+.panel-note { font-size: 11px; color: var(--text-3); margin-top: 12px; line-height: 1.5; }
+.topbar-pill.warn { background: var(--orange-bg); color: var(--orange); }
+
+/* Experiments */
+.exp-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }
+.exp-picker label { font-size: 12px; color: var(--text-3); font-weight: 500; }
+.select {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: inherit; min-width: 260px;
+}
+.select:focus { outline: none; border-color: var(--accent); }
+.exp-banner {
+  background: var(--orange-bg); color: var(--orange); border-radius: 10px;
+  padding: 10px 14px; font-size: 12px; margin-bottom: 16px; line-height: 1.5;
+}
+.tone-good { color: var(--green); }
+.tone-bad { color: var(--red); }
+.exp-card-value.small { font-size: 18px; }
+.exp-verdict.continue { background: var(--blue-bg); color: var(--blue); }
+.exp-verdict.hold { background: var(--orange-bg); color: var(--orange); }
+.exp-verdict.revert { background: var(--red-bg); color: var(--red); }
+.exp-verdict.unknown { background: var(--surface-3); color: var(--text-2); }
+
+/* AI Analyst placeholder */
+.ai-placeholder { padding: 40px 24px; text-align: center; }
+.ai-placeholder-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.ai-placeholder p { font-size: 13px; color: var(--text-2); max-width: 560px; margin: 0 auto; line-height: 1.6; }
+
+@media (max-width: 768px) {
+  .kpi-row.cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
 </style>
 </head>
 <body>
@@ -402,8 +467,8 @@ body {
     <span class="topbar-sub">Analytics</span>
   </div>
   <div class="topbar-right">
-    <span class="topbar-pill">Live</span>
-    <span class="topbar-date">Oct 2025 — Sep 2026</span>
+    <span class="topbar-pill" id="topbar-pill">Loading…</span>
+    <span class="topbar-date" id="topbar-date"></span>
   </div>
 </div>
 
@@ -421,203 +486,182 @@ body {
 
 <!-- ===== OVERVIEW TAB ===== -->
 <div class="tab-content active" id="tab-overview">
-  <div class="kpi-row">
-    <div class="kpi">
+  <div class="kpi-row panel" id="panel-kpis" data-keep>
+    <div class="kpi" data-kpi="mrr_usd">
       <div class="kpi-label">Monthly Recurring Revenue</div>
-      <div class="kpi-value">$2.4M</div>
-      <span class="kpi-change up">↑ 18.2% MoM</span>
+      <div class="kpi-value">—</div>
+      <span class="kpi-change"></span>
     </div>
-    <div class="kpi">
+    <div class="kpi" data-kpi="dau">
       <div class="kpi-label">Daily Active Users</div>
-      <div class="kpi-value">42,891</div>
-      <span class="kpi-change up">↑ 12.4%</span>
+      <div class="kpi-value">—</div>
+      <span class="kpi-change"></span>
     </div>
-    <div class="kpi">
+    <div class="kpi" data-kpi="week4_retention_rate">
       <div class="kpi-label">Week-4 Retention</div>
-      <div class="kpi-value">38.4%</div>
-      <span class="kpi-change up">↑ 4.8pp</span>
+      <div class="kpi-value">—</div>
+      <span class="kpi-change"></span>
     </div>
-    <div class="kpi">
+    <div class="kpi" data-kpi="ai_feature_adoption_rate">
       <div class="kpi-label">AI Feature Adoption</div>
-      <div class="kpi-value">47.2%</div>
-      <span class="kpi-change up">↑ 11.3%</span>
+      <div class="kpi-value">—</div>
+      <span class="kpi-change"></span>
     </div>
-    <div class="kpi">
+    <div class="kpi" data-kpi="activation_rate_14d">
       <div class="kpi-label">Activation Rate (14d)</div>
-      <div class="kpi-value">34.2%</div>
-      <span class="kpi-change up">↑ 2.1pp</span>
+      <div class="kpi-value">—</div>
+      <span class="kpi-change"></span>
     </div>
-    <div class="kpi">
+    <div class="kpi" data-kpi="nps">
       <div class="kpi-label">NPS</div>
-      <div class="kpi-value">47</div>
-      <span class="kpi-change up">↑ 3</span>
-    </div>
-  </div>
-
-  <div class="insight">
-    <div class="insight-icon">💡</div>
-    <div class="insight-text">
-      <strong>Key Insight:</strong> DAU grew 12.4% month-over-month, driven primarily by AI Assist adoption among Professional-tier workspaces. Week-2 retention improved from 41% to 46% after the guided setup flow launched. Recommendation: surface AI Assist as a post-call CTA within the first week.
+      <div class="kpi-value">—</div>
+      <span class="kpi-change"></span>
     </div>
   </div>
 
   <div class="chart-row">
-    <div class="chart-card">
+    <div class="chart-card panel" id="panel-dau">
       <div class="chart-title">Daily Active Users</div>
-      <div class="chart-subtitle">Trailing 12 months</div>
+      <div class="chart-subtitle" id="sub-dau"></div>
       <div class="chart-wrap"><canvas id="chart-dau"></canvas></div>
     </div>
-    <div class="chart-card">
+    <div class="chart-card panel" id="panel-adoption">
       <div class="chart-title">Feature Adoption</div>
-      <div class="chart-subtitle">Cumulative adoption by day since signup</div>
+      <div class="chart-subtitle" id="sub-adoption"></div>
       <div class="chart-wrap"><canvas id="chart-adoption"></canvas></div>
     </div>
   </div>
 
   <div class="chart-row">
-    <div class="chart-card">
+    <div class="chart-card panel" id="panel-revenue">
       <div class="chart-title">Revenue by Plan Tier</div>
-      <div class="chart-subtitle">Monthly breakdown</div>
+      <div class="chart-subtitle" id="sub-revenue"></div>
       <div class="chart-wrap"><canvas id="chart-revenue"></canvas></div>
     </div>
-    <div class="chart-card">
+    <div class="chart-card panel" id="panel-agent">
       <div class="chart-title">AI Agent Resolution Rate</div>
-      <div class="chart-subtitle">% of calls resolved without human escalation</div>
+      <div class="chart-subtitle" id="sub-agent"></div>
       <div class="chart-wrap"><canvas id="chart-agent"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-title">Voice of Customer <span class="section-note">trailing 12 months</span></div>
+  <div class="kpi-row cols-4">
+    <div class="kpi panel" id="voc-nps" data-keep>
+      <div class="kpi-label">NPS (12 months)</div>
+      <div class="kpi-value">—</div>
+      <div class="kpi-sub"></div>
+    </div>
+    <div class="kpi panel" id="voc-tickets" data-keep>
+      <div class="kpi-label">Support Tickets</div>
+      <div class="kpi-value">—</div>
+      <div class="kpi-sub"></div>
+    </div>
+    <div class="kpi panel" id="voc-ai_resolution" data-keep>
+      <div class="kpi-label">AI Resolution Rate</div>
+      <div class="kpi-value">—</div>
+      <div class="kpi-sub"></div>
+    </div>
+    <div class="kpi panel" id="voc-csat" data-keep>
+      <div class="kpi-label">Avg CSAT</div>
+      <div class="kpi-value">—</div>
+      <div class="kpi-sub"></div>
+    </div>
+  </div>
+  <div class="chart-row">
+    <div class="chart-card panel" id="panel-nps-trend">
+      <div class="chart-title">NPS Over Time</div>
+      <div class="chart-subtitle" id="sub-nps-trend"></div>
+      <div class="chart-wrap"><canvas id="chart-nps-trend"></canvas></div>
+    </div>
+    <div class="chart-card panel" id="panel-nps-plan">
+      <div class="chart-title">NPS by Plan Tier</div>
+      <div class="chart-subtitle" id="sub-nps-plan"></div>
+      <div class="chart-wrap"><canvas id="chart-nps-plan"></canvas></div>
     </div>
   </div>
 </div>
 
 <!-- ===== RETENTION TAB ===== -->
 <div class="tab-content" id="tab-retention">
-  <div class="insight">
-    <div class="insight-icon">💡</div>
-    <div class="insight-text">
-      <strong>Insight:</strong> The Jan-2026 cohort shows a 6pp improvement in week-4 retention vs. Dec-2025, coinciding with the onboarding revamp. Cohorts with >3 features adopted in week 1 retain at 2x the rate of single-feature users.
-    </div>
-  </div>
-  <div class="chart-card full" style="margin-bottom:24px;">
+  <div class="chart-card full panel" id="panel-cohorts">
     <div class="chart-title">Weekly Retention Cohort Matrix</div>
-    <div class="chart-subtitle">% of cohort returning in week N</div>
+    <div class="chart-subtitle" id="sub-cohorts"></div>
     <div class="heatmap-wrap" id="heatmap-container"></div>
-  </div>
-  <div class="chart-card full">
-    <div class="chart-title">Retention by Features Adopted (Week 1)</div>
-    <div class="chart-subtitle">More features in week 1 = higher retention</div>
-    <div class="chart-wrap"><canvas id="chart-feat-retention"></canvas></div>
   </div>
 </div>
 
 <!-- ===== FUNNEL TAB ===== -->
 <div class="tab-content" id="tab-funnel">
-  <div class="insight">
-    <div class="insight-icon">💡</div>
-    <div class="insight-text">
-      <strong>Insight:</strong> 68% of signups place their first call within 14 days, but only 41% try an AI feature. The drop from Call → AI Feature is the biggest leak. Recommendation: surface AI Assist as a post-call CTA.
-    </div>
-  </div>
-  <div class="chart-card full" style="margin-bottom:24px">
+  <div class="chart-card full panel mb-24" id="panel-funnel">
     <div class="chart-title">14-Day Activation Funnel</div>
-    <div class="chart-subtitle">New user milestones within first 14 days</div>
+    <div class="chart-subtitle" id="sub-funnel"></div>
     <div class="funnel" id="funnel-container"></div>
   </div>
-  <div class="chart-card full">
+  <div class="chart-card full panel" id="panel-milestones">
     <div class="chart-title">Time to Activation by Milestone</div>
-    <div class="chart-subtitle">Median days from signup to each milestone</div>
+    <div class="chart-subtitle" id="sub-milestones"></div>
     <div class="chart-wrap"><canvas id="chart-time-activation"></canvas></div>
   </div>
 </div>
 
 <!-- ===== EXPERIMENTS TAB ===== -->
 <div class="tab-content" id="tab-experiments">
-  <div class="chart-card full" style="margin-bottom:24px">
-    <div class="chart-title">Experiment: Onboarding V2</div>
-    <div class="chart-subtitle">Hypothesis: Surfacing AI features earlier increases 14-day activation rate by ≥5%</div>
-
-    <div class="exp-result" style="margin-top:16px">
-      <div class="exp-card">
-        <div class="exp-card-label">Control (variant_0)</div>
-        <div class="exp-card-value">31.8%</div>
-        <div class="exp-card-sub">n = 124,832</div>
-      </div>
-      <div class="exp-card">
-        <div class="exp-card-label">Treatment (variant_1)</div>
-        <div class="exp-card-value" style="color:var(--green)">34.2%</div>
-        <div class="exp-card-sub">n = 125,168</div>
-      </div>
-    </div>
-
-    <div class="exp-result">
-      <div class="exp-card">
-        <div class="exp-card-label">Relative Lift</div>
-        <div class="exp-card-value" style="color:var(--green)">+7.5%</div>
-        <div class="exp-card-sub">p-value: 0.0003</div>
-      </div>
-      <div class="exp-card">
-        <div class="exp-card-label">Bayesian P(Treatment Better)</div>
-        <div class="exp-card-value" style="color:var(--green)">99.2%</div>
-        <div class="exp-card-sub">Expected loss: 0.0002</div>
-      </div>
-    </div>
-
-    <div class="exp-result">
-      <div class="exp-card">
-        <div class="exp-card-label">SRM Check</div>
-        <div class="exp-card-value" style="color:var(--green);font-size:18px">✓ Passed</div>
-        <div class="exp-card-sub">Ratio: 0.4993 (p=0.87)</div>
-      </div>
-      <div class="exp-card">
-        <div class="exp-card-label">Revenue Guardrail</div>
-        <div class="exp-card-value" style="color:var(--green);font-size:18px">✓ Passed</div>
-        <div class="exp-card-sub">No significant decrease</div>
-      </div>
-    </div>
-
-    <div class="exp-verdict ship">SHIP — Significant lift of +7.5% with 99.2% Bayesian confidence. All guardrails passed.</div>
+  <div class="exp-picker panel" id="panel-exp-list" data-keep>
+    <label for="exp-select">Experiment</label>
+    <select id="exp-select" class="select" disabled>
+      <option>Loading experiments…</option>
+    </select>
   </div>
 
-  <div class="chart-card full">
+  <div class="chart-card full panel mb-24" id="panel-exp">
+    <div class="chart-title" id="exp-title">Experiment</div>
+    <div class="chart-subtitle" id="exp-sub"></div>
+    <div id="exp-body"></div>
+  </div>
+
+  <div class="chart-card full panel" id="panel-exp-curve">
     <div class="chart-title">Cumulative Conversion Over Time</div>
-    <div class="chart-subtitle">Control vs Treatment activation rate by day</div>
+    <div class="chart-subtitle" id="sub-exp-curve"></div>
     <div class="chart-wrap"><canvas id="chart-exp-time"></canvas></div>
   </div>
 </div>
 
 <!-- ===== HEALTH TAB ===== -->
 <div class="tab-content" id="tab-health">
-  <div class="kpi-row" style="margin-bottom:20px">
-    <div class="kpi">
+  <div class="kpi-row mb-20 panel" id="panel-tiers" data-keep>
+    <div class="kpi" data-tier="Champion">
       <div class="kpi-label">Champion</div>
-      <div class="kpi-value" style="color:var(--green)">8,420</div>
-      <span class="kpi-change up">16.8%</span>
+      <div class="kpi-value tier-champion">—</div>
+      <span class="kpi-change up"></span>
     </div>
-    <div class="kpi">
+    <div class="kpi" data-tier="Healthy">
       <div class="kpi-label">Healthy</div>
-      <div class="kpi-value" style="color:var(--blue)">22,140</div>
-      <span class="kpi-change up">44.3%</span>
+      <div class="kpi-value tier-healthy">—</div>
+      <span class="kpi-change up"></span>
     </div>
-    <div class="kpi">
+    <div class="kpi" data-tier="At Risk">
       <div class="kpi-label">At Risk</div>
-      <div class="kpi-value" style="color:var(--orange)">14,290</div>
-      <span class="kpi-change down">28.6%</span>
+      <div class="kpi-value tier-at-risk">—</div>
+      <span class="kpi-change down"></span>
     </div>
-    <div class="kpi">
+    <div class="kpi" data-tier="Critical">
       <div class="kpi-label">Critical</div>
-      <div class="kpi-value" style="color:var(--red)">5,150</div>
-      <span class="kpi-change down">10.3%</span>
+      <div class="kpi-value tier-critical">—</div>
+      <span class="kpi-change down"></span>
     </div>
   </div>
 
-  <div class="chart-card full" style="margin-bottom:24px">
+  <div class="chart-card full panel mb-24" id="panel-health-dist">
     <div class="chart-title">Health Score Distribution</div>
-    <div class="chart-subtitle">Weighted composite: DAU/seats, features adopted, AI usage, support tickets, NPS</div>
+    <div class="chart-subtitle" id="sub-health-dist"></div>
     <div class="chart-wrap"><canvas id="chart-health-dist"></canvas></div>
   </div>
 
-  <div class="chart-card full">
+  <div class="chart-card full panel" id="panel-health-table">
     <div class="chart-title">Top At-Risk Workspaces</div>
-    <div class="chart-subtitle">Prioritized for outreach — sorted by health score ascending</div>
-    <table class="health-table" style="margin-top:8px">
+    <div class="chart-subtitle" id="sub-health-table"></div>
+    <table class="health-table mt-8">
       <thead><tr><th>Workspace</th><th>Plan</th><th>Health Score</th><th>Seats</th><th>DAU/Seats</th><th>AI Usage</th><th>Status</th></tr></thead>
       <tbody id="health-table-body"></tbody>
     </table>
@@ -628,23 +672,11 @@ body {
 <div class="tab-content" id="tab-ai">
   <div class="ai-section">
     <div class="ai-header">
-      <div class="ai-dot"></div>
       <span class="ai-header-text">ConnectHub AI Analyst</span>
-      <span class="ai-header-sub">Ask anything about the product data</span>
     </div>
-    <div class="ai-messages" id="ai-messages">
-      <div class="ai-msg ai">Hi! I'm the ConnectHub AI Analyst. I have full context on the product metrics, retention cohorts, experiments, and customer health data. Ask me anything — why retention dropped, which features drive activation, how experiments performed, or what's driving churn risk.</div>
-    </div>
-    <div class="ai-suggestions" id="ai-suggestions">
-      <button class="ai-chip">Why did retention improve this quarter?</button>
-      <button class="ai-chip">Which features drive the most retention?</button>
-      <button class="ai-chip">Should we ship the onboarding experiment?</button>
-      <button class="ai-chip">What's driving churn in Enterprise accounts?</button>
-      <button class="ai-chip">How does AI Assist adoption correlate with NPS?</button>
-    </div>
-    <div class="ai-input-row">
-      <input class="ai-input" id="ai-input" placeholder="Ask about metrics, retention, experiments...">
-      <button class="ai-send" id="ai-send">Send</button>
+    <div class="ai-placeholder">
+      <div class="ai-placeholder-title">AI Analyst coming in Phase 6</div>
+      <p>The analyst will answer questions from the same API data shown on this dashboard, through a server-side endpoint that keeps its key out of the browser. Until then this tab shows no answers, so nothing here can be mistaken for real analysis.</p>
     </div>
   </div>
 </div>
@@ -652,16 +684,10 @@ body {
 </div><!-- /main -->
 
 <div class="built-by">
-  Built by <strong>Ragu</strong> · <a href="https://github.com/yourusername/connecthub-product-analytics">View Source on GitHub</a>
+  Built by <strong>Ragu</strong>
 </div>
 
 <script>
-// The Content-Security-Policy blocks inline style attributes in generated markup (innerHTML),
-// but not styles set through the DOM, so generated markup carries data-style and this applies it.
-function applyStyles(root) {
-  root.querySelectorAll('[data-style]').forEach(el => { el.style.cssText = el.dataset.style; });
-}
-
 // ===== DATA LAYER: BEGIN =====
 // The only code that talks to the analytics API (PHASE_5_PLAN.md section 3). Everything between
 // the BEGIN and END markers is run by tests/dashboard/data_layer.test.mjs in Node with a fake
@@ -1064,406 +1090,728 @@ const api = (() => {
   }
 })();
 
-// ===== TAB NAVIGATION =====
+// ===== PANEL MODELS: BEGIN =====
+// Pure functions: API response in, display-ready model out. No DOM, no Chart, no fetch (tested in Node by
+// tests/dashboard/panel_models.test.mjs). Every number shown comes from the API response passed in;
+// what is defined here is wording, colors and unit conversion.
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const FEATURE_LABELS = {
+  ai_assist: 'AI Assist', ai_voice_agent: 'AI Voice Agent', call_recording: 'Call Recording',
+  integrations: 'Integrations', sms: 'SMS', voice_calls: 'Voice Calls', whatsapp: 'WhatsApp',
+};
+const STAGE_LABELS = {
+  signed_up: 'Signed Up', placed_first_call: 'Placed First Call',
+  call_and_ai: 'Call + AI Feature', activated_14d: 'Activated (14d)',
+};
+const MILESTONE_LABELS = {
+  placed_first_call: 'First Call', used_ai_feature: 'AI Feature Used',
+  invited_team_member: 'Team Invited', activated_14d: 'Activated',
+};
+const METRIC_LABELS = {
+  activated_14d: ['14-day activation rate', 'pct'],
+  avg_session_minutes_14d: ['Avg session minutes (14d)', 'minutes'],
+  revenue_60d: ['Revenue per user (60d)', 'usd2'],
+};
+const SERIES_COLORS = ['#6366f1', '#34d399', '#fbbf24', '#f87171', '#60a5fa', '#a78bfa', '#f472b6'];
+const PLAN_COLORS = { Enterprise: '#6366f1', Professional: '#818cf8', Essentials: '#a5b4fc', Free: '#374151' };
+const TIER_COLORS = { Critical: '#f87171', 'At Risk': '#fbbf24', Healthy: '#60a5fa', Champion: '#34d399' };
+const TIER_ORDER = ['Champion', 'Healthy', 'At Risk', 'Critical'];
+const TIER_CLASS = { Critical: 'critical', 'At Risk': 'at-risk', Healthy: 'healthy', Champion: 'champion' };
+const TIER_VAR = { Critical: 'var(--red)', 'At Risk': 'var(--orange)', Healthy: 'var(--blue)', Champion: 'var(--green)' };
+const VERDICT_CLASS = { SHIP: 'ship', CONTINUE: 'continue', HOLD: 'hold', REVERT: 'revert' };
+
+function titleCase(id) {
+  return String(id || '').split('_').filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+}
+function parseIso(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || '');
+  return m ? { y: Number(m[1]), m: Number(m[2]), d: Number(m[3]) } : null;
+}
+function formatDay(s) { const p = parseIso(s); return p ? MONTH_NAMES[p.m - 1] + ' ' + p.d + ', ' + p.y : '—'; }
+function formatMonth(s) { const p = parseIso(s); return p ? MONTH_NAMES[p.m - 1] + ' ' + p.y : '—'; }
+function shiftDays(iso, days) {
+  const p = parseIso(iso);
+  return new Date(Date.UTC(p.y, p.m - 1, p.d) + days * 86400000).toISOString().slice(0, 10);
+}
+// The last `days` days ending at the data end, never starting before the data does.
+function trailingWindow(dataEnd, days, dataStart) {
+  const start = shiftDays(dataEnd, -(days - 1));
+  return { start: dataStart && start < dataStart ? dataStart : start, end: dataEnd };
+}
+
+const EM_DASH = '—';
+const isNum = v => typeof v === 'number' && Number.isFinite(v);
+const integer = v => (isNum(v) ? Math.round(v).toLocaleString('en-US') : EM_DASH);
+const percent = (v, digits = 1) => (isNum(v) ? (v * 100).toFixed(digits) + '%' : EM_DASH);
+const scaled = (v, factor = 100) => (isNum(v) ? v * factor : null);       // chart value or a gap
+function formatP(p) { return !isNum(p) ? EM_DASH : p < 0.001 ? '<0.001' : p.toFixed(3); }
+
+function formatValue(value, unit) {
+  if (!isNum(value)) return EM_DASH;
+  if (unit === 'usd') return Math.abs(value) >= 1e6 ? '$' + (value / 1e6).toFixed(2) + 'M' : '$' + integer(value);
+  if (unit === 'users') return integer(value);
+  if (unit === 'fraction') return percent(value);
+  if (unit === 'nps_points') return value.toFixed(1);
+  return String(value);
+}
+
+// {text, dir: up|down|flat|none}: percentage points for rates, % for money and counts, points for NPS.
+function formatChange(kpi) {
+  const none = { text: EM_DASH, dir: 'none' };
+  if (!kpi) return none;
+  let amount, suffix;
+  if (kpi.unit === 'fraction') { amount = scaled(kpi.change_abs); suffix = 'pp'; }
+  else if (kpi.unit === 'nps_points') { amount = kpi.change_abs; suffix = ''; }
+  else { amount = scaled(kpi.change_rel); suffix = '%'; }
+  if (!isNum(amount)) return none;
+  const shown = Math.abs(amount).toFixed(1);
+  if (Number(shown) === 0) return { text: '→ 0.0' + suffix, dir: 'flat' };
+  return { text: (amount > 0 ? '↑ ' : '↓ ') + shown + suffix, dir: amount > 0 ? 'up' : 'down' };
+}
+function kpiTooltip(kpi) {
+  if (!kpi) return '';
+  const range = p => (p ? formatDay(p.start) + (p.end !== p.start ? ' – ' + formatDay(p.end) : '') : EM_DASH);
+  return [kpi.definition, 'Current: ' + range(kpi.period), 'Previous: ' + range(kpi.previous_period),
+          kpi.note].filter(Boolean).join('\n');
+}
+
+function topbarModel(meta) {
+  const run = meta.last_successful_run;
+  return {
+    pill: run && run.finished_at ? 'Data as of ' + formatDay(run.finished_at) : 'No validated pipeline run',
+    range: formatDay(meta.data_start) + ' — ' + formatDay(meta.data_end)
+      + (meta.dataset && meta.dataset.synthetic ? ' · ' + meta.dataset.label + ' data' : ''),
+  };
+}
+
+function engagementModel(data) {
+  const points = data.points || [];
+  const partial = points.some(p => !p.is_complete);
+  return {
+    labels: points.map(p => formatMonth(p.period_start) + (p.is_complete ? '' : '*')),
+    values: points.map(p => p.avg_dau),
+    subtitle: 'Average daily active users per month' + (partial ? ' · * partial month' : ''),
+  };
+}
+function adoptionModel(data) {
+  const curves = data.curves || [];
+  return {
+    labels: (curves[0] ? curves[0].points : []).map(p => 'Day ' + p.day),
+    datasets: curves.map((c, i) => ({
+      label: FEATURE_LABELS[c.feature] || titleCase(c.feature), isAi: !!c.is_ai,
+      color: SERIES_COLORS[i % SERIES_COLORS.length],
+      data: c.points.map(p => scaled(p.observed_rate)),
+    })),
+    subtitle: 'Share of users who used each feature by day since signup (only users observed that long)',
+  };
+}
+function revenueModel(data, planNames) {
+  const series = data.series || [];
+  const plans = (planNames && planNames.length ? planNames : Object.keys((series[0] || {}).by_plan || {})).slice().reverse();
+  return {
+    labels: series.map(s => formatMonth(s.month)),
+    datasets: plans.map(plan => ({
+      label: plan, color: PLAN_COLORS[plan] || '#818cf8',
+      data: series.map(s => scaled(s.by_plan && s.by_plan[plan] ? s.by_plan[plan].mrr_usd : 0, 0.001)),
+    })),
+    subtitle: 'Monthly recurring revenue by plan tier ($K)',
+  };
+}
+function resolutionModel(data) {
+  const series = data.series || [];
+  return {
+    labels: series.map(s => formatMonth(s.period_start)),
+    values: series.map(s => scaled(s.ai_resolution_rate)),
+    subtitle: '% of AI-agent calls resolved without human escalation',
+  };
+}
+function supportCards(data) {
+  const t = data.tickets || {};
+  const a = data.ai_agent || {};
+  return {
+    tickets: { value: integer(t.created), sub: integer(t.resolved) + ' resolved · ' + (isNum(t.tickets_per_1k_active_user_days) ? t.tickets_per_1k_active_user_days.toFixed(1) : EM_DASH) + ' per 1K active user-days' },
+    ai_resolution: { value: percent(a.ai_resolution_rate), sub: integer(a.calls) + ' calls · ' + percent(a.escalation_rate) + ' escalated' },
+    csat: { value: isNum(a.avg_csat) ? a.avg_csat.toFixed(2) : EM_DASH, sub: isNum(a.avg_handle_time_seconds) ? 'Avg handle time ' + (a.avg_handle_time_seconds / 60).toFixed(1) + ' min' : '' },
+  };
+}
+function npsModel(data) {
+  const s = data.summary || {};
+  const series = data.series || [];
+  const byPlan = data.by_plan || [];
+  return {
+    card: {
+      value: formatValue(s.nps, 'nps_points'),
+      sub: isNum(s.nps)
+        ? '±' + s.margin_of_error_95.toFixed(1) + ' · ' + integer(s.responses) + ' responses · ' + percent(s.promoter_share, 0) + ' promoters, ' + percent(s.detractor_share, 0) + ' detractors'
+        : (s.suppressed_reason || 'Not enough responses') + ' (' + integer(s.responses) + ' responses)',
+    },
+    trend: { labels: series.map(p => formatMonth(p.period_start) + (p.is_complete ? '' : '*')), values: series.map(p => (isNum(p.nps) ? p.nps : null)) },
+    byPlan: { labels: byPlan.map(p => p.plan_tier), values: byPlan.map(p => (isNum(p.nps) ? p.nps : null)), responses: byPlan.map(p => p.responses) },
+  };
+}
+
+// Same thresholds the page always used for the cell colors (presentation only).
+function heatColor(pct) {
+  const intensity = Math.max(0.08, pct / 100);
+  const rgb = pct >= 50 ? '99,102,241' : pct >= 30 ? '96,165,250' : '251,191,36';
+  return 'rgba(' + rgb + ',' + intensity + ')';
+}
+function cohortModel(data) {
+  const weeks = data.weeks || [];
+  const cohorts = data.cohorts || [];
+  const years = new Set(cohorts.map(c => (parseIso(c.cohort_week) || {}).y));
+  return {
+    weeks: weeks.map(w => 'W' + w),
+    rows: cohorts.map(c => {
+      const p = parseIso(c.cohort_week);
+      return {
+        label: p ? MONTH_NAMES[p.m - 1] + ' ' + p.d + (years.size > 1 ? ", '" + String(p.y).slice(2) : '') : EM_DASH,
+        size: c.cohort_size,
+        cells: weeks.map((w, i) => { const cell = c.cells[i]; return cell && isNum(cell.retention_rate) ? cell.retention_rate * 100 : null; }),
+      };
+    }),
+    subtitle: '% of each weekly signup cohort active in week N · as of ' + formatDay(data.as_of) + ' · hover a row for cohort size',
+  };
+}
+
+function funnelModel(data) {
+  const stages = data.funnel || [];
+  const top = stages[0] ? stages[0].users : 0;
+  return {
+    stages: stages.map(s => ({
+      label: STAGE_LABELS[s.stage] || titleCase(s.stage), users: integer(s.users), ofSignups: percent(s.rate_of_signups, 0),
+      width: top > 0 ? (s.users / top) * 100 : 0,
+    })),
+    subtitle: integer(data.signups) + ' signups through ' + formatDay(data.complete_windows_through) + ' (the last day with a complete 14-day window)',
+  };
+}
+function milestoneModel(data) {
+  const rows = data.time_to_milestone || [];
+  return {
+    labels: rows.map(r => MILESTONE_LABELS[r.milestone] || titleCase(r.milestone)),
+    values: rows.map(r => (isNum(r.median_days) ? r.median_days : null)),
+    p75: rows.map(r => r.p75_days), reached: rows.map(r => r.users_reached),
+    subtitle: 'Median days from signup to each milestone, for users who reached it',
+  };
+}
+
+function experimentOptions(data) {
+  const list = (data.experiments || []).map(e => ({
+    id: e.experiment.experiment_id, kind: e.experiment.kind,
+    label: e.experiment.experiment_id + (e.experiment.kind === 'aa' ? ' (A/A check)' : ''),
+  }));
+  const preferred = list.find(o => o.kind === 'ab') || list[0];
+  return { options: list, defaultId: preferred ? preferred.id : null };
+}
+function formatMetric(v, kind) {
+  if (!isNum(v)) return EM_DASH;
+  if (kind === 'pct') return percent(v);
+  if (kind === 'usd2') return '$' + v.toFixed(2);
+  if (kind === 'minutes') return v.toFixed(1) + ' min';
+  return v.toFixed(2);
+}
+function experimentModel(detail) {
+  const exp = detail.experiment;
+  const ev = detail.evaluation;
+  const model = {
+    id: exp.experiment_id, kind: exp.kind, isAA: exp.kind === 'aa', status: detail.status,
+    hypothesis: exp.hypothesis || exp.description || '',
+    window: formatDay(exp.start) + ' – ' + formatDay(exp.end),
+    evaluation: ev || null, cards: [], verdict: null, curve: null,
+  };
+  const curves = detail.activation_curve || [];
+  model.curve = {
+    labels: ((curves[0] || {}).points || []).map(p => 'Day ' + p.day),
+    datasets: curves.map((c, i) => ({
+      label: c.variant === 'variant_0' ? 'Control' : c.variant === 'variant_1' ? 'Treatment' : c.variant,
+      color: c.variant === 'variant_0' ? '#9898b0' : SERIES_COLORS[1], dashed: c.variant === 'variant_0',
+      data: c.points.map(p => scaled(p.activation_rate)),
+    })),
+  };
+  if (!ev) return model;
+  const p = ev.primary;
+  const n = ev.sample_sizes || {};
+  const bayes = ev.bayesian || {};
+  const srm = ev.srm || {};
+  const pp = v => (isNum(v) ? (v * 100).toFixed(1) : EM_DASH);
+  const sig = p.significant ? (p.relative_lift > 0 ? 'good' : 'bad') : '';
+  const metric = (METRIC_LABELS[p.metric] || [titleCase(p.metric), 'pct'])[0];
+  model.cards = [
+    { label: 'Control (' + metric + ')', value: percent(p.control_rate), sub: 'n = ' + integer(n.control_14d_window) + ' (' + integer(n.control) + ' assigned)', tone: '' },
+    { label: 'Treatment (' + metric + ')', value: percent(p.treatment_rate), sub: 'n = ' + integer(n.treatment_14d_window) + ' (' + integer(n.treatment) + ' assigned)', tone: sig },
+    { label: 'Relative Lift', value: (p.relative_lift > 0 ? '+' : '') + percent(p.relative_lift), sub: 'p-value: ' + formatP(p.p_value) + ' · 95% CI ' + pp(p.ci_lower) + ' to ' + pp(p.ci_upper) + ' pp', tone: sig },
+    { label: 'Bayesian P(Treatment Better)', value: percent(bayes.prob_treatment_better), sub: 'Expected loss: ' + (isNum(bayes.expected_loss) ? bayes.expected_loss.toFixed(4) : EM_DASH), tone: '' },
+    { label: 'SRM Check', value: srm.detected ? '✗ Detected' : '✓ Passed', small: true, sub: 'Ratio ' + (isNum(srm.actual_ratio) ? srm.actual_ratio.toFixed(4) : EM_DASH) + ' (p=' + formatP(srm.p_value) + ')', tone: srm.detected ? 'bad' : 'good' },
+  ].concat((ev.guardrails || []).map(g => {
+    const info = METRIC_LABELS[g.metric] || [titleCase(g.metric), 'num'];
+    return {
+      label: 'Guardrail: ' + info[0], value: g.failed ? '✗ Failed' : '✓ Passed', small: true, tone: g.failed ? 'bad' : 'good',
+      sub: formatMetric(g.control_mean, info[1]) + ' → ' + formatMetric(g.treatment_mean, info[1]) + ' (' + (g.relative_lift > 0 ? '+' : '') + percent(g.relative_lift) + ', p=' + formatP(g.p_value) + ')',
+    };
+  }));
+  model.verdict = { code: ev.decision_code, text: ev.decision_text, cls: VERDICT_CLASS[ev.decision_code] || 'unknown' };
+  return model;
+}
+
+function healthModel(data) {
+  const byTier = {};
+  (data.tiers || []).forEach(t => { byTier[t.tier] = t; });
+  const hist = data.histogram || [];
+  return {
+    cards: TIER_ORDER.map(name => ({
+      tier: name, count: byTier[name] ? integer(byTier[name].workspaces) : EM_DASH,
+      share: byTier[name] ? percent(byTier[name].share) : '',
+    })),
+    hist: { labels: hist.map(b => b.bin_start + '–' + b.bin_end), values: hist.map(b => b.workspaces), colors: hist.map(b => TIER_COLORS[b.tier] || '#818cf8') },
+    subtitle: 'Percentile-rank composite of ' + Object.keys(data.weights || {}).length + ' weighted metrics · '
+      + integer(data.workspaces) + ' workspaces · snapshot ' + formatDay(data.snapshot_date),
+  };
+}
+function workspaceRows(page) {
+  return (page.items || []).map(w => ({
+    name: w.workspace_name, plan: w.plan_tier,
+    score: isNum(w.health_score) ? w.health_score.toFixed(1) : EM_DASH, scorePct: isNum(w.health_score) ? Math.max(0, Math.min(100, w.health_score)) : 0,
+    seats: integer(w.seat_count), dauSeats: percent(w.dau_over_seats_ratio, 0),
+    ai: w.used_ai_feature_30d ? 'Active' + (isNum(w.pct_ai_calls_automated) ? ' · ' + percent(w.pct_ai_calls_automated, 0) + ' automated' : '') : 'None',
+    status: w.risk_tier, statusClass: TIER_CLASS[w.risk_tier] || 'unknown', barColor: TIER_VAR[w.risk_tier] || 'var(--text-3)',
+  }));
+}
+// ===== PANEL MODELS: END =====
+
+// ===== PANELS =====
+const byId = id => document.getElementById(id);
+function node(tag, className, text) {
+  const n = document.createElement(tag);
+  if (className) n.className = className;
+  if (text !== undefined && text !== null) n.textContent = text;
+  return n;
+}
+function clearNode(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+
+function drawChart(canvasId, config) {
+  if (typeof Chart === 'undefined') throw new Error('The chart library could not be loaded.');
+  const canvas = byId(canvasId);
+  const old = Chart.getChart(canvas);
+  if (old) old.destroy();
+  return new Chart(canvas, config);
+}
+
+if (typeof Chart !== 'undefined') {            // a blocked CDN must not stop the rest of the page
+  Chart.defaults.color = '#9898b0';
+  Chart.defaults.borderColor = '#2a2a40';
+  Chart.defaults.font.family = "'Inter', sans-serif";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.pointStyleWidth = 8;
+}
+const lineStyle = color => ({ borderColor: color, tension: 0.3, borderWidth: 2, pointRadius: 2, spanGaps: true });
+const noLegend = { legend: { display: false } };
+
+// A panel is one or more containers fed by one request. It shows loading / empty / error itself
+// (with a Retry button and the request id) and calls render(result) when data arrives.
+function definePanel({ containers, load, render, onState }) {
+  const els = containers.map(byId);
+  let hasNote = false;                         // the API's caveats are shown once per panel
+  const stateEls = els.map(el => {
+    const s = node('div', 'panel-state');
+    s.setAttribute('role', 'status');
+    el.appendChild(s);
+    if (!hasNote && !el.hasAttribute('data-keep')) { el.appendChild(node('div', 'panel-note')); hasNote = true; }
+    return s;
+  });
+  const loader = createPanelLoader(apply);
+  function apply(s) {
+    els.forEach((el, i) => {
+      el.setAttribute('data-state', s.state);
+      const box = stateEls[i];
+      clearNode(box);
+      const note = el.querySelector(':scope > .panel-note');
+      if (note) note.textContent = '';
+      if (s.state === 'loading') box.textContent = 'Loading…';
+      else if (s.state === 'empty') box.textContent = s.message || 'No data for this period.';
+      else if (s.state === 'error') {
+        box.appendChild(node('div', 'state-title', s.message.title));
+        box.appendChild(node('div', '', s.message.message));
+        if (s.message.requestId) box.appendChild(node('div', 'state-id', 'request ' + s.message.requestId));
+        const retry = node('button', '', 'Retry');
+        retry.type = 'button';
+        retry.addEventListener('click', start);
+        box.appendChild(retry);
+      }
+    });
+    if (s.state === 'ready') {
+      render(s.result);                       // may throw: the loader turns that into the error state
+      const caveats = (s.result.meta.caveats || []).join(' ');
+      els.forEach(el => { const note = el.querySelector(':scope > .panel-note'); if (note) note.textContent = caveats; });
+    }
+    if (onState) onState(s);
+  }
+  function start() { return loader.run(load); }
+  return { start, show: apply };
+}
+
+function needApi() {
+  if (!api) throw new ApiError('config', 'The dashboard must be opened through the API (for example http://127.0.0.1:8000/), not from a file.');
+  return api;
+}
+let metaRequest = null;
+function loadMeta() {                          // one /api/meta call shared by every panel that needs the data window
+  if (!metaRequest) metaRequest = needApi().meta({}).catch(err => { metaRequest = null; throw err; });
+  return metaRequest;
+}
+const YEAR_DAYS = 365;
+async function yearWindow() {
+  const meta = (await loadMeta()).data;
+  return trailingWindow(meta.data_end, YEAR_DAYS, meta.data_start);
+}
+
+// ----- top bar
+const topbar = createPanelLoader(s => {
+  const pill = byId('topbar-pill');
+  pill.classList.toggle('warn', s.state === 'error');
+  if (s.state === 'loading') pill.textContent = 'Loading…';
+  else if (s.state === 'error') { pill.textContent = 'API unavailable'; pill.title = s.message.title + ': ' + s.message.message; }
+  else if (s.state === 'ready') {
+    const m = topbarModel(s.result.data);
+    pill.textContent = m.pill; pill.title = '';
+    byId('topbar-date').textContent = m.range;
+  }
+});
+
+// ----- overview
+function setKpi(card, kpi, valueText) {
+  card.querySelector('.kpi-value').textContent = valueText;
+}
+const kpiPanel = definePanel({
+  containers: ['panel-kpis'],
+  load: signal => needApi().overview({}, { signal }),
+  render: r => {
+    document.querySelectorAll('#panel-kpis [data-kpi]').forEach(card => {
+      const kpi = r.data.kpis[card.dataset.kpi];
+      setKpi(card, kpi, kpi ? formatValue(kpi.value, kpi.unit) : EM_DASH);
+      const change = formatChange(kpi);
+      const badge = card.querySelector('.kpi-change');
+      badge.textContent = change.text;
+      badge.className = 'kpi-change ' + (change.dir === 'none' ? '' : change.dir);
+      card.title = kpiTooltip(kpi);
+    });
+  },
+});
+
+const dauPanel = definePanel({
+  containers: ['panel-dau'],
+  load: signal => needApi().engagement({ granularity: 'month' }, { signal }),
+  render: r => {
+    const m = engagementModel(r.data);
+    byId('sub-dau').textContent = m.subtitle;
+    drawChart('chart-dau', {
+      type: 'line',
+      data: { labels: m.labels, datasets: [{ label: 'Avg DAU', data: m.values, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.08)', fill: true, tension: 0.35, borderWidth: 2, pointRadius: 3 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: noLegend },
+    });
+  },
+});
+
+const adoptionPanel = definePanel({
+  containers: ['panel-adoption'],
+  load: signal => needApi().featureAdoption({}, { signal }),
+  render: r => {
+    const m = adoptionModel(r.data);
+    byId('sub-adoption').textContent = m.subtitle;
+    drawChart('chart-adoption', {
+      type: 'line',
+      data: { labels: m.labels, datasets: m.datasets.map(d => ({ label: d.label, data: d.data, ...lineStyle(d.color), pointRadius: 0, pointHoverRadius: 4, borderDash: d.isAi ? [] : [4, 3] })) },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { x: { ticks: { maxTicksLimit: 10 } }, y: { ticks: { callback: v => v + '%' } } },
+        plugins: { tooltip: { callbacks: { label: c => c.dataset.label + ': ' + (c.parsed.y === null ? EM_DASH : c.parsed.y.toFixed(1) + '%') } } },
+      },
+    });
+  },
+});
+
+const revenuePanel = definePanel({
+  containers: ['panel-revenue'],
+  load: async signal => {
+    const meta = (await loadMeta()).data;
+    return needApi().revenue({ group_by: 'plan_tier' }, { signal }).then(r => { r.planNames = (meta.plan_tiers || []).map(p => p.name); return r; });
+  },
+  render: r => {
+    const m = revenueModel(r.data, r.planNames);
+    byId('sub-revenue').textContent = m.subtitle;
+    drawChart('chart-revenue', {
+      type: 'bar',
+      data: { labels: m.labels, datasets: m.datasets.map(d => ({ label: d.label, data: d.data, backgroundColor: d.color, borderRadius: 4 })) },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { x: { stacked: true, ticks: { maxTicksLimit: 12 } }, y: { stacked: true, ticks: { callback: v => '$' + v + 'K' } } },
+        plugins: { tooltip: { callbacks: { label: c => c.dataset.label + ': $' + c.parsed.y.toFixed(1) + 'K' } } },
+      },
+    });
+  },
+});
+
+// One 12-month support request feeds the AI-resolution chart and the support cards; one NPS request
+// feeds the NPS card and its two charts.
+const supportPanel = definePanel({
+  containers: ['panel-agent', 'voc-tickets', 'voc-ai_resolution', 'voc-csat'],
+  load: async signal => { const w = await yearWindow(); return needApi().support({ start: w.start, end: w.end, granularity: 'month' }, { signal }); },
+  render: r => {
+    const m = resolutionModel(r.data);
+    byId('sub-agent').textContent = m.subtitle + ' · ' + formatDay(r.meta.effective_range.start) + ' – ' + formatDay(r.meta.effective_range.end);
+    drawChart('chart-agent', {
+      type: 'line',
+      data: { labels: m.labels, datasets: [{ label: 'AI Resolution Rate', data: m.values, borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.08)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 3, spanGaps: true }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: noLegend, scales: { y: { ticks: { callback: v => v + '%' } } } },
+    });
+    const cards = supportCards(r.data);
+    for (const key of Object.keys(cards)) {
+      const card = byId('voc-' + key);
+      card.querySelector('.kpi-value').textContent = cards[key].value;
+      card.querySelector('.kpi-sub').textContent = cards[key].sub;
+    }
+  },
+});
+
+const npsPanel = definePanel({
+  containers: ['voc-nps', 'panel-nps-trend', 'panel-nps-plan'],
+  load: async signal => { const w = await yearWindow(); return needApi().nps({ start: w.start, end: w.end, granularity: 'month' }, { signal }); },
+  render: r => {
+    const m = npsModel(r.data);
+    const range = formatDay(r.meta.effective_range.start) + ' – ' + formatDay(r.meta.effective_range.end);
+    byId('sub-nps-trend').textContent = 'Net Promoter Score per month · * partial month';
+    byId('sub-nps-plan').textContent = 'Over ' + range + ' · NPS is blank below ' + r.data.min_responses + ' responses';
+    const card = byId('voc-nps');
+    card.querySelector('.kpi-value').textContent = m.card.value;
+    card.querySelector('.kpi-sub').textContent = m.card.sub + ' · ' + range;
+    drawChart('chart-nps-trend', {
+      type: 'line',
+      data: { labels: m.trend.labels, datasets: [{ label: 'NPS', data: m.trend.values, borderColor: '#818cf8', backgroundColor: 'rgba(129,140,248,0.08)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 3, spanGaps: true }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: noLegend },
+    });
+    drawChart('chart-nps-plan', {
+      type: 'bar',
+      data: { labels: m.byPlan.labels, datasets: [{ label: 'NPS', data: m.byPlan.values, backgroundColor: m.byPlan.labels.map(p => PLAN_COLORS[p] || '#818cf8'), borderRadius: 6 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { afterLabel: c => integer(m.byPlan.responses[c.dataIndex]) + ' responses' } } },
+      },
+    });
+  },
+});
+
+// ----- retention
+const cohortPanel = definePanel({
+  containers: ['panel-cohorts'],
+  load: signal => needApi().cohorts({}, { signal }),
+  render: r => {
+    const m = cohortModel(r.data);
+    byId('sub-cohorts').textContent = m.subtitle;
+    const wrap = byId('heatmap-container');
+    clearNode(wrap);
+    const table = node('table', 'heatmap');
+    const head = node('tr');
+    head.appendChild(node('th'));
+    m.weeks.forEach(w => head.appendChild(node('th', '', w)));
+    table.appendChild(node('thead')).appendChild(head);
+    const body = node('tbody');
+    m.rows.forEach(row => {
+      const tr = node('tr');
+      const label = node('td', 'row-label', row.label);
+      label.title = integer(row.size) + ' users in this cohort';
+      tr.appendChild(label);
+      row.cells.forEach(v => {
+        const td = node('td', v === null ? 'cell-muted' : '', v === null ? EM_DASH : Math.round(v) + '%');
+        if (v !== null) td.style.background = heatColor(v);
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+    table.appendChild(body);
+    wrap.appendChild(table);
+  },
+});
+
+// ----- activation
+const activationPanel = definePanel({
+  containers: ['panel-funnel', 'panel-milestones'],
+  load: signal => needApi().activation({}, { signal }),
+  render: r => {
+    const f = funnelModel(r.data);
+    byId('sub-funnel').textContent = f.subtitle;
+    const wrap = byId('funnel-container');
+    clearNode(wrap);
+    f.stages.forEach(s => {
+      const row = node('div', 'funnel-stage');
+      row.appendChild(node('div', 'funnel-label', s.label));
+      const track = node('div', 'funnel-track');
+      const bar = node('div', 'funnel-bar');
+      bar.style.width = s.width + '%';
+      bar.style.opacity = String(0.5 + s.width / 200);
+      track.appendChild(bar);
+      row.appendChild(track);
+      row.appendChild(node('div', 'funnel-value', s.users));
+      row.appendChild(node('div', 'funnel-pct', s.ofSignups));
+      wrap.appendChild(row);
+    });
+    const t = milestoneModel(r.data);
+    byId('sub-milestones').textContent = t.subtitle;
+    drawChart('chart-time-activation', {
+      type: 'bar',
+      data: { labels: t.labels, datasets: [{ label: 'Median Days', data: t.values, backgroundColor: ['#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'], borderRadius: 6 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { beginAtZero: true, grace: '10%' } }, plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { afterLabel: c => '75th percentile: ' + t.p75[c.dataIndex] + ' days · ' + integer(t.reached[c.dataIndex]) + ' users reached it' } },
+        },
+      },
+    });
+  },
+});
+
+// ----- experiments
+function metricCard(c) {
+  const card = node('div', 'exp-card');
+  card.appendChild(node('div', 'exp-card-label', c.label));
+  card.appendChild(node('div', 'exp-card-value' + (c.small ? ' small' : '') + (c.tone ? ' tone-' + c.tone : ''), c.value));
+  card.appendChild(node('div', 'exp-card-sub', c.sub));
+  return card;
+}
+const experimentPanel = definePanel({
+  containers: ['panel-exp', 'panel-exp-curve'],
+  load: signal => needApi().experiment(byId('exp-select').value, { signal }),
+  render: r => {
+    const m = experimentModel(r.data);
+    byId('exp-title').textContent = 'Experiment: ' + m.id;
+    byId('exp-sub').textContent = (m.hypothesis ? 'Hypothesis: ' + m.hypothesis + ' · ' : '') + m.window + ' · status: ' + m.status;
+    const body = byId('exp-body');
+    clearNode(body);
+    if (m.isAA) body.appendChild(node('div', 'exp-banner', 'A/A check: both arms receive the same experience, so a significant result here is a false positive by construction. It is a test of the evaluation method, not a product win.'));
+    if (!m.evaluation) {
+      body.appendChild(node('div', 'panel-note', 'This experiment has no saved evaluation yet.'));
+    } else {
+      for (let i = 0; i < m.cards.length; i += 2) {
+        const row = node('div', 'exp-result');
+        m.cards.slice(i, i + 2).forEach(c => row.appendChild(metricCard(c)));
+        body.appendChild(row);
+      }
+      body.appendChild(node('div', 'exp-verdict ' + m.verdict.cls, m.verdict.text));
+    }
+    byId('sub-exp-curve').textContent = 'Cumulative 14-day activation rate by day since entering the experiment';
+    drawChart('chart-exp-time', {
+      type: 'line',
+      data: { labels: m.curve.labels, datasets: m.curve.datasets.map(d => ({ label: d.label, data: d.data, ...lineStyle(d.color), borderDash: d.dashed ? [5, 5] : [] })) },
+      options: {
+        responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { callback: v => v + '%' } } },
+        plugins: { tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.parsed.y.toFixed(1) + '%' } } },
+      },
+    });
+  },
+});
+const experimentList = definePanel({
+  containers: ['panel-exp-list'],
+  load: signal => needApi().experiments({}, { signal }),
+  render: r => {
+    const m = experimentOptions(r.data);
+    const select = byId('exp-select');
+    clearNode(select);
+    m.options.forEach(o => { const opt = node('option', '', o.label); opt.value = o.id; select.appendChild(opt); });
+    select.disabled = m.options.length === 0;
+    if (m.defaultId) { select.value = m.defaultId; experimentPanel.start(); }
+  },
+  onState: s => {
+    const select = byId('exp-select');
+    const placeholder = { loading: 'Loading experiments…', empty: 'No experiments registered', error: 'Unavailable' }[s.state];
+    if (placeholder) {
+      select.disabled = true;
+      clearNode(select);
+      select.appendChild(node('option', '', placeholder));
+    }
+    if (s.state === 'loading') experimentPanel.show({ state: 'loading' });
+    if (s.state === 'empty') experimentPanel.show({ state: 'empty', message: 'No experiments are registered.' });
+    if (s.state === 'error') experimentPanel.show({ state: 'empty', message: 'Experiments could not be listed.' });
+  },
+});
+byId('exp-select').addEventListener('change', () => experimentPanel.start());
+
+// ----- customer health
+const healthPanel = definePanel({
+  containers: ['panel-tiers', 'panel-health-dist'],
+  load: signal => needApi().customerHealth({}, { signal }),
+  render: r => {
+    const m = healthModel(r.data);
+    m.cards.forEach(c => {
+      const card = document.querySelector('#panel-tiers [data-tier="' + c.tier + '"]');
+      card.querySelector('.kpi-value').textContent = c.count;
+      card.querySelector('.kpi-change').textContent = c.share;
+    });
+    byId('sub-health-dist').textContent = m.subtitle;
+    drawChart('chart-health-dist', {
+      type: 'bar',
+      data: { labels: m.hist.labels, datasets: [{ label: 'Workspaces', data: m.hist.values, backgroundColor: m.hist.colors, borderRadius: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: noLegend, scales: { x: { title: { display: true, text: 'Health Score' } } } },
+    });
+  },
+});
+const workspacePanel = definePanel({
+  containers: ['panel-health-table'],
+  load: signal => needApi().workspaces({ sort: 'health_score', order: 'asc', limit: 10 }, { signal }),
+  render: r => {
+    byId('sub-health-table').textContent = 'Lowest health scores first · snapshot ' + formatDay(r.data.snapshot_date) + ' · showing ' + integer(r.data.items.length) + ' of ' + integer(r.data.total);
+    const body = byId('health-table-body');
+    clearNode(body);
+    workspaceRows(r.data).forEach(w => {
+      const tr = node('tr');
+      tr.appendChild(node('td', 'cell-strong', w.name));
+      tr.appendChild(node('td', '', w.plan));
+      const score = node('td');
+      const bg = node('div', 'health-bar-bg');
+      const fill = node('div', 'health-bar-fill');
+      fill.style.width = w.scorePct + '%';
+      fill.style.background = w.barColor;
+      bg.appendChild(fill);
+      score.appendChild(bg);
+      score.appendChild(document.createTextNode(w.score));
+      tr.appendChild(score);
+      tr.appendChild(node('td', '', w.seats));
+      tr.appendChild(node('td', '', w.dauSeats));
+      tr.appendChild(node('td', '', w.ai));
+      const status = node('td');
+      status.appendChild(node('span', 'health-badge ' + w.statusClass, w.status));
+      tr.appendChild(status);
+      body.appendChild(tr);
+    });
+  },
+});
+
+// ----- tabs: the overview loads at start, every other tab the first time it is opened
+const TAB_PANELS = {
+  overview: [kpiPanel, dauPanel, adoptionPanel, revenuePanel, supportPanel, npsPanel],
+  retention: [cohortPanel],
+  funnel: [activationPanel],
+  experiments: [experimentList],
+  health: [healthPanel, workspacePanel],
+  ai: [],
+};
+const startedTabs = new Set();
+function startTab(name) {
+  if (startedTabs.has(name)) return;
+  startedTabs.add(name);
+  (TAB_PANELS[name] || []).forEach(p => p.start());
+}
+
 document.querySelectorAll('.nav-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    byId('tab-' + tab.dataset.tab).classList.add('active');
+    startTab(tab.dataset.tab);
   });
 });
 
-// ===== CHART DEFAULTS =====
-Chart.defaults.color = '#9898b0';
-Chart.defaults.borderColor = '#2a2a40';
-Chart.defaults.font.family = "'Inter', sans-serif";
-Chart.defaults.font.size = 11;
-Chart.defaults.plugins.legend.labels.usePointStyle = true;
-Chart.defaults.plugins.legend.labels.pointStyleWidth = 8;
-
-const months = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep'];
-
-// ===== DAU CHART =====
-new Chart(document.getElementById('chart-dau'), {
-  type: 'line',
-  data: {
-    labels: months,
-    datasets: [{
-      label: 'DAU',
-      data: [28400,29800,31200,33100,34800,36200,37600,38900,40100,41200,42100,42891],
-      borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.08)',
-      fill: true, tension: 0.35, borderWidth: 2, pointRadius: 3
-    }]
-  },
-  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
-});
-
-// ===== FEATURE ADOPTION =====
-new Chart(document.getElementById('chart-adoption'), {
-  type: 'line',
-  data: {
-    labels: Array.from({length:10}, (_,i) => `Day ${i*10}`),
-    datasets: [
-      { label:'AI Assist', data:[0,12,22,30,36,40,43,45,46.5,47.2], borderColor:'#6366f1', tension:0.3, borderWidth:2, pointRadius:2 },
-      { label:'Voice Calls', data:[0,28,45,55,62,67,71,74,76,78], borderColor:'#34d399', tension:0.3, borderWidth:2, pointRadius:2 },
-      { label:'SMS', data:[0,8,15,21,26,30,33,35,37,38], borderColor:'#fbbf24', tension:0.3, borderWidth:2, pointRadius:2 },
-      { label:'WhatsApp', data:[0,5,10,15,19,22,25,27,29,30], borderColor:'#f87171', tension:0.3, borderWidth:2, pointRadius:2 },
-    ]
-  },
-  options: { responsive:true, maintainAspectRatio:false }
-});
-
-// ===== REVENUE =====
-new Chart(document.getElementById('chart-revenue'), {
-  type: 'bar',
-  data: {
-    labels: months,
-    datasets: [
-      { label:'Enterprise', data:[380,400,420,450,470,490,510,540,560,580,600,620], backgroundColor:'#6366f1', borderRadius:4 },
-      { label:'Professional', data:[520,540,560,580,600,620,640,660,680,700,720,740], backgroundColor:'#818cf8', borderRadius:4 },
-      { label:'Essentials', data:[400,410,420,430,440,450,460,470,480,490,500,510], backgroundColor:'#a5b4fc', borderRadius:4 },
-      { label:'Free', data:[0,0,0,0,0,0,0,0,0,0,0,0], backgroundColor:'#374151', borderRadius:4 },
-    ]
-  },
-  options: { responsive:true, maintainAspectRatio:false, scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'$'+v+'K'}}} }
-});
-
-// ===== AI AGENT =====
-new Chart(document.getElementById('chart-agent'), {
-  type: 'line',
-  data: {
-    labels: months,
-    datasets: [{
-      label:'AI Resolution Rate',
-      data: [22,24,26,28,30,32,33,34,35,36,37,38],
-      borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.08)',
-      fill:true, tension:0.3, borderWidth:2, pointRadius:3
-    }]
-  },
-  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:v=>v+'%'}}} }
-});
-
-// ===== RETENTION HEATMAP =====
-(function(){
-  const cohorts = ['Oct W1','Oct W3','Nov W1','Nov W3','Dec W1','Dec W3','Jan W1','Jan W3','Feb W1','Feb W3','Mar W1'];
-  const weeks = Array.from({length:13},(_,i)=>'W'+i);
-  const data = [
-    [100,62,48,40,35,31,28,26,24,23,22,21,20],
-    [100,63,49,41,36,32,29,27,25,24,23,22,21],
-    [100,64,50,42,37,33,30,28,26,25,24,23,22],
-    [100,65,51,43,38,34,31,29,27,26,25,24,23],
-    [100,66,52,44,39,35,32,30,28,27,26,25,24],
-    [100,67,53,45,40,36,33,31,29,28,27,26,null],
-    [100,70,56,48,42,38,35,33,31,30,null,null,null],
-    [100,71,57,49,43,39,36,34,null,null,null,null,null],
-    [100,72,58,50,44,40,null,null,null,null,null,null,null],
-    [100,73,59,51,null,null,null,null,null,null,null,null,null],
-    [100,74,null,null,null,null,null,null,null,null,null,null,null],
-  ];
-  let html = '<table class="heatmap"><thead><tr><th></th>';
-  weeks.forEach(w => html += '<th>'+w+'</th>');
-  html += '</tr></thead><tbody>';
-  cohorts.forEach((c,i) => {
-    html += '<tr><td class="row-label">'+c+'</td>';
-    data[i].forEach(v => {
-      if(v===null) { html += '<td data-style="color:var(--text-3)">—</td>'; }
-      else {
-        const intensity = Math.max(0.08, v/100);
-        const color = v>=50?'rgba(99,102,241,'+intensity+')': v>=30?'rgba(96,165,250,'+intensity+')':'rgba(251,191,36,'+intensity+')';
-        html += '<td data-style="background:'+color+'">'+v+'%</td>';
-      }
-    });
-    html += '</tr>';
-  });
-  html += '</tbody></table>';
-  const heatmap = document.getElementById('heatmap-container');
-  heatmap.innerHTML = html;
-  applyStyles(heatmap);
-})();
-
-// ===== FEATURES → RETENTION =====
-new Chart(document.getElementById('chart-feat-retention'), {
-  type: 'bar',
-  data: {
-    labels: ['1 feature','2 features','3 features','4 features','5+ features'],
-    datasets: [{
-      label:'Week-4 Retention',
-      data: [22,31,42,54,68],
-      backgroundColor: ['#f87171','#fbbf24','#60a5fa','#818cf8','#34d399'],
-      borderRadius: 6
-    }]
-  },
-  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:v=>v+'%'}}} }
-});
-
-// ===== FUNNEL =====
-(function(){
-  const stages = [
-    {name:'Signed Up', value:500000, pct:'100%'},
-    {name:'Placed First Call', value:340000, pct:'68%'},
-    {name:'Used AI Feature', value:205000, pct:'41%'},
-    {name:'Invited Team Member', value:135000, pct:'27%'},
-  ];
-  const max = stages[0].value;
-  let html = '';
-  stages.forEach(s => {
-    const w = (s.value/max*100);
-    html += `<div class="funnel-stage">
-      <div class="funnel-label">${s.name}</div>
-      <div data-style="flex:1"><div class="funnel-bar" data-style="width:${w}%;opacity:${0.5+w/200}"></div></div>
-      <div class="funnel-value">${(s.value/1000).toFixed(0)}K</div>
-      <div class="funnel-pct">${s.pct}</div>
-    </div>`;
-  });
-  const funnel = document.getElementById('funnel-container');
-  funnel.innerHTML = html;
-  applyStyles(funnel);
-})();
-
-// ===== TIME TO ACTIVATION =====
-new Chart(document.getElementById('chart-time-activation'), {
-  type: 'bar',
-  data: {
-    labels: ['First Call','AI Feature Used','Team Invited','Fully Activated'],
-    datasets: [{
-      label:'Median Days',
-      data: [2.1, 5.8, 8.4, 11.2],
-      backgroundColor: ['#6366f1','#818cf8','#a5b4fc','#c7d2fe'],
-      borderRadius: 6
-    }]
-  },
-  options: { responsive:true, maintainAspectRatio:false, indexAxis:'y', plugins:{legend:{display:false}} }
-});
-
-// ===== EXPERIMENT TIME SERIES =====
-new Chart(document.getElementById('chart-exp-time'), {
-  type: 'line',
-  data: {
-    labels: Array.from({length:15},(_,i)=>'Day '+(i+1)),
-    datasets: [
-      { label:'Control', data:[8,12,16,19,22,24,26,27.5,28.8,29.8,30.5,31,31.3,31.5,31.8], borderColor:'#9898b0', borderDash:[5,5], tension:0.3, borderWidth:2, pointRadius:2 },
-      { label:'Treatment', data:[9,14,18,22,25,27.5,29.5,31,32,33,33.5,33.8,34,34.1,34.2], borderColor:'#34d399', tension:0.3, borderWidth:2, pointRadius:2 },
-    ]
-  },
-  options: { responsive:true, maintainAspectRatio:false, scales:{y:{ticks:{callback:v=>v+'%'}}} }
-});
-
-// ===== HEALTH DISTRIBUTION =====
-new Chart(document.getElementById('chart-health-dist'), {
-  type: 'bar',
-  data: {
-    labels: ['0-10','10-20','20-30','30-40','40-50','50-60','60-70','70-80','80-90','90-100'],
-    datasets: [{
-      label:'Workspaces',
-      data: [820,1840,2490,4200,5100,4990,6200,8450,9200,6710],
-      backgroundColor: v => {
-        const colors = ['#f87171','#f87171','#f87171','#fbbf24','#fbbf24','#fbbf24','#60a5fa','#60a5fa','#34d399','#34d399'];
-        return colors;
-      },
-      borderRadius: 4
-    }]
-  },
-  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{title:{display:true,text:'Health Score'}}} }
-});
-// Fix bar colors
-document.getElementById('chart-health-dist').__chartjs = true;
-
-// ===== HEALTH TABLE =====
-(function(){
-  const rows = [
-    {name:'Acme Corp',plan:'Enterprise',score:12,seats:50,dau:0.06,ai:'None',status:'critical'},
-    {name:'TechFlow Inc',plan:'Professional',score:18,seats:25,dau:0.08,ai:'None',status:'critical'},
-    {name:'DataBridge',plan:'Enterprise',score:24,seats:100,dau:0.09,ai:'Low',status:'critical'},
-    {name:'CloudSync',plan:'Professional',score:31,seats:15,dau:0.13,ai:'None',status:'at-risk'},
-    {name:'NexGen Labs',plan:'Essentials',score:35,seats:10,dau:0.15,ai:'Low',status:'at-risk'},
-    {name:'Pinnacle IO',plan:'Professional',score:42,seats:25,dau:0.22,ai:'Medium',status:'at-risk'},
-    {name:'Horizon SaaS',plan:'Enterprise',score:68,seats:50,dau:0.48,ai:'High',status:'healthy'},
-    {name:'Velocity AI',plan:'Professional',score:82,seats:15,dau:0.67,ai:'High',status:'champion'},
-  ];
-  let html = '';
-  rows.forEach(r => {
-    const barColor = r.score<30?'var(--red)':r.score<60?'var(--orange)':r.score<80?'var(--blue)':'var(--green)';
-    html += `<tr>
-      <td data-style="font-weight:500">${r.name}</td>
-      <td>${r.plan}</td>
-      <td><div class="health-bar-bg"><div class="health-bar-fill" data-style="width:${r.score}%;background:${barColor}"></div></div>${r.score}</td>
-      <td>${r.seats}</td>
-      <td>${(r.dau*100).toFixed(0)}%</td>
-      <td>${r.ai}</td>
-      <td><span class="health-badge ${r.status}">${r.status.replace('-',' ')}</span></td>
-    </tr>`;
-  });
-  const healthBody = document.getElementById('health-table-body');
-  healthBody.innerHTML = html;
-  applyStyles(healthBody);
-})();
-
-// ===== AI ANALYST =====
-const PROJECT_CONTEXT = `You are the AI Product Analyst for ConnectHub, a B2B SaaS AI-powered customer communications platform with 22,000+ businesses, 500K users, and 50M+ product events.
-
-Current metrics (as of Sep 2026):
-- MRR: $2.4M (+18.2% MoM)
-- DAU: 42,891 (+12.4%)
-- WAU: 89,200
-- MAU: 186,400
-- DAU/MAU stickiness: 23%
-- Week-4 retention: 38.4% (+4.8pp vs last quarter)
-- Week-12 retention: 21%
-- 14-day activation rate: 34.2% (+2.1pp)
-- AI feature adoption: 47.2% of active workspaces
-- NPS: 47 (+3)
-- AI agent resolution rate: 38% (up from 22% a year ago)
-
-Activation funnel (14 days):
-- Signed up: 500K
-- Placed first call: 340K (68%)
-- Used AI feature: 205K (41%) ← biggest drop
-- Invited team member: 135K (27%)
-- Biggest leak: Call → AI Feature (27pp drop)
-- Median time to first call: 2.1 days
-- Median time to AI feature: 5.8 days
-
-Retention by features adopted in week 1:
-- 1 feature: 22% week-4 retention
-- 2 features: 31%
-- 3 features: 42%
-- 4 features: 54%
-- 5+ features: 68% ← 3x the single-feature rate
-
-Experiment: Onboarding V2 (completed):
-- Hypothesis: surfacing AI features earlier increases activation
-- Control: 31.8% activation (n=124,832)
-- Treatment: 34.2% activation (n=125,168)
-- Relative lift: +7.5%, p-value: 0.0003
-- Bayesian P(treatment better): 99.2%
-- SRM check: passed (ratio 0.4993)
-- Revenue guardrail: passed (no decrease)
-- Decision: SHIP
-
-Customer health scoring:
-- Champion (80-100): 8,420 workspaces (16.8%)
-- Healthy (60-80): 22,140 (44.3%)
-- At Risk (30-60): 14,290 (28.6%)
-- Critical (0-30): 5,150 (10.3%)
-- Weights: DAU/seats 25%, features adopted 20%, AI usage 15%, session duration 10%, support tickets -10%, NPS 10%, expansion revenue 10%
-- Top churn signals: low DAU/seat ratio (<10%), zero AI feature usage, >5 support tickets/month
-
-Revenue breakdown:
-- Enterprise: $620K/mo (26%)
-- Professional: $740K/mo (31%)
-- Essentials: $510K/mo (21%)
-- Free: $0 (22% of workspaces, conversion target)
-
-AI Agent performance:
-- Resolution rate: 38% (up from 22%)
-- Avg handle time (AI): 45 seconds
-- Avg handle time (human): 4.2 minutes
-- CSAT for AI-resolved: 4.1/5
-- CSAT for human-resolved: 4.3/5
-- Escalation rate: 25%
-
-Tech stack: Python, SQL, PySpark, dbt, Airflow, Apache Iceberg, Hex, Looker (LookML), Plotly, Great Expectations, scikit-learn
-
-Answer concisely as a senior data scientist would. Use specific numbers. If asked about methodology, reference the actual tools and approaches used.`;
-
-let sampleApi = null;
-let chatReady = false;
-
-async function initAI() {
-  try {
-    sampleApi = await claude.use('sample');
-    if (sampleApi) { chatReady = true; }
-  } catch(e) { /* sample not available */ }
-}
-initAI();
-
-// The Content-Security-Policy forbids inline event handlers, so they are bound here.
-document.querySelectorAll('.ai-chip').forEach(chip => chip.addEventListener('click', () => askSuggestion(chip)));
-document.getElementById('ai-send').addEventListener('click', sendMessage);
-document.getElementById('ai-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
-
-function askSuggestion(el) {
-  document.getElementById('ai-input').value = el.textContent;
-  sendMessage();
-}
-
-async function sendMessage() {
-  const input = document.getElementById('ai-input');
-  const msg = input.value.trim();
-  if (!msg) return;
-
-  const msgs = document.getElementById('ai-messages');
-  const sendBtn = document.getElementById('ai-send');
-
-  // Add user message
-  const userDiv = document.createElement('div');
-  userDiv.className = 'ai-msg user';
-  userDiv.textContent = msg;
-  msgs.appendChild(userDiv);
-  input.value = '';
-  sendBtn.disabled = true;
-
-  // Hide suggestions after first use
-  document.getElementById('ai-suggestions').style.display = 'none';
-
-  // Add thinking indicator
-  const aiDiv = document.createElement('div');
-  aiDiv.className = 'ai-msg ai thinking';
-  aiDiv.textContent = 'Analyzing data...';
-  msgs.appendChild(aiDiv);
-  msgs.scrollTop = msgs.scrollHeight;
-
-  if (sampleApi && chatReady) {
-    try {
-      const result = await sampleApi(
-        [{ role: 'user', content: PROJECT_CONTEXT + '\n\nUser question: ' + msg }],
-        {
-          onText: ({text}) => {
-            aiDiv.className = 'ai-msg ai';
-            aiDiv.textContent = text;
-            msgs.scrollTop = msgs.scrollHeight;
-          },
-          modelTier: 'quick'
-        }
-      );
-      aiDiv.className = 'ai-msg ai';
-      aiDiv.textContent = result.text;
-    } catch(e) {
-      aiDiv.className = 'ai-msg ai';
-      if (e.code === 'not_granted') {
-        aiDiv.textContent = 'To use the AI Analyst, please allow this page to use Claude when prompted. Refresh and try again.';
-      } else {
-        aiDiv.textContent = 'Could not reach the AI analyst right now. The dashboard data is still fully interactive above.';
-      }
-    }
-  } else {
-    // Fallback: pattern-matched responses
-    aiDiv.className = 'ai-msg ai';
-    aiDiv.textContent = getFallbackResponse(msg);
-  }
-
-  msgs.scrollTop = msgs.scrollHeight;
-  sendBtn.disabled = false;
-  input.focus();
-}
-
-function getFallbackResponse(q) {
-  const ql = q.toLowerCase();
-  if (ql.includes('retention') && (ql.includes('improve') || ql.includes('why')))
-    return "Week-4 retention improved from 33.6% to 38.4% (+4.8pp) this quarter, driven by two factors:\n\n1. The Onboarding V2 experiment shipped in January — it surfaces AI features earlier in the setup flow, which increased 14-day activation by 7.5%.\n\n2. Users who adopt 3+ features in week 1 retain at 42% vs 22% for single-feature users. AI Assist adoption grew from 36% to 47.2%, pulling more users into the multi-feature cohort.\n\nThe Jan-2026 cohort specifically shows 70% week-1 retention (vs 62% in Oct-2025), which compounds through the retention curve.";
-  if (ql.includes('feature') && ql.includes('retention'))
-    return "Feature adoption in week 1 is the strongest predictor of retention:\n\n• 1 feature → 22% week-4 retention\n• 2 features → 31%\n• 3 features → 42%\n• 4 features → 54%\n• 5+ features → 68%\n\nThe biggest lever is getting users from 1→3 features. Voice Calls (78% adoption) is the entry point, but AI Assist (47.2%) is the inflection — users who try AI Assist in week 1 are 2.4x more likely to still be active in week 4. SMS and WhatsApp are secondary but additive.";
-  if (ql.includes('experiment') || ql.includes('ship') || ql.includes('onboarding'))
-    return "The Onboarding V2 experiment is a clear SHIP:\n\n• Control: 31.8% activation | Treatment: 34.2% (+7.5% lift)\n• p-value: 0.0003 (well below 0.05 threshold)\n• Bayesian P(better): 99.2% (above 95% ship threshold)\n• SRM check: passed — no assignment bias (ratio 0.4993)\n• Revenue guardrail: passed — no decrease in ARPU\n• Expected loss from shipping: 0.0002 (negligible)\n\nThe treatment surfaces AI Assist as a post-call CTA during the first week, which closes the biggest funnel leak (Call → AI Feature, 27pp drop).";
-  if (ql.includes('churn') || ql.includes('risk') || ql.includes('critical'))
-    return "5,150 workspaces (10.3%) are in Critical health status. The top churn signals:\n\n1. DAU/seat ratio < 10% — the product isn't being used relative to seats purchased\n2. Zero AI feature usage — these workspaces miss the stickiness benefit of AI Assist\n3. 5+ support tickets/month — high friction indicating poor product-fit\n\nEnterprise accounts like Acme Corp (score: 12, 50 seats, 6% utilization) are the highest-value at-risk targets. Recommended action: CSM outreach with guided AI Assist activation sessions for the top 50 Critical workspaces.";
-  if (ql.includes('ai') && (ql.includes('nps') || ql.includes('correlat')))
-    return "AI Assist adoption correlates strongly with NPS:\n\n• Workspaces with AI usage: avg NPS 54\n• Without AI usage: avg NPS 38\n• Gap: +16 points\n\nThe mechanism: AI Assist automates post-call summaries and reduces handle time by ~60% (45 sec vs 4.2 min). Agents spend less time on admin work, which improves both agent satisfaction and customer response times. The CSAT gap is smaller (4.1 vs 4.3) because customers slightly prefer human resolution, but the speed advantage offsets this for routine calls.";
-  if (ql.includes('tech') || ql.includes('stack') || ql.includes('built'))
-    return "The platform is built on:\n\n• Ingestion: Kafka + Kinesis → S3 raw zone\n• Processing: PySpark for sessionization (30-min gap logic), Airflow for orchestration\n• Lakehouse: Apache Iceberg (time-travel, schema evolution), dbt medallion models (Bronze→Silver→Gold)\n• Analytics: Python modules — cohort engine, activation funnel, health scoring, A/B test framework (frequentist + Bayesian)\n• Serving: Hex notebooks for ad-hoc analysis, Looker (LookML) for governed dashboards\n• Quality: Great Expectations contracts between pipeline stages\n\n50M+ events processed daily across 500K users.";
-  return "That's a great question. Based on the ConnectHub data:\n\n• MRR is at $2.4M (+18.2% MoM), driven by Professional tier growth\n• DAU hit 42,891 with 23% stickiness (DAU/MAU)\n• The biggest opportunity is the activation funnel — 68% place a call but only 41% try AI features\n• The Onboarding V2 experiment proved that surfacing AI earlier lifts activation by 7.5%\n\nIs there a specific metric or area you'd like me to dig deeper into?";
-}
+topbar.run(() => loadMeta());
+startTab('overview');
 </script>
 
 </body>

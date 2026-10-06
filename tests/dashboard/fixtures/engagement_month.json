@@ -1,0 +1,179 @@
+{
+ "data": {
+  "summary": {
+   "day": "2025-12-31",
+   "dau": 671,
+   "wau_7d": 2460,
+   "mau_28d": 3786,
+   "active_workspaces": 355,
+   "stickiness_rate": 0.177232,
+   "mau_window_complete": true
+  },
+  "granularity": "month",
+  "points": [
+   {
+    "period_start": "2025-01-02",
+    "period_end": "2025-01-31",
+    "is_complete": false,
+    "days": 30,
+    "avg_dau": 18.8,
+    "avg_active_workspaces": 13.07,
+    "wau_7d_end": 114,
+    "mau_28d_end": 152,
+    "avg_stickiness_rate": 0.420405,
+    "mau_window_complete": true
+   },
+   {
+    "period_start": "2025-02-01",
+    "period_end": "2025-02-28",
+    "is_complete": true,
+    "days": 28,
+    "avg_dau": 71.89,
+    "avg_active_workspaces": 40.82,
+    "wau_7d_end": 293,
+    "mau_28d_end": 437,
+    "avg_stickiness_rate": 0.242656,
+    "mau_window_complete": true
+   },
+   {
+    "period_start": "2025-03-01",
+    "period_end": "2025-03-31",
+    "is_complete": true,
+    "days": 31,
+    "avg_dau": 142.45,
+    "avg_active_workspaces": 81.39,
+    "wau_7d_end": 568,
+    "mau_28d_end": 897,
+    "avg_stickiness_rate": 0.208773,
+    "mau_window_complete": true
+   },
+   {
+    "period_start": "2025-04-01",
+    "period_end": "2025-04-30",
+    "is_complete": true,
+    "days": 30,
+    "avg_dau": 202.63,
+    "avg_active_workspaces": 110.2,
+    "wau_7d_end": 757,
+    "mau_28d_end": 1181,
+    "avg_stickiness_rate": 0.190901,
+    "mau_window_complete": true
+   },
+   {
+    "period_start": "2025-05-01",
+    "period_end": "2025-05-31",
+    "is_complete": true,
+    "days": 31,
+    "avg_dau": 247.39,
+    "avg_active_workspaces": 137.9,
+    "wau_7d_end": 953,
+    "mau_28d_end": 1513,
+    "avg_stickiness_rate": 0.180968,
+    "mau_window_complete": true
+   },
+   {
+    "period_start": "2025-06-01",
+    "period_end": "2025-06-30",
+    "is_complete": true,
+    "days": 30,
+    "avg_dau": 296.3,
+    "avg_active_workspaces": 169.4,
+    "wau_7d_end": 1166,
+    "mau_28d_end": 1819,
+    "avg_stickiness_rate": 0.178011,
+    "mau_window_complete": true
+   },
+   {
+    "period_start": "2025-07-01",
+    "period_end": "2025-07-31",
+    "is_complete": true,
+    "days": 31,
+    "avg_dau": 355.39,
+    "avg_active_workspaces": 201.26,
+    "wau_7d_end": 1332,
+    "mau_28d_end": 2115,
+    "avg_stickiness_rate": 0.180262,
+    "mau_window_complete": true
+   },
+   {
+    "period_start": "2025-08-01",
+    "period_end": "2025-08-31",
+    "is_complete": true,
+    "days": 31,
+    "avg_dau": 393.48,
+    "avg_active_workspaces": 230.55,
+    "wau_7d_end": 1457,
+    "mau_28d_end": 2321,
+    "avg_stickiness_rate": 0.176334,
+    "mau_window_complete": true
+   },
+   {
+    "period_start": "2025-09-01",
+    "period_end": "2025-09-30",
+    "is_complete": true,
+    "days": 30,
+    "avg_dau": 439.03,
+    "avg_active_workspaces": 254.83,
+    "wau_7d_end": 1655,
+    "mau_28d_end": 2569,
+    "avg_stickiness_rate": 0.178834,
+    "mau_window_complete": true
+   },
+   {
+    "period_start": "2025-10-01",
+    "period_end": "2025-10-31",
+    "is_complete": true,
+    "days": 31,
+    "avg_dau": 497.9,
+    "avg_active_workspaces": 292.48,
+    "wau_7d_end": 1977,
+    "mau_28d_end": 2960,
+    "avg_stickiness_rate": 0.180871,
+    "mau_window_complete": true
+   },
+   {
+    "period_start": "2025-11-01",
+    "period_end": "2025-11-30",
+    "is_complete": true,
+    "days": 30,
+    "avg_dau": 601.17,
+    "avg_active_workspaces": 338.37,
+    "wau_7d_end": 2331,
+    "mau_28d_end": 3567,
+    "avg_stickiness_rate": 0.184292,
+    "mau_window_complete": true
+   },
+   {
+    "period_start": "2025-12-01",
+    "period_end": "2025-12-31",
+    "is_complete": true,
+    "days": 31,
+    "avg_dau": 661.77,
+    "avg_active_workspaces": 354.19,
+    "wau_7d_end": 2460,
+    "mau_28d_end": 3786,
+    "avg_stickiness_rate": 0.17672,
+    "mau_window_complete": true
+   }
+  ]
+ },
+ "meta": {
+  "as_of": "2025-12-31",
+  "data_start": "2025-01-02",
+  "data_end": "2025-12-31",
+  "effective_range": {
+   "start": "2025-01-02",
+   "end": "2025-12-31"
+  },
+  "filters": {
+   "granularity": "month"
+  },
+  "sources": [],
+  "data_version": "phase4b-run-1",
+  "generated_at": "2026-10-06T19:06:36.207848Z",
+  "definitions": {},
+  "caveats": [
+   "MAU (28-day) and WAU windows before 2025-01-29 start before the first loaded day (2025-01-02) and are understated."
+  ]
+ }
+}

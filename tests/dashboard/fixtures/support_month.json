@@ -1,0 +1,127 @@
+{
+ "data": {
+  "tickets": {
+   "created": 1834,
+   "resolved": 1470,
+   "resolved_to_created_ratio": 0.801527,
+   "active_user_days": 53054,
+   "tickets_per_1k_active_user_days": 34.569
+  },
+  "ai_agent": {
+   "calls": 7325,
+   "ai_resolved": 4720,
+   "escalated": 1540,
+   "human_handled": 1065,
+   "ai_resolution_rate": 0.644369,
+   "escalation_rate": 0.210239,
+   "human_handled_share": 0.145392,
+   "avg_csat": 4.017,
+   "avg_handle_time_seconds": 168.381
+  },
+  "by_call_type": [
+   {
+    "calls": 4026,
+    "ai_resolved": 2550,
+    "escalated": 860,
+    "human_handled": 616,
+    "ai_resolution_rate": 0.633383,
+    "escalation_rate": 0.213612,
+    "human_handled_share": 0.153005,
+    "avg_csat": 4.011,
+    "avg_handle_time_seconds": 170.784,
+    "call_type": "inbound"
+   },
+   {
+    "calls": 743,
+    "ai_resolved": 494,
+    "escalated": 151,
+    "human_handled": 98,
+    "ai_resolution_rate": 0.664872,
+    "escalation_rate": 0.20323,
+    "human_handled_share": 0.131898,
+    "avg_csat": 4.003,
+    "avg_handle_time_seconds": 158.972,
+    "call_type": "internal"
+   },
+   {
+    "calls": 1851,
+    "ai_resolved": 1227,
+    "escalated": 380,
+    "human_handled": 244,
+    "ai_resolution_rate": 0.662885,
+    "escalation_rate": 0.205294,
+    "human_handled_share": 0.131821,
+    "avg_csat": 4.033,
+    "avg_handle_time_seconds": 166.163,
+    "call_type": "outbound"
+   },
+   {
+    "calls": 705,
+    "ai_resolved": 449,
+    "escalated": 149,
+    "human_handled": 107,
+    "ai_resolution_rate": 0.636879,
+    "escalation_rate": 0.211348,
+    "human_handled_share": 0.151773,
+    "avg_csat": 4.02,
+    "avg_handle_time_seconds": 170.4,
+    "call_type": "voicemail"
+   }
+  ],
+  "granularity": "month",
+  "series": [
+   {
+    "period_start": "2025-10-03",
+    "period_end": "2025-10-31",
+    "is_complete": false,
+    "tickets_created": 473,
+    "tickets_resolved": 379,
+    "calls": 1853,
+    "ai_resolution_rate": 0.651376,
+    "avg_csat": 4.021
+   },
+   {
+    "period_start": "2025-11-01",
+    "period_end": "2025-11-30",
+    "is_complete": true,
+    "tickets_created": 666,
+    "tickets_resolved": 532,
+    "calls": 2498,
+    "ai_resolution_rate": 0.642114,
+    "avg_csat": 4.028
+   },
+   {
+    "period_start": "2025-12-01",
+    "period_end": "2025-12-31",
+    "is_complete": true,
+    "tickets_created": 695,
+    "tickets_resolved": 559,
+    "calls": 2974,
+    "ai_resolution_rate": 0.641896,
+    "avg_csat": 4.004
+   }
+  ]
+ },
+ "meta": {
+  "as_of": "2025-12-31",
+  "data_start": "2025-01-02",
+  "data_end": "2025-12-31",
+  "effective_range": {
+   "start": "2025-10-03",
+   "end": "2025-12-31"
+  },
+  "filters": {
+   "plan_tier": null,
+   "call_type": null,
+   "granularity": "month"
+  },
+  "sources": [],
+  "data_version": "phase4b-run-1",
+  "generated_at": "2026-10-06T19:06:36.839915Z",
+  "definitions": {},
+  "caveats": [
+   "Events carry no ticket ID, so ticket resolution time and backlog are not available; resolved_to_created_ratio is a ratio of counts.",
+   "AI-agent metrics cover AI-handled calls only; call_type filters only the AI-agent figures (tickets have no call type)."
+  ]
+ }
+}

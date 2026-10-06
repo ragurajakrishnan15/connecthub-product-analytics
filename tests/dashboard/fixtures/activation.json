@@ -1,0 +1,199 @@
+{
+ "data": {
+  "signups": 3616,
+  "excluded_incomplete_signups": 0,
+  "complete_windows_through": "2025-12-17",
+  "activation_rate_14d": 0.224004,
+  "funnel": [
+   {
+    "stage": "signed_up",
+    "users": 3616,
+    "rate_of_signups": 1,
+    "rate_of_previous": null
+   },
+   {
+    "stage": "placed_first_call",
+    "users": 2500,
+    "rate_of_signups": 0.691372,
+    "rate_of_previous": 0.691372
+   },
+   {
+    "stage": "call_and_ai",
+    "users": 1258,
+    "rate_of_signups": 0.347898,
+    "rate_of_previous": 0.5032
+   },
+   {
+    "stage": "activated_14d",
+    "users": 810,
+    "rate_of_signups": 0.224004,
+    "rate_of_previous": 0.643879
+   }
+  ],
+  "milestones": {
+   "placed_first_call_rate": 0.691372,
+   "used_ai_feature_rate": 0.347898,
+   "invited_team_member_rate": 0.224004
+  },
+  "time_to_milestone": [
+   {
+    "milestone": "placed_first_call",
+    "users_reached": 2500,
+    "median_days": 1,
+    "p75_days": 3
+   },
+   {
+    "milestone": "used_ai_feature",
+    "users_reached": 1258,
+    "median_days": 3,
+    "p75_days": 6
+   },
+   {
+    "milestone": "invited_team_member",
+    "users_reached": 810,
+    "median_days": 5,
+    "p75_days": 8
+   },
+   {
+    "milestone": "activated_14d",
+    "users_reached": 810,
+    "median_days": 5,
+    "p75_days": 8
+   }
+  ],
+  "granularity": "week",
+  "series": [
+   {
+    "period_start": "2025-09-19",
+    "period_end": "2025-09-21",
+    "is_complete": false,
+    "signups": 101,
+    "activated_14d": 28,
+    "activation_rate_14d": 0.277228
+   },
+   {
+    "period_start": "2025-09-22",
+    "period_end": "2025-09-28",
+    "is_complete": true,
+    "signups": 195,
+    "activated_14d": 45,
+    "activation_rate_14d": 0.230769
+   },
+   {
+    "period_start": "2025-09-29",
+    "period_end": "2025-10-05",
+    "is_complete": true,
+    "signups": 209,
+    "activated_14d": 42,
+    "activation_rate_14d": 0.200957
+   },
+   {
+    "period_start": "2025-10-06",
+    "period_end": "2025-10-12",
+    "is_complete": true,
+    "signups": 253,
+    "activated_14d": 52,
+    "activation_rate_14d": 0.205534
+   },
+   {
+    "period_start": "2025-10-13",
+    "period_end": "2025-10-19",
+    "is_complete": true,
+    "signups": 241,
+    "activated_14d": 58,
+    "activation_rate_14d": 0.240664
+   },
+   {
+    "period_start": "2025-10-20",
+    "period_end": "2025-10-26",
+    "is_complete": true,
+    "signups": 260,
+    "activated_14d": 55,
+    "activation_rate_14d": 0.211538
+   },
+   {
+    "period_start": "2025-10-27",
+    "period_end": "2025-11-02",
+    "is_complete": true,
+    "signups": 298,
+    "activated_14d": 74,
+    "activation_rate_14d": 0.248322
+   },
+   {
+    "period_start": "2025-11-03",
+    "period_end": "2025-11-09",
+    "is_complete": true,
+    "signups": 292,
+    "activated_14d": 68,
+    "activation_rate_14d": 0.232877
+   },
+   {
+    "period_start": "2025-11-10",
+    "period_end": "2025-11-16",
+    "is_complete": true,
+    "signups": 336,
+    "activated_14d": 80,
+    "activation_rate_14d": 0.238095
+   },
+   {
+    "period_start": "2025-11-17",
+    "period_end": "2025-11-23",
+    "is_complete": true,
+    "signups": 345,
+    "activated_14d": 70,
+    "activation_rate_14d": 0.202899
+   },
+   {
+    "period_start": "2025-11-24",
+    "period_end": "2025-11-30",
+    "is_complete": true,
+    "signups": 354,
+    "activated_14d": 84,
+    "activation_rate_14d": 0.237288
+   },
+   {
+    "period_start": "2025-12-01",
+    "period_end": "2025-12-07",
+    "is_complete": true,
+    "signups": 340,
+    "activated_14d": 69,
+    "activation_rate_14d": 0.202941
+   },
+   {
+    "period_start": "2025-12-08",
+    "period_end": "2025-12-14",
+    "is_complete": true,
+    "signups": 282,
+    "activated_14d": 62,
+    "activation_rate_14d": 0.219858
+   },
+   {
+    "period_start": "2025-12-15",
+    "period_end": "2025-12-17",
+    "is_complete": false,
+    "signups": 110,
+    "activated_14d": 23,
+    "activation_rate_14d": 0.209091
+   }
+  ]
+ },
+ "meta": {
+  "as_of": "2025-12-31",
+  "data_start": "2025-01-02",
+  "data_end": "2025-12-31",
+  "effective_range": {
+   "start": "2025-09-19",
+   "end": "2025-12-17"
+  },
+  "filters": {
+   "plan_tier": null,
+   "granularity": "week",
+   "include_incomplete": "false"
+  },
+  "sources": [],
+  "data_version": "phase4b-run-1",
+  "generated_at": "2026-10-06T19:06:36.250044Z",
+  "definitions": {},
+  "caveats": []
+ }
+}

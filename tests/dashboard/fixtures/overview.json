@@ -1,0 +1,171 @@
+{
+ "data": {
+  "kpis": {
+   "mrr_usd": {
+    "value": 61870,
+    "previous_value": 56860,
+    "change_abs": 5010,
+    "change_rel": 0.088111,
+    "period": {
+     "start": "2025-12-01",
+     "end": "2025-12-31"
+    },
+    "previous_period": {
+     "start": "2025-11-01",
+     "end": "2025-11-30"
+    },
+    "unit": "usd",
+    "definition": "MRR of the latest complete month vs the month before",
+    "note": null
+   },
+   "dau": {
+    "value": 671,
+    "previous_value": 679,
+    "change_abs": -8,
+    "change_rel": -0.011782,
+    "period": {
+     "start": "2025-12-31",
+     "end": "2025-12-31"
+    },
+    "previous_period": {
+     "start": "2025-12-03",
+     "end": "2025-12-03"
+    },
+    "unit": "users",
+    "definition": "Distinct active users on the last loaded day vs 28 days earlier (same weekday)",
+    "note": null
+   },
+   "week4_retention_rate": {
+    "value": 0.39431,
+    "previous_value": 0.396203,
+    "change_abs": -0.001893,
+    "change_rel": -0.004778,
+    "period": {
+     "start": "2025-01-02",
+     "end": "2025-12-31"
+    },
+    "previous_period": {
+     "start": "2025-01-02",
+     "end": "2025-12-03"
+    },
+    "unit": "fraction",
+    "definition": "Pooled week-4 retention over cohorts whose week 4 has ended, as of the last loaded day vs as of 28 days earlier",
+    "note": null
+   },
+   "ai_feature_adoption_rate": {
+    "value": 0.87385,
+    "previous_value": 0.836387,
+    "change_abs": 0.037463,
+    "change_rel": 0.044791,
+    "period": {
+     "start": "2025-12-01",
+     "end": "2025-12-31"
+    },
+    "previous_period": {
+     "start": "2025-11-01",
+     "end": "2025-11-30"
+    },
+    "unit": "fraction",
+    "definition": "AI-active / feature-active workspaces, latest complete month vs the month before",
+    "note": null
+   },
+   "activation_rate_14d": {
+    "value": 0.21553,
+    "previous_value": 0.23125,
+    "change_abs": -0.01572,
+    "change_rel": -0.067978,
+    "period": {
+     "start": "2025-11-18",
+     "end": "2025-12-17"
+    },
+    "previous_period": {
+     "start": "2025-10-19",
+     "end": "2025-11-17"
+    },
+    "unit": "fraction",
+    "definition": "Activated within 14 days / signups, over the latest 30 signup days with a complete 14-day window vs the 30 days before",
+    "note": null
+   },
+   "nps": {
+    "value": 8.4,
+    "previous_value": 1.3,
+    "change_abs": 7.1,
+    "change_rel": 5.461538,
+    "period": {
+     "start": "2025-10-03",
+     "end": "2025-12-31"
+    },
+    "previous_period": {
+     "start": "2025-07-05",
+     "end": "2025-10-02"
+    },
+    "unit": "nps_points",
+    "definition": "NPS over the last 90 days vs the 90 days before (null below 30 responses)",
+    "note": null
+   },
+   "ai_resolution_rate": {
+    "value": 0.64162,
+    "previous_value": 0.643028,
+    "change_abs": -0.001408,
+    "change_rel": -0.00219,
+    "period": {
+     "start": "2025-12-02",
+     "end": "2025-12-31"
+    },
+    "previous_period": {
+     "start": "2025-11-02",
+     "end": "2025-12-01"
+    },
+    "unit": "fraction",
+    "definition": "AI-handled calls resolved without escalation / AI-handled calls, last 30 days vs the 30 days before",
+    "note": null
+   }
+  },
+  "health": {
+   "snapshot_date": "2025-12-31",
+   "workspaces": 1000,
+   "tiers": {
+    "Critical": {
+     "workspaces": 299,
+     "share": 0.299
+    },
+    "At Risk": {
+     "workspaces": 283,
+     "share": 0.283
+    },
+    "Healthy": {
+     "workspaces": 304,
+     "share": 0.304
+    },
+    "Champion": {
+     "workspaces": 114,
+     "share": 0.114
+    }
+   }
+  },
+  "experiments": {
+   "registered": 2,
+   "evaluated": 2,
+   "by_decision": {
+    "SHIP": 2,
+    "CONTINUE": 0,
+    "HOLD": 0,
+    "REVERT": 0
+   }
+  }
+ },
+ "meta": {
+  "as_of": "2025-12-31",
+  "data_start": "2025-01-02",
+  "data_end": "2025-12-31",
+  "effective_range": null,
+  "filters": {},
+  "sources": [],
+  "data_version": "phase4b-run-1",
+  "generated_at": "2026-10-06T19:06:36.173043Z",
+  "definitions": {},
+  "caveats": [
+   "Each KPI states its own period; values for periods that start before the first loaded day are null."
+  ]
+ }
+}

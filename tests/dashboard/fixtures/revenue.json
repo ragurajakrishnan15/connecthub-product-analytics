@@ -1,0 +1,246 @@
+{
+ "data": {
+  "latest": {
+   "month": "2025-12-01",
+   "is_complete": true,
+   "mrr_usd": 61870,
+   "previous_mrr_usd": 56860,
+   "mrr_growth_rate": 0.088111,
+   "paying_workspaces": 495,
+   "arpa_usd": 124.99,
+   "billed_seats": 3911,
+   "movement": {
+    "new_usd": 125,
+    "expansion_usd": 10875,
+    "reactivation_usd": 545,
+    "contraction_usd": -5380,
+    "churned_usd": -1155,
+    "net_new_usd": 5010
+   },
+   "by_plan": {
+    "Enterprise": {
+     "mrr_usd": 20295,
+     "paying_workspaces": 113,
+     "share_of_mrr": 0.328027,
+     "arpa_usd": 179.6
+    },
+    "Essentials": {
+     "mrr_usd": 17025,
+     "paying_workspaces": 234,
+     "share_of_mrr": 0.275174,
+     "arpa_usd": 72.76
+    },
+    "Free": {
+     "mrr_usd": 0,
+     "paying_workspaces": 0,
+     "share_of_mrr": 0,
+     "arpa_usd": null
+    },
+    "Professional": {
+     "mrr_usd": 24550,
+     "paying_workspaces": 148,
+     "share_of_mrr": 0.3968,
+     "arpa_usd": 165.88
+    }
+   }
+  },
+  "latest_complete": {
+   "month": "2025-12-01",
+   "is_complete": true,
+   "mrr_usd": 61870,
+   "previous_mrr_usd": 56860,
+   "mrr_growth_rate": 0.088111,
+   "paying_workspaces": 495,
+   "arpa_usd": 124.99,
+   "billed_seats": 3911,
+   "movement": {
+    "new_usd": 125,
+    "expansion_usd": 10875,
+    "reactivation_usd": 545,
+    "contraction_usd": -5380,
+    "churned_usd": -1155,
+    "net_new_usd": 5010
+   },
+   "by_plan": {
+    "Enterprise": {
+     "mrr_usd": 20295,
+     "paying_workspaces": 113,
+     "share_of_mrr": 0.328027,
+     "arpa_usd": 179.6
+    },
+    "Essentials": {
+     "mrr_usd": 17025,
+     "paying_workspaces": 234,
+     "share_of_mrr": 0.275174,
+     "arpa_usd": 72.76
+    },
+    "Free": {
+     "mrr_usd": 0,
+     "paying_workspaces": 0,
+     "share_of_mrr": 0,
+     "arpa_usd": null
+    },
+    "Professional": {
+     "mrr_usd": 24550,
+     "paying_workspaces": 148,
+     "share_of_mrr": 0.3968,
+     "arpa_usd": 165.88
+    }
+   }
+  },
+  "series": [
+   {
+    "month": "2025-10-01",
+    "is_complete": true,
+    "mrr_usd": 47725,
+    "previous_mrr_usd": 41810,
+    "mrr_growth_rate": 0.141473,
+    "paying_workspaces": 457,
+    "arpa_usd": 104.43,
+    "billed_seats": 3040,
+    "movement": {
+     "new_usd": 6300,
+     "expansion_usd": 4755,
+     "reactivation_usd": 825,
+     "contraction_usd": -5245,
+     "churned_usd": -720,
+     "net_new_usd": 5915
+    },
+    "by_plan": {
+     "Enterprise": {
+      "mrr_usd": 18855,
+      "paying_workspaces": 105,
+      "share_of_mrr": 0.395076,
+      "arpa_usd": 179.57
+     },
+     "Essentials": {
+      "mrr_usd": 15570,
+      "paying_workspaces": 220,
+      "share_of_mrr": 0.326244,
+      "arpa_usd": 70.77
+     },
+     "Free": {
+      "mrr_usd": 0,
+      "paying_workspaces": 0,
+      "share_of_mrr": 0,
+      "arpa_usd": null
+     },
+     "Professional": {
+      "mrr_usd": 13300,
+      "paying_workspaces": 132,
+      "share_of_mrr": 0.27868,
+      "arpa_usd": 100.76
+     }
+    }
+   },
+   {
+    "month": "2025-11-01",
+    "is_complete": true,
+    "mrr_usd": 56860,
+    "previous_mrr_usd": 47725,
+    "mrr_growth_rate": 0.191409,
+    "paying_workspaces": 510,
+    "arpa_usd": 111.49,
+    "billed_seats": 3638,
+    "movement": {
+     "new_usd": 9285,
+     "expansion_usd": 5830,
+     "reactivation_usd": 1150,
+     "contraction_usd": -5920,
+     "churned_usd": -1210,
+     "net_new_usd": 9135
+    },
+    "by_plan": {
+     "Enterprise": {
+      "mrr_usd": 20025,
+      "paying_workspaces": 111,
+      "share_of_mrr": 0.352181,
+      "arpa_usd": 180.41
+     },
+     "Essentials": {
+      "mrr_usd": 17610,
+      "paying_workspaces": 244,
+      "share_of_mrr": 0.309708,
+      "arpa_usd": 72.17
+     },
+     "Free": {
+      "mrr_usd": 0,
+      "paying_workspaces": 0,
+      "share_of_mrr": 0,
+      "arpa_usd": null
+     },
+     "Professional": {
+      "mrr_usd": 19225,
+      "paying_workspaces": 155,
+      "share_of_mrr": 0.338111,
+      "arpa_usd": 124.03
+     }
+    }
+   },
+   {
+    "month": "2025-12-01",
+    "is_complete": true,
+    "mrr_usd": 61870,
+    "previous_mrr_usd": 56860,
+    "mrr_growth_rate": 0.088111,
+    "paying_workspaces": 495,
+    "arpa_usd": 124.99,
+    "billed_seats": 3911,
+    "movement": {
+     "new_usd": 125,
+     "expansion_usd": 10875,
+     "reactivation_usd": 545,
+     "contraction_usd": -5380,
+     "churned_usd": -1155,
+     "net_new_usd": 5010
+    },
+    "by_plan": {
+     "Enterprise": {
+      "mrr_usd": 20295,
+      "paying_workspaces": 113,
+      "share_of_mrr": 0.328027,
+      "arpa_usd": 179.6
+     },
+     "Essentials": {
+      "mrr_usd": 17025,
+      "paying_workspaces": 234,
+      "share_of_mrr": 0.275174,
+      "arpa_usd": 72.76
+     },
+     "Free": {
+      "mrr_usd": 0,
+      "paying_workspaces": 0,
+      "share_of_mrr": 0,
+      "arpa_usd": null
+     },
+     "Professional": {
+      "mrr_usd": 24550,
+      "paying_workspaces": 148,
+      "share_of_mrr": 0.3968,
+      "arpa_usd": 165.88
+     }
+    }
+   }
+  ]
+ },
+ "meta": {
+  "as_of": "2025-12-31",
+  "data_start": "2025-01-02",
+  "data_end": "2025-12-31",
+  "effective_range": {
+   "start": "2025-01-01",
+   "end": "2025-12-31"
+  },
+  "filters": {
+   "plan_tier": null,
+   "group_by": "plan_tier"
+  },
+  "sources": [],
+  "data_version": "phase4b-run-1",
+  "generated_at": "2026-10-06T19:06:36.490135Z",
+  "definitions": {},
+  "caveats": [
+   "A workspace that changes plan moves all its MRR to the new plan, so per-plan previous MRR and movements are relative to the workspaces on that plan this month."
+  ]
+ }
+}
