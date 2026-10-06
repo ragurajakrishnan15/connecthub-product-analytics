@@ -355,6 +355,34 @@ body {
 }
 .built-by a { color: var(--accent-light); text-decoration: none; }
 
+/* API-key dialog (shown when the API answers 401) */
+.key-dialog {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  width: min(420px, calc(100vw - 32px));
+}
+.key-dialog::backdrop { background: rgba(0,0,0,0.6); }
+.key-dialog h2 { font-size: 16px; margin-bottom: 8px; }
+.key-dialog p { font-size: 13px; color: var(--text-2); margin-bottom: 14px; }
+.key-dialog label { display: block; font-size: 12px; color: var(--text-3); }
+.key-dialog input {
+  display: block; width: 100%; margin-top: 6px; padding: 10px 12px;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 13px;
+}
+.key-dialog input:focus { outline: none; border-color: var(--accent); }
+.key-dialog .key-dialog-error { color: var(--red); min-height: 18px; margin: 8px 0 0; }
+.key-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.key-dialog-actions button {
+  padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--text); font-size: 13px; cursor: pointer;
+}
+.key-dialog-actions button[type="submit"] { background: var(--accent); border-color: var(--accent); }
+
 @media (max-width: 768px) {
   .chart-row { grid-template-columns: 1fr; }
   .exp-result { grid-template-columns: 1fr; }
@@ -633,6 +661,408 @@ body {
 function applyStyles(root) {
   root.querySelectorAll('[data-style]').forEach(el => { el.style.cssText = el.dataset.style; });
 }
+
+// ===== DATA LAYER: BEGIN =====
+// The only code that talks to the analytics API (PHASE_5_PLAN.md section 3). Everything between
+// the BEGIN and END markers is run by tests/dashboard/data_layer.test.mjs in Node with a fake
+// fetch, so it must not touch window, document or location: the page injects them below.
+// It holds no analytics values: only paths, parameter names and structural "is it empty" checks.
+const API_PREFIX = '/api';
+const KEY_STORAGE = 'connecthub.apiKey';
+const DEFAULT_TIMEOUT_MS = 10000;
+const MAX_CACHED_RESPONSES = 64;
+
+class ApiError extends Error {
+  // kind: network | timeout | aborted | auth | validation | not-found | unavailable |
+  //       server-timeout | server | client | parse | protocol | config
+  constructor(kind, message, extra = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.kind = kind;
+    this.status = extra.status ?? null;
+    this.type = extra.type ?? null;           // problem slug, e.g. "data-not-ready"
+    this.title = extra.title ?? null;
+    this.detail = extra.detail ?? null;
+    this.errors = extra.errors ?? null;       // field errors of a 422
+    this.requestId = extra.requestId ?? null;
+    this.retryAfterS = extra.retryAfterS ?? null;
+    this.retryable = ['network', 'timeout', 'unavailable', 'server-timeout'].includes(kind);
+  }
+}
+
+const hasItems = list => Array.isArray(list) && list.length > 0;
+// path, the parameter names the API declares (anything else is a bug here, not sent), and a
+// structural check for "the request succeeded but there is nothing to draw".
+const ENDPOINTS = {
+  meta:            { path: '/meta', params: [], isEmpty: () => false },
+  overview:        { path: '/overview', params: [], isEmpty: d => !d.kpis || Object.keys(d.kpis).length === 0 },
+  engagement:      { path: '/engagement', params: ['start', 'end', 'granularity'],
+                     isEmpty: d => !hasItems(d.points) },
+  activation:      { path: '/activation',
+                     params: ['start', 'end', 'plan_tier', 'granularity', 'include_incomplete'],
+                     isEmpty: d => !hasItems(d.funnel) || d.signups === 0 },
+  retention:       { path: '/retention', params: ['as_of', 'cohort_start', 'cohort_end'],
+                     isEmpty: d => !hasItems(d.pooled_curve) },
+  cohorts:         { path: '/cohorts', params: ['as_of', 'cohort_start', 'cohort_end', 'weeks'],
+                     isEmpty: d => !hasItems(d.cohorts) },
+  revenue:         { path: '/revenue', params: ['start_month', 'end_month', 'plan_tier', 'group_by'],
+                     isEmpty: d => !hasItems(d.series) },
+  featureAdoption: { path: '/feature-adoption',
+                     params: ['features', 'max_day', 'start_month', 'end_month'],
+                     isEmpty: d => !hasItems(d.curves) },
+  experiments:     { path: '/experiments', params: ['decision', 'status'],
+                     isEmpty: d => !hasItems(d.experiments) },
+  experiment:      { path: '/experiments/', params: [], pathParam: 'id', isEmpty: d => !d.experiment },
+  nps:             { path: '/nps', params: ['start', 'end', 'plan_tier', 'granularity', 'min_responses'],
+                     isEmpty: d => !d.summary || d.summary.responses === 0 },
+  support:         { path: '/support', params: ['start', 'end', 'plan_tier', 'call_type', 'granularity'],
+                     isEmpty: d => !d.ai_agent || (d.ai_agent.calls === 0 && (!d.tickets || d.tickets.created === 0)) },
+  customerHealth:  { path: '/customer-health', params: ['plan_tier'], isEmpty: d => !d.workspaces },
+  workspaces:      { path: '/customer-health/workspaces',
+                     params: ['tier', 'plan_tier', 'sort', 'order', 'limit', 'offset'],
+                     isEmpty: d => !hasItems(d.items) },
+};
+const ID_PATTERN = /^[A-Za-z0-9_.-]{1,64}$/;
+const KEY_PATTERN = /^[\x21-\x7E]{1,256}$/;      // printable ASCII, no spaces: safe in a header
+
+function parseBase(baseUrl) {
+  let url;
+  try { url = new URL(baseUrl); } catch (e) { url = null; }
+  if (!url || !['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+    throw new ApiError('config', 'The dashboard must be opened through the API (for example http://127.0.0.1:8000/), not from a file.');
+  }
+  return url.origin;
+}
+
+function buildUrl(origin, name, params = {}, pathId) {
+  const spec = ENDPOINTS[name];
+  if (!spec) throw new TypeError('unknown endpoint ' + name);
+  let path = API_PREFIX + spec.path;
+  if (spec.pathParam) {
+    if (!ID_PATTERN.test(String(pathId ?? ''))) throw new TypeError('invalid ' + spec.pathParam);
+    path += encodeURIComponent(pathId);
+  }
+  const query = new URLSearchParams();
+  for (const param of Object.keys(params).sort()) {
+    if (!spec.params.includes(param)) throw new TypeError('unknown parameter ' + param + ' for ' + name);
+    const value = params[param];
+    for (const v of Array.isArray(value) ? value : [value]) {   // arrays repeat the parameter
+      if (v === null || v === undefined || v === '') continue;
+      if (!['string', 'number', 'boolean'].includes(typeof v)) throw new TypeError('invalid value for ' + param);
+      query.append(param, String(v));
+    }
+  }
+  const qs = query.toString();
+  return origin + path + (qs ? '?' + qs : '');
+}
+
+function kindForStatus(status) {
+  if (status === 401) return 'auth';
+  if (status === 400 || status === 422) return 'validation';
+  if (status === 404) return 'not-found';
+  if (status === 504) return 'server-timeout';
+  if (status === 503) return 'unavailable';
+  if (status >= 500) return 'server';
+  return 'client';
+}
+
+// Never echoes a non-JSON body (an HTML error page, say): only the problem fields are kept.
+async function problemFromResponse(res) {
+  let body = null;
+  try { body = JSON.parse(await res.text()); } catch (e) { body = null; }
+  const p = body && typeof body === 'object' ? body : {};
+  const slug = typeof p.type === 'string' && p.type.startsWith('urn:connecthub:problem:')
+    ? p.type.slice('urn:connecthub:problem:'.length) : null;
+  const retryAfter = Number(res.headers.get('Retry-After'));
+  return new ApiError(kindForStatus(res.status), 'HTTP ' + res.status + (slug ? ' ' + slug : ''), {
+    status: res.status, type: slug,
+    title: typeof p.title === 'string' ? p.title : null,
+    detail: typeof p.detail === 'string' ? p.detail : null,
+    errors: Array.isArray(p.errors) ? p.errors : null,
+    requestId: typeof p.request_id === 'string' ? p.request_id : res.headers.get('X-Request-ID'),
+    retryAfterS: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null,
+  });
+}
+
+function createApiClient(options) {
+  const o = { timeoutMs: DEFAULT_TIMEOUT_MS, maxCached: MAX_CACHED_RESPONSES, ...options };
+  const origin = parseBase(o.baseUrl);
+  const cache = new Map();         // url -> {etag, envelope, requestId}; insertion order = recency
+  const inflight = new Map();      // url -> Promise (identical concurrent requests share one)
+  let memoryKey = null;            // used when sessionStorage is unavailable
+  let promptInFlight = null;
+
+  function readKey() {
+    try { const k = o.storage && o.storage.getItem(KEY_STORAGE); if (k) return k; } catch (e) { /* blocked */ }
+    return memoryKey;
+  }
+  function setApiKey(key) {
+    const k = typeof key === 'string' ? key.trim() : '';
+    if (!KEY_PATTERN.test(k)) return false;
+    memoryKey = k;
+    try { if (o.storage) o.storage.setItem(KEY_STORAGE, k); } catch (e) { /* kept in memory */ }
+    return true;
+  }
+  function clearApiKey() {
+    memoryKey = null;
+    try { if (o.storage) o.storage.removeItem(KEY_STORAGE); } catch (e) { /* ignore */ }
+  }
+
+  async function fetchEnvelope(url, { signal: callerSignal, force = false } = {}) {
+    const entry = force ? null : cache.get(url);
+    const headers = { Accept: 'application/json' };
+    const key = readKey();
+    if (key) headers['X-API-Key'] = key;               // header only: never in the URL, never logged
+    if (entry) headers['If-None-Match'] = entry.etag;
+
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; controller.abort(); }, o.timeoutMs);
+    const onCallerAbort = () => controller.abort();
+    if (callerSignal) {
+      if (callerSignal.aborted) controller.abort();
+      else callerSignal.addEventListener('abort', onCallerAbort, { once: true });
+    }
+    try {
+      if (controller.signal.aborted) throw new ApiError('aborted', 'The request was cancelled.');   // no request at all
+      const res = await o.fetch(url, {
+        method: 'GET', headers, signal: controller.signal,
+        credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer',
+      });
+      const requestId = res.headers.get('X-Request-ID');
+      if (res.status === 304) {
+        if (entry) {
+          cache.delete(url); cache.set(url, entry);    // most recently used
+          return { envelope: entry.envelope, etag: entry.etag, requestId, status: 304, source: 'revalidated' };
+        }
+        if (!force) return await fetchEnvelope(url, { signal: callerSignal, force: true });
+        throw new ApiError('protocol', 'Unexpected 304 response', { status: 304, requestId });
+      }
+      if (!res.ok) {
+        const err = await problemFromResponse(res);
+        if (err.kind === 'auth' && key) { clearApiKey(); err.keyRejected = true; }   // a stale key is not resent
+        throw err;
+      }
+      if (!(res.headers.get('Content-Type') || '').includes('json')) {
+        throw new ApiError('parse', 'The API returned a response that is not JSON.', { status: res.status, requestId });
+      }
+      let envelope;
+      try { envelope = JSON.parse(await res.text()); } catch (e) {
+        if (controller.signal.aborted) throw e;
+        throw new ApiError('parse', 'The API returned invalid JSON.', { status: res.status, requestId });
+      }
+      const isObject = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+      if (!isObject(envelope) || !isObject(envelope.data) || !isObject(envelope.meta)) {
+        throw new ApiError('parse', 'The API response is missing its data or meta.', { status: res.status, requestId });
+      }
+      const etag = res.headers.get('ETag');
+      if (etag) {
+        cache.delete(url);
+        cache.set(url, { etag, envelope, requestId });
+        while (cache.size > o.maxCached) cache.delete(cache.keys().next().value);
+      }
+      return { envelope, etag, requestId, status: res.status, source: 'network' };
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      if (controller.signal.aborted) {
+        throw timedOut
+          ? new ApiError('timeout', 'The API did not respond within ' + Math.round(o.timeoutMs / 1000) + ' seconds.')
+          : new ApiError('aborted', 'The request was cancelled.');
+      }
+      throw new ApiError('network', 'The API could not be reached.');
+    } finally {
+      clearTimeout(timer);
+      if (callerSignal) callerSignal.removeEventListener('abort', onCallerAbort);
+    }
+  }
+
+  // One key prompt at a time, however many panels hit a 401 together.
+  function promptOnce(info) {
+    if (!promptInFlight) {
+      promptInFlight = Promise.resolve().then(() => o.onAuthRequired(info)).catch(() => false)
+        .finally(() => { promptInFlight = null; });
+    }
+    return promptInFlight;
+  }
+
+  async function fetchWithAuth(url, opts) {
+    try {
+      return await fetchEnvelope(url, opts);
+    } catch (err) {
+      if (err.kind !== 'auth' || !o.onAuthRequired) throw err;
+      const entered = await promptOnce({ reason: err.keyRejected ? 'invalid' : 'missing', requestId: err.requestId });
+      if (!entered) throw err;
+      return await fetchEnvelope(url, opts);            // one retry with the new key, never a loop
+    }
+  }
+
+  // Returns {data, meta, status, source, etag, requestId, empty}; `data` is a private copy.
+  async function get(name, params = {}, opts = {}) {
+    const spec = ENDPOINTS[name];
+    const url = buildUrl(origin, name, params, opts.id);
+    let flight = opts.signal ? null : inflight.get(url);
+    if (!flight) {
+      flight = fetchWithAuth(url, opts);
+      if (!opts.signal) {
+        inflight.set(url, flight);
+        const done = () => { if (inflight.get(url) === flight) inflight.delete(url); };
+        flight.then(done, done);
+      }
+    }
+    const r = await flight;
+    const envelope = structuredClone(r.envelope);
+    return { data: envelope.data, meta: envelope.meta, status: r.status, source: r.source,
+             etag: r.etag, requestId: r.requestId, empty: spec.isEmpty(envelope.data) };
+  }
+
+  const client = { get, setApiKey, clearApiKey, hasApiKey: () => !!readKey(), origin,
+                   clearCache: () => cache.clear() };
+  for (const name of Object.keys(ENDPOINTS)) {
+    client[name] = name === 'experiment'
+      ? (id, opts = {}) => get(name, {}, { ...opts, id })
+      : (params, opts) => get(name, params, opts);
+  }
+  return client;
+}
+
+// Text for an error panel. UI wording only; the API's own `detail` is shown as plain text.
+function describeError(err) {
+  const base = { requestId: err.requestId || null, retryable: !!err.retryable, retryAfterS: err.retryAfterS || null };
+  const slug = err.type;
+  const by = {
+    'unauthorized': ['API key required', 'Enter a valid API key to load this panel.'],
+    'data-not-ready': ['Warehouse not ready', 'The analytics warehouse has not been built yet. Run the pipeline, then retry.'],
+    'database-unavailable': ['Database unavailable', 'The warehouse database cannot be reached right now.'],
+    'pool-exhausted': ['Server busy', 'The API is busy. Retry in a few seconds.'],
+    'warehouse-busy': ['Warehouse updating', 'The warehouse is being rebuilt. Retry in a few seconds.'],
+    'query-timeout': ['Query timed out', 'The query took too long. Try a narrower range.'],
+    'experiment-not-found': ['Experiment not found', 'This experiment does not exist.'],
+  };
+  if (slug && by[slug]) return { ...base, title: by[slug][0], message: by[slug][1] };
+  const byKind = {
+    network: ['Cannot reach the API', 'Check that the API is running and reachable from this page.'],
+    timeout: ['The API is not responding', err.message],
+    auth: ['API key required', 'Enter a valid API key to load this panel.'],
+    validation: ['Invalid request', err.detail || 'The API rejected the request parameters.'],
+    'not-found': ['Not found', err.detail || 'The requested data does not exist.'],
+    unavailable: ['Temporarily unavailable', 'The API is not ready. Retry shortly.'],
+    'server-timeout': ['Query timed out', 'The query took too long. Try a narrower range.'],
+    server: ['Server error', 'The API reported an internal error.'],
+    parse: ['Unexpected response', err.message],
+    protocol: ['Unexpected response', err.message],
+    config: ['Cannot load data', err.message],
+  };
+  const [title, message] = byKind[err.kind] || ['Something went wrong', err.message || 'Unknown error'];
+  return { ...base, title, message };
+}
+
+// Per-panel loading state with a stale-response guard: starting a new run cancels the previous
+// request, and a result that arrives after a newer run started is dropped (not drawn).
+// onState receives {state: 'loading'|'ready'|'empty'|'error', result?, error?, message?}.
+function createPanelLoader(onState) {
+  let token = 0;
+  let controller = null;
+  return {
+    async run(fetcher) {
+      if (controller) controller.abort();
+      const mine = ++token;
+      controller = new AbortController();
+      onState({ state: 'loading' });
+      try {
+        const result = await fetcher(controller.signal);
+        if (mine !== token) return null;
+        onState({ state: result.empty ? 'empty' : 'ready', result });
+        return result;
+      } catch (err) {
+        if (mine !== token || err.kind === 'aborted') return null;
+        onState({ state: 'error', error: err, message: describeError(err) });
+        return null;
+      }
+    },
+    cancel() { token += 1; if (controller) controller.abort(); },
+  };
+}
+
+// The API-key dialog (shown on a 401). Built with DOM calls and textContent only; resolves to
+// the entered key, or null if dismissed. The key goes to the client, never into the URL.
+function promptForApiKey(doc, info = {}) {
+  return new Promise(resolve => {
+    const dialog = doc.createElement('dialog');
+    dialog.className = 'key-dialog';
+    dialog.setAttribute('aria-labelledby', 'key-dialog-title');
+    const form = doc.createElement('form');
+    const title = doc.createElement('h2');
+    title.id = 'key-dialog-title';
+    title.textContent = 'API key required';
+    const text = doc.createElement('p');
+    text.textContent = info.reason === 'invalid'
+      ? 'The API rejected that key. Enter a valid key.'
+      : 'This API needs a key. It is kept only for this browser tab.';
+    const label = doc.createElement('label');
+    label.textContent = 'API key';
+    const input = doc.createElement('input');
+    input.type = 'password';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.required = true;
+    input.setAttribute('aria-label', 'API key');
+    label.appendChild(input);
+    const problem = doc.createElement('p');
+    problem.className = 'key-dialog-error';
+    problem.setAttribute('role', 'alert');
+    const row = doc.createElement('div');
+    row.className = 'key-dialog-actions';
+    const cancel = doc.createElement('button');
+    cancel.type = 'button';
+    cancel.textContent = 'Cancel';
+    const submit = doc.createElement('button');
+    submit.type = 'submit';
+    submit.textContent = 'Use key';
+    row.append(cancel, submit);
+    form.append(title, text, label, problem, row);
+    dialog.appendChild(form);
+
+    let settled = false;
+    const finish = value => {
+      if (settled) return;
+      settled = true;
+      if (dialog.open) dialog.close();
+      dialog.remove();
+      resolve(value);
+    };
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      const value = input.value.trim();
+      if (!KEY_PATTERN.test(value)) { problem.textContent = 'Keys are letters, digits and symbols with no spaces.'; return; }
+      finish(value);
+    });
+    cancel.addEventListener('click', () => finish(null));
+    dialog.addEventListener('cancel', event => { event.preventDefault(); finish(null); });   // Escape
+    doc.body.appendChild(dialog);
+    dialog.showModal();
+    input.focus();
+  });
+}
+// ===== DATA LAYER: END =====
+
+// The page's client: same origin only (the policy's connect-src is 'self', and a key is only ever
+// sent to the origin that served this page). Created once; panels call api.overview(), etc.
+let sessionStore = null;
+try { sessionStore = window.sessionStorage; } catch (e) { /* storage blocked: key kept in memory */ }
+const api = (() => {
+  try {
+    return createApiClient({
+      baseUrl: location.origin, fetch: window.fetch.bind(window), storage: sessionStore,
+      onAuthRequired: async info => {
+        const key = await promptForApiKey(document, info);
+        return key ? api.setApiKey(key) : false;
+      },
+    });
+  } catch (err) {
+    console.warn(err.message);          // e.g. opened from a file: panels show their error state
+    return null;
+  }
+})();
 
 // ===== TAB NAVIGATION =====
 document.querySelectorAll('.nav-tab').forEach(tab => {
