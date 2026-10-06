@@ -104,6 +104,13 @@ Not part of the API contract (not in `docs/openapi.json`). With `API_DASHBOARD_P
 | `base-uri`, `form-action` | `'none'` |
 | `frame-ancestors` | `'none'` |
 
+**How the page calls the API** (the data layer in `index.html`, between its `DATA LAYER` markers; tested by `tests/dashboard/data_layer.test.mjs`, which needs Node and runs under `pytest`):
+
+- **Same origin only.** Requests are credential-less `GET`s to the origin that served the page. There is no `?api=` override, because a key must only ever go to the origin that served the page.
+- **ETag revalidation.** The page remembers each response's `ETag` per URL (bounded, in memory), sends `If-None-Match`, and on `304` reuses its stored copy.
+- **Errors** become `ApiError` objects with a `kind` (`network`, `timeout`, `aborted`, `auth`, `validation`, `not-found`, `unavailable`, `server-timeout`, `server`, `parse`, `protocol`, `config`), the problem `type`, `request_id` and `Retry-After`. A request that succeeds with nothing to draw is flagged `empty`.
+- **API key (`API_AUTH_MODE=api_key`).** On a `401` the page shows a key dialog, keeps the key in `sessionStorage` (this tab only; memory if storage is blocked), sends it in `X-API-Key` and retries once. It is never put in a URL, never logged and never in the source. A rejected key is forgotten.
+
 Changing the page changes its hashes automatically on the next start. Because the page's own styles are hashed, markup generated at runtime must set styles through the DOM (`element.style`), not `style=""` strings.
 
 ## Endpoints
