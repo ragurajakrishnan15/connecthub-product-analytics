@@ -767,3 +767,88 @@ def test_defaults_are_the_documented_limits():
             s.analyst_turn_timeout_s, s.analyst_max_request_bytes, s.analyst_max_response_bytes) == \
         (10, 200_000, 6, 60, 262_144, 65_536)
     assert s.analyst_enabled is False and copy.deepcopy(s).analyst_ready is False
+
+
+# --- 11. the budget is crossed in the middle of a turn ------------------------------------------------------------------------------------------
+
+def _midturn(monkeypatch, budget=1000, second='MRR is $99,999.', **overrides):
+    """A turn whose first model reply reports 1,100 tokens (budget 1,000) while asking for a tool."""
+    service = stub(monkeypatch, 'get_overview', OVERVIEW)
+    secret_prompt = 'my private question qqq'
+    api = Api(use(call('get_overview'), tokens=(900, 200)), say(second), analyst_daily_token_budget=budget,
+              **overrides)
+    return service, secret_prompt, api
+
+
+def test_a_budget_crossed_mid_turn_stops_before_any_tool_or_further_model_call(monkeypatch):
+    monkeypatch.setenv('GEMINI_API_KEY', FAKE_KEY)
+    service, question, api = _midturn(monkeypatch)
+    with api:
+        lines = capture_logs()
+        r = api.chat([U(question)])
+        body = assert_problem(r, 429, 'budget-exhausted')
+        assert api.llm.calls == 1                                        # no second model request
+        assert service.calls == [] and api.app.state.engine.connections == 0   # no tool, no database
+        assert api.app.state.analyst_budget.snapshot()['tokens'] == 1100  # exactly what was reported
+        assert api.app.state.analyst_budget.snapshot()['requests'] == 1
+        assert 1 <= int(r.headers['retry-after']) <= 86400
+        assert api.app.state.analyst_limiter._running == 0                # the slot was released
+        again = api.chat([U(question)])                                   # spent: refused before the model
+        assert_problem(again, 429, 'budget-exhausted') and api.llm.calls == 1
+    # no partial answer, no unsupported number, nothing that identifies the prompt, key or upstream
+    assert 'answer' not in body and '99,999' not in r.text and '61,870' not in r.text
+    for leaked in (question, FAKE_KEY, FAKE_PASSWORD, 'get_overview', 'tool', 'Traceback', 'analyst-v1',
+                   'You are the ConnectHub'):
+        assert leaked not in r.text, leaked
+    assert body['detail'] == 'the token limit for the analyst has been reached'
+    logged = json.dumps(lines())
+    assert question not in logged and FAKE_KEY not in logged and 'budget-tokens' in logged
+
+
+def test_the_mid_turn_budget_outcome_is_deterministic(monkeypatch):
+    outcomes = []
+    for _ in range(3):
+        service, question, api = _midturn(monkeypatch)
+        with api:
+            r = api.chat([U(question)], headers={'X-Request-ID': 'req-budget-0001'})
+            snap = api.app.state.analyst_budget.snapshot()
+            outcomes.append((r.status_code, r.json()['type'], r.json()['detail'], r.json()['request_id'],
+                             api.llm.calls, len(service.calls), snap['tokens'], snap['requests']))
+    assert outcomes[0] == outcomes[1] == outcomes[2]
+    assert outcomes[0][0] == 429 and outcomes[0][4:] == (1, 0, 1100, 1)
+
+
+def test_a_turn_that_stays_inside_the_budget_is_not_stopped(monkeypatch):
+    service, question, api = _midturn(monkeypatch, budget=5000, second='MRR is $61,870.')
+    with api:
+        r = api.chat([U(question)])
+        assert r.status_code == 200 and r.json()['status'] == 'answered'
+        assert api.llm.calls == 2 and len(service.calls) == 1
+        assert api.app.state.analyst_budget.snapshot()['tokens'] == 1100 + 15     # 900+200, then 10+5
+
+
+def _skip_check(number):
+    """DailyBudget.exhausted() that reports 'not exhausted' on its number-th call only."""
+    real = DailyBudget.exhausted
+    state = {'calls': 0}
+
+    def exhausted(self):
+        state['calls'] += 1
+        return None if state['calls'] == number else real(self)
+    return exhausted
+
+
+@pytest.mark.parametrize('name, patch', [
+    ('no budget check at all', lambda self: None),
+    ('the check after the model reply is removed', _skip_check(3)),   # 1 route, 2 loop start, 3 mid-turn
+])
+def test_removing_the_mid_turn_budget_stop_is_detected(name, patch, monkeypatch):
+    """The route checks the budget once, then the engine checks before each model request and again
+    before running tools (the third call here). With that check gone (or all of them) the turn runs the tool and goes on to answer, which the
+    test above forbids."""
+    service, question, api = _midturn(monkeypatch)
+    monkeypatch.setattr(DailyBudget, 'exhausted', patch)
+    with api:
+        r = api.chat([U(question)])
+        broken = (r.status_code != 429 or service.calls != [] or api.llm.calls != 1)
+    assert broken, f'mutation {name!r} was not detected'
