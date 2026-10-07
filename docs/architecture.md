@@ -205,12 +205,25 @@ never come from the clock: the 12-month support and NPS windows are computed
 from `/api/meta`'s data window, and every other panel uses the API's own
 defaults, which are relative to the last loaded day.
 
+## AI analyst (Phase 6)
+
+```
+browser (Analyst tab, history in page memory)
+  -> POST /api/analyst/chat   [API key, same-origin, content type, size, rate limit, daily token budget]
+  -> chat engine              [validates history; fixed server-written instructions; tool loop with limits]
+  -> Gemini provider          [one HTTP request per call, no retries; the model sees only the 14 tool declarations]
+  -> allowlisted tools        [strict arguments -> existing services -> read-only pool, size-capped results]
+  -> grounding check          [every number matched to a tool result, or the answer is withheld]
+  -> response                 [plain text, sources, grounding status; no internals]
+```
+
+The modules are `api/analyst/` (`tools.py`, `engine.py`, `llm.py`, `gemini.py`, `grounding.py`, `limits.py`), `api/routers/analyst.py` and the Analyst tab in `index.html`. The engine knows only the provider-neutral `LlmClient` interface, so the scripted fake used by the tests and the Gemini client are interchangeable. Untrusted text (the user's, the model's, the warehouse's) is never instructions: client roles other than user and assistant are refused, tool results are marked as data, there is no tool that writes, fetches or runs code, and answers are rendered as text. Details: [PHASE_6_PLAN.md](../PHASE_6_PLAN.md); verification status and limitations: [PHASE_6_REPORT.md](../PHASE_6_REPORT.md).
+
 ## Not implemented
 
-Kafka / Kinesis / S3 ingestion, Apache Iceberg and the AI analyst. The dashboard
-has an "AI Analyst" tab, but it is a placeholder: a grounded analyst would be a
-server-side endpoint that keeps its key out of the browser, and does not exist
-yet. There is also no hosted deployment, no browser test in CI (the browser
+Kafka / Kinesis / S3 ingestion and Apache Iceberg. The AI analyst is implemented
+(previous section) but its Gemini live evaluation is incomplete and the Docker
+image does not include it. There is also no hosted deployment, no browser test in CI (the browser
 tests run locally; only Chromium is covered, not Firefox or Safari), and no
 sign-in beyond the optional API key. LookML and Hex files are illustrative and
 unvalidated.
