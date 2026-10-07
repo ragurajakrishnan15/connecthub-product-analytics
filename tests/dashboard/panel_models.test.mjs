@@ -403,10 +403,17 @@ describe('the page', () => {
     assert.ok(!html.includes('Retention by Features Adopted'));
   });
 
-  it('the AI Analyst tab is a Phase 6 placeholder with nothing interactive', () => {
+  it('the Analyst tab is a real chat: a form, a text box, a send button and a conversation log', () => {
     const tab = markup.slice(markup.indexOf('id="tab-ai"'), markup.indexOf('</div><!-- /main -->'));
-    assert.match(tab, /AI Analyst coming in Phase 6/);
-    assert.ok(!/<(input|button|textarea|select|form)\b/.test(tab));
+    assert.ok(!/coming in Phase 6/.test(tab));
+    assert.match(tab, /<form[^>]*id="ai-form"/);
+    assert.match(tab, /<textarea[^>]*id="ai-input"/);
+    assert.match(tab, /<button[^>]*type="submit"[^>]*id="ai-send"/);
+    assert.match(tab, /role="log"/);
+    assert.match(tab, /grounded|checked against/i);
+    assert.match(tab, /Each answer lists its sources/);
+    assert.match(tab, /may be unavailable/);
+    assert.ok(!/\sstyle\s*=|\son[a-z]+\s*=/.test(tab));
   });
 
   it('every element id the script uses exists in the markup', () => {
@@ -423,7 +430,7 @@ describe('the page', () => {
   it('only calls endpoints the data layer defines, and only through the client', () => {
     const called = [...code.matchAll(/needApi\(\)\.(\w+)\(/g)].map(m => m[1]);
     assert.ok(called.length >= 12);
-    for (const name of called) assert.ok(ENDPOINTS[name], 'unknown endpoint ' + name);
+    for (const name of called) assert.ok(ENDPOINTS[name] || name === 'chat', 'unknown endpoint ' + name);   // chat: the analyst's POST
     assert.ok(!/(^|[^.\w])fetch\(/.test(code.replace(/window\.fetch\.bind/, '')), 'panels must not call fetch directly');
   });
 

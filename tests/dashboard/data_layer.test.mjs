@@ -60,7 +60,7 @@ describe('the endpoint table matches the committed OpenAPI contract', () => {
 
   it('covers every data endpoint (everything except the two health routes)', () => {
     const covered = new Set(Object.keys(ENDPOINTS).map(fromSpec));
-    const expected = Object.keys(paths).filter(p => !p.startsWith('/api/health'));
+    const expected = Object.keys(paths).filter(p => !p.startsWith('/api/health') && !p.startsWith('/api/analyst/'));   // the analyst's POST is tested in analyst.test.mjs
     assert.deepEqual([...covered].sort(), expected.sort());
   });
 
@@ -689,7 +689,7 @@ describe('the data layer source', () => {
   it('calls the network only through the injected fetch, and only the /api prefix', () => {
     const code = source.replace(/\/\/.*$/gm, '');
     assert.ok(!/(^|[^.\w])fetch\(/.test(code));
-    assert.equal((code.match(/o\.fetch\(/g) || []).length, 1);
+    assert.equal((code.match(/o\.fetch\(/g) || []).length, 2);      // the GET client and the analyst's POST
     assert.equal((code.match(/https?:\/\/[^\s'"]*/g) || []).filter(u => !u.includes('127.0.0.1')).length, 0);
   });
 
@@ -699,7 +699,7 @@ describe('the data layer source', () => {
     const code = source.replace(/\/\/.*$/gm, '').replace(/'[^'\n]*'|"[^"\n]*"|`[^`\n]*`/g, "''");
     const numbers = [...code.matchAll(/(?<![\w.$])\d+(?:\.\d+)?(?![\w.])/g)].map(m => Number(m[0]));
     assert.ok(numbers.includes(401) && numbers.includes(503), 'the scan really sees the code');
-    const allowed = new Set([0, 1, 64, 256, 1000, 10000, 304, 400, 401, 404, 422, 500, 503, 504]);
+    const allowed = new Set([0, 1, 20, 50, 64, 256, 1000, 10000, 75000, 304, 400, 401, 403, 404, 422, 429, 500, 503, 504]);
     assert.deepEqual([...new Set(numbers.filter(n => !allowed.has(n)))], []);
   });
 });

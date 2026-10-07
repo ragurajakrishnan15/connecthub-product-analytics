@@ -37,12 +37,13 @@ class ThreadedServer(uvicorn.Server):
 class RunningApp:
     """A uvicorn server in a background thread, plus tiny helpers to read its API."""
 
-    def __init__(self, settings, key=None):
+    def __init__(self, settings, key=None, port=None, analyst_llm=None):
         from api.main import create_app
         self.key = key
-        self.port = _free_port()
+        self.port = port or _free_port()
         self.origin = f'http://127.0.0.1:{self.port}'
-        config = uvicorn.Config(create_app(settings), host='127.0.0.1', port=self.port,
+        self.app = create_app(settings, analyst_llm=analyst_llm)          # kept so a test can reach app.state
+        config = uvicorn.Config(self.app, host='127.0.0.1', port=self.port,
                                 log_config=None, access_log=False, lifespan='on')
         self.server = ThreadedServer(config)
         self.thread = threading.Thread(target=self.server.run, daemon=True)
