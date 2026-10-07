@@ -93,7 +93,7 @@ def test_log_redaction_covers_the_key(monkeypatch):
 
 @pytest.mark.parametrize('field,value', [
     ('analyst_max_tool_calls', 7), ('analyst_max_tool_calls', 0), ('analyst_max_history_turns', 0),
-    ('analyst_max_message_chars', 0), ('analyst_max_output_tokens', 10),
+    ('analyst_max_message_chars', 0), ('analyst_max_output_tokens', 10), ('analyst_max_tool_result_bytes', 100),
     ('analyst_upstream_timeout_s', 0), ('analyst_rate_limit_per_min', 0),
     ('analyst_daily_token_budget', 10), ('analyst_model', 'bad model; rm -rf')])
 def test_invalid_analyst_limits_are_rejected(field, value):

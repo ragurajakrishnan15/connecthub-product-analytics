@@ -75,6 +75,7 @@ class Settings(BaseSettings):
     analyst_max_message_chars: int = Field(2000, ge=1, le=20000)
     analyst_max_history_turns: int = Field(10, ge=1, le=50)
     analyst_max_tool_calls: int = Field(6, ge=1, le=6)
+    analyst_max_tool_result_bytes: int = Field(48_000, ge=2000, le=500_000)
     analyst_max_output_tokens: int = Field(1024, ge=64, le=8192)
     analyst_upstream_timeout_s: float = Field(30, gt=0, le=120)
     analyst_rate_limit_per_min: int = Field(10, ge=1, le=600)
