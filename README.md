@@ -31,8 +31,8 @@ See [docs/api.md](docs/api.md#dashboard-page-get-) for how the page is served an
 
 The API (`api/`) is documented in [docs/api.md](docs/api.md); the dashboard is part of the same service.
 
-Not implemented: Kafka/Kinesis/S3 ingestion, Apache Iceberg and the AI analyst (the dashboard tab is a placeholder),
-and an automated browser test suite for the dashboard. See [docs/architecture.md](docs/architecture.md).
+Not implemented: Kafka/Kinesis/S3 ingestion, Apache Iceberg and the AI analyst (the dashboard tab is a placeholder).
+See [docs/architecture.md](docs/architecture.md).
 
 ## Architecture
 
@@ -51,7 +51,7 @@ Metric definitions: [docs/metric-definitions.md](docs/metric-definitions.md).
 
 ## Tech Stack
 
-Python 3.11 | SQL | PostgreSQL 15 | dbt 1.7 | Apache Airflow 2.8 | Great Expectations 0.18 | FastAPI | pandas | NumPy | SciPy | scikit-learn | PySpark (isolated) | Docker | Chart.js 4.4.1 (vendored; plain HTML and JavaScript, no build step) | Node.js (dashboard tests only)
+Python 3.11 | SQL | PostgreSQL 15 | dbt 1.7 | Apache Airflow 2.8 | Great Expectations 0.18 | FastAPI | pandas | NumPy | SciPy | scikit-learn | PySpark (isolated) | Docker | Chart.js 4.4.1 (vendored; plain HTML and JavaScript, no build step) | Node.js and Playwright (dashboard tests only)
 
 ## Quick Start
 
@@ -60,6 +60,10 @@ Python 3.11 | SQL | PostgreSQL 15 | dbt 1.7 | Apache Airflow 2.8 | Great Expecta
 - **Python 3.11** (pinned in `.python-version`). dbt-core 1.7 and Airflow 2.8 do not support Python 3.12+.
 - Docker Desktop (PostgreSQL warehouse, the API and dashboard; Airflow and Spark images)
 - Node.js, optional: only the dashboard's JavaScript tests need it (`tests/dashboard`, run by `pytest`; developed with Node 24). Without Node that one test is skipped.
+- Playwright and Chromium, optional: only the dashboard's browser tests (`tests/browser`) need them.
+  `pip install -r requirements/browser.txt -c requirements/constraints-py311.txt`; the browser itself is downloaded
+  separately (see that file, which also shows how to keep it off a nearly full drive). Without them those tests are
+  skipped.
 
 ### Configuration
 
@@ -213,7 +217,7 @@ connecthub-product-analytics/
 ├── dags/                           # Airflow DAG
 ├── docker/                         # Airflow and Spark images
 ├── spark_jobs/                     # PySpark jobs (isolated, verified against dbt)
-├── tests/                          # pytest: unit, integration, end-to-end; tests/dashboard: Node tests for the page
+├── tests/                          # pytest: unit, integration, end-to-end; tests/dashboard: Node tests, tests/browser: Playwright
 ├── docs/                           # Architecture, API reference, metric definitions, playbooks
 ├── index.html                      # The dashboard: one file, served by the API at / (reads only the API)
 ├── vendor/                         # Vendored Chart.js 4.4.1 (MIT), its license and provenance
@@ -237,7 +241,7 @@ connecthub-product-analytics/
 
 ### Serving
 - **Analytics API** (`api/`) — Read-only endpoints over the gold serving tables, with caching, ETags and a committed OpenAPI contract ([docs/api.md](docs/api.md))
-- **Dashboard** (`index.html`) — One file in three layers: a data layer (same-origin requests, ETag revalidation, error and key handling), pure panel models (API data to display), and panels with loading, empty and error states. Tested in Node without a browser (`tests/dashboard`)
+- **Dashboard** (`index.html`) — One file in three layers: a data layer (same-origin requests, ETag revalidation, error and key handling), pure panel models (API data to display), and panels with loading, empty and error states. Tested in Node (`tests/dashboard`) and in Chromium with Playwright against the real API and warehouse (`tests/browser`)
 - **Dashboard serving** (`api/dashboard.py`) — Reads the page at startup, derives its Content-Security-Policy from it, and refuses to start on inline handlers, remote scripts or a vendored script whose hash does not match
 
 ## License

@@ -105,7 +105,7 @@ Not part of the API contract (not in `docs/openapi.json`). With `API_DASHBOARD_P
 | `base-uri`, `form-action` | `'none'` |
 | `frame-ancestors` | `'none'` |
 
-**How the page calls the API** (the data layer in `index.html`, between its `DATA LAYER` markers; tested by `tests/dashboard/data_layer.test.mjs`, which needs Node and runs under `pytest`):
+**How the page calls the API** (the data layer in `index.html`, between its `DATA LAYER` markers; tested by `tests/dashboard/data_layer.test.mjs`, which needs Node and runs under `pytest`; the whole page is also exercised in Chromium by `tests/browser`, which needs Playwright, see `requirements/browser.txt`):
 
 - **Same origin only.** Requests are credential-less `GET`s to the origin that served the page. There is no `?api=` override, because a key must only ever go to the origin that served the page.
 - **ETag revalidation.** The page remembers each response's `ETag` per URL (bounded, in memory), sends `If-None-Match`, and on `304` reuses its stored copy.

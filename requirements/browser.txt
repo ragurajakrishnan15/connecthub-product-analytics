@@ -1,0 +1,13 @@
+# Optional: the dashboard browser tests (tests/browser, Playwright driving Chromium).
+# Not part of requirements.txt: without it those tests are skipped, not failed.
+#
+#   pip install -r requirements/browser.txt -c requirements/constraints-py311.txt
+#
+# Playwright 1.58 drives Chromium revision 1208 (Chromium 145). If that browser is not
+# already on the machine, download only Chromium (about 400 MB plus a 260 MB headless shell):
+#   python -m playwright install chromium
+# Playwright keeps browsers outside the project (default %LOCALAPPDATA%\ms-playwright, or
+# ~/.cache/ms-playwright). On a drive that is short of space, point it elsewhere first:
+#   PLAYWRIGHT_BROWSERS_PATH=D:\playwright-browsers
+# (set the same variable when running pytest).
+playwright==1.58.0
