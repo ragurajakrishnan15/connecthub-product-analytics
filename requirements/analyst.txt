@@ -1,0 +1,7 @@
+# Optional: the AI analyst (PHASE_6_PLAN.md). Not part of requirements.txt or api.txt:
+# without it the API runs normally and the analyst reports "not available". Install with the lock file:
+#   pip install -r requirements/analyst.txt -c requirements/constraints-py311.txt
+#
+# The Gemini key is read only from the GEMINI_API_KEY environment variable; it never goes in a file.
+# Verified together with the pinned versions in constraints-py311.txt (pip check clean).
+google-genai==2.28.0

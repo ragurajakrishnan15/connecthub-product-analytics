@@ -67,6 +67,20 @@ class Settings(BaseSettings):
     api_data_version_ttl_s: float = Field(30, ge=0, le=3600)
     api_cache_max_age_s: int = Field(60, ge=0, le=3600)
 
+    # --- AI analyst (PHASE_6_PLAN.md §4.4, §4.5). Off by default. The Gemini key comes only from
+    # the GEMINI_API_KEY environment variable (never a file, an image or the page) and is masked.
+    analyst_enabled: bool = False
+    gemini_api_key: SecretStr | None = None
+    analyst_model: str | None = Field(None, pattern=r'^[A-Za-z0-9._-]{1,64}$')
+    analyst_max_message_chars: int = Field(2000, ge=1, le=20000)
+    analyst_max_history_turns: int = Field(10, ge=1, le=50)
+    analyst_max_tool_calls: int = Field(6, ge=1, le=6)
+    analyst_max_output_tokens: int = Field(1024, ge=64, le=8192)
+    analyst_upstream_timeout_s: float = Field(30, gt=0, le=120)
+    analyst_rate_limit_per_min: int = Field(10, ge=1, le=600)
+    analyst_daily_token_budget: int = Field(200_000, ge=1000)
+    analyst_log_content: bool = False             # prompts and answers are logged only when true
+
     @field_validator('api_cors_origins', mode='before')
     @classmethod
     def _parse_origins(cls, value):
@@ -82,6 +96,14 @@ class Settings(BaseSettings):
     @classmethod
     def _blank_dashboard_path(cls, value):
         return None if isinstance(value, str) and not value.strip() else value
+
+    @field_validator('gemini_api_key', 'analyst_model', mode='before')
+    @classmethod
+    def _blank_is_unset(cls, value):
+        """An empty or whitespace-only value counts as not set (a blank line in a shell profile)."""
+        if isinstance(value, str):
+            return value.strip() or None
+        return value
 
     @field_validator('api_keys', mode='before')
     @classmethod
@@ -105,11 +127,23 @@ class Settings(BaseSettings):
             return self.api_env == 'development'
         return self.api_docs_enabled
 
+    @property
+    def analyst_key_present(self) -> bool:
+        return self.gemini_api_key is not None
+
+    @property
+    def analyst_ready(self) -> bool:
+        """The analyst can be offered: switched on, a key present and a model chosen. Anything
+        less is "not configured" (the endpoint answers 503); it never stops the API starting."""
+        return self.analyst_enabled and self.analyst_key_present and self.analyst_model is not None
+
     def summary(self) -> dict:
-        """Settings safe to log: secrets masked."""
+        """Settings safe to log: secrets masked. The Gemini key shows only as present or absent."""
         out = self.model_dump(mode='json')
         out['api_db_password'] = '***'
         out['api_keys'] = ['***'] * len(self.api_keys)
+        out['gemini_api_key'] = '***' if self.analyst_key_present else None
+        out['analyst_ready'] = self.analyst_ready
         out['docs_enabled'] = self.docs_enabled
         return out
 
