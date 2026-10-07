@@ -410,6 +410,12 @@ def _error(tool, code, message, arguments=None):
     return out
 
 
+def error_result(name, code, message):
+    """An `ok: false` result in the same shape run_tool returns, for callers (the chat engine) that
+    refuse a call before it reaches run_tool. `name` need not be a real tool."""
+    return _error(TOOLS.get(name) if isinstance(name, str) else None, code, message)
+
+
 def _problems(exc):
     return '; '.join(
         f"{'.'.join(str(p) for p in err['loc']) or 'arguments'}: {err['msg']}"
