@@ -6,6 +6,24 @@ import generate_synthetic_data as gen
 
 matplotlib.use('Agg')  # cohort_engine plots; never open a window in tests
 
+GOOGLE_SUFFIXES = ('googleapis.com', 'google.com', 'gstatic.com', 'ai.google.dev')
+
+
+@pytest.fixture(autouse=True)
+def never_resolve_a_google_host(monkeypatch):
+    """No test may reach Google, whatever it builds (Phase 6: the live Gemini evaluation is a separate,
+    approved step). Resolving such a name fails the test; every other name resolves as before."""
+    import socket
+    real = socket.getaddrinfo
+
+    def guarded(host, *args, **kwargs):
+        name = host.decode() if isinstance(host, bytes) else str(host or '')
+        if name.lower().rstrip('.').endswith(GOOGLE_SUFFIXES):
+            raise AssertionError(f'a test tried to reach {name}')
+        return real(host, *args, **kwargs)
+    monkeypatch.setattr(socket, 'getaddrinfo', guarded)
+
+
 SAMPLE_USERS = 4000
 SAMPLE_WORKSPACES = 400
 

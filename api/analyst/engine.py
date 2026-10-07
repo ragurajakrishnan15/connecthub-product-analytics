@@ -221,7 +221,8 @@ class ChatResult:
 
 
 _UPSTREAM = {'timeout': ('upstream-timeout', 'the language model took too long to answer'),
-             'rate_limited': ('upstream-rate-limited', 'the language model is busy; retry shortly')}
+             'rate_limited': ('upstream-rate-limited', 'the language model is busy; retry shortly'),
+             'auth': ('upstream-not-authorized', 'the language model is not available (service configuration)')}
 _UPSTREAM_DEFAULT = ('upstream-error', 'the language model could not answer right now')
 _BUDGET_MESSAGE = {'requests': 'the request limit for the analyst has been reached',
                    'tokens': 'the token limit for the analyst has been reached',
@@ -384,8 +385,10 @@ def run_chat(messages, *, llm, engine, settings, budget=None, cancel=None, clock
             name = call.name if isinstance(call.name, str) else '<invalid>'
             trace.append({'id': call_id, 'name': _label(name, 64), 'arguments': _recorded(call.arguments),
                           'cached': cached, 'result': result})
-            requested.append({'id': call_id, 'name': _label(name, 64),
-                              'arguments': _recorded(call.arguments)})
+            entry = {'id': call_id, 'name': _label(name, 64), 'arguments': _recorded(call.arguments)}
+            if isinstance(getattr(call, 'provider_state', None), str):
+                entry['provider_state'] = call.provider_state[:2000]
+            requested.append(entry)
             answered.append({'id': call_id, 'name': _label(name, 64),
                              'content': json.dumps(result, ensure_ascii=False, separators=(',', ':'),
                                                    allow_nan=False)})

@@ -397,7 +397,7 @@ def _shrink(result, budget):
 # --- running a tool ----------------------------------------------------------------------------------
 
 def _clip(value, limit=MAX_ERROR_CHARS):
-    return _clean_string(str(value))[0][:limit]
+    return _clean_string(redact(str(value)))[0][:limit]       # a configured secret is masked even here
 
 
 def _error(tool, code, message, arguments=None):
