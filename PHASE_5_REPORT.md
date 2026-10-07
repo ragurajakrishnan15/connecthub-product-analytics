@@ -3,9 +3,9 @@
 1. **Date:** 2026-10-06
 2. **Branch:** `phase-5`
 3. **Starting commit:** `193be5f` (Phase 4D). Phases 4A–4D (`0a35c91`, `3fa11e3`, `307ed88`, `193be5f`) are all in the history.
-4. **Final commit:** the commit that contains this report (`git log -1`; a file cannot contain its own commit's hash). The implementation is complete at `ad8c73b`; this report is the only change after it.
+4. **Final implementation commit:** `2e0fe75` (the Playwright browser suite). This report was first committed in `1962fba` (when the implementation was complete at `ad8c73b`), extended by §19 and §20, and reconciled with the final state in §21; a file cannot contain the hash of the commit that contains it, so the reconciliation commit is not named here.
 5. **Result:** `index.html` now renders **only data returned by the Phase 4 API**. No analytics number is a literal in the page. The AI Analyst is deferred to Phase 6.
-6. **Not done:** pushing, merging, tagging, rewriting history, installing Playwright/Chromium (done afterwards, see §20), vendoring Chart.js (done afterwards, see §19), the AI analyst.
+6. **Not done:** pushing, merging, tagging, rewriting history, the AI analyst (Phase 6), and the plan's second-dataset sensitivity check (§15, §16). Done after the first version of this report: the Playwright suite (§20) and vendoring Chart.js (§19).
 
 | Commit | Step |
 |---|---|
@@ -13,7 +13,11 @@
 | `e70367f` | Step 1: serve the dashboard through the API with a hash-based CSP |
 | `d0a71d9` | Step 2: the dashboard data layer |
 | `ad8c73b` | Step 3: wire every panel to the API |
-| *(this commit)* | Final validation and this report |
+| `1962fba` | Final validation report (the first version of this document) |
+| `fcc4f43` | Vendor Chart.js 4.4.1 and serve it from the dashboard's own origin (§19) |
+| `abee9e1` | Docs: README and `docs/architecture.md` describe the dashboard as it works now |
+| `2e0fe75` | **Phase 5: add Playwright browser validation** (42 tests; §20) |
+| *(reconciliation)* | This report reconciled with the final state (§21) |
 
 ---
 
@@ -21,7 +25,7 @@
 
 | Area | Before | After |
 |---|---|---|
-| Data | Every KPI, series, table row and "AI answer" was a literal in `index.html` | Every displayed value comes from one of 13 API endpoints, through one client |
+| Data | Every KPI, series, table row and "AI answer" was a literal in `index.html` | Every displayed value comes from 13 of the API's 14 data endpoints (all but `/api/retention`), through one client |
 | Serving | `index.html` had to be opened as a file | `GET /` on the API container serves it, same origin, with its own CSP |
 | CSP | n/a (API-only policy) | Derived from the page at startup: script and style hashes, one exact CDN URL (since replaced by `'self'`, see §19), `style-src-attr 'none'`, no `unsafe-inline`, no `unsafe-hashes` |
 | Failure handling | None (nothing could fail) | Per-panel loading, empty and error states, request id, Retry; stale responses dropped |
@@ -29,21 +33,28 @@
 | AI Analyst | Canned answers with invented numbers | "AI Analyst coming in Phase 6" placeholder, nothing interactive |
 | Phase 4 code | Frozen | Extended additively in 4 `api/` files (the serving hook); no behavior changed |
 
-## 2. Files changed since `193be5f` (29 files, +5,663 / −494, not counting this report)
+## 2. Files changed since `193be5f`
+
+In the first version of this report (at `ad8c73b`): 29 files, +5,663 / −494, not counting the report. **Final, at `2e0fe75` (`git diff phase-4...phase-5 --stat`): 42 files, +7,301 / −519**, which adds the later work listed in the last rows of the table.
 
 | File | Change | Purpose |
 |---|---|---|
-| `api/dashboard.py` | new (185 lines) | Reads the page once, derives the CSP, serves `GET /` (ETag/304, `no-cache`) |
+| `api/dashboard.py` | new (185 lines at Step 1; 263 after Chart.js vendoring) | Reads the page once, derives the CSP, serves `GET /` (ETag/304, `no-cache`) and the vendored script |
 | `api/main.py`, `api/settings.py`, `api/__main__.py` | +7 lines each | `API_DASHBOARD_PATH` setting; mount the route; fail fast at startup with a clear message |
 | `index.html` | rewritten (1,818 lines) | The data layer, panel models, panels, new styles; all mock data and the canned analyst removed |
 | `docker/api/Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.env.example` | small | Put `index.html` in the image and set `API_DASHBOARD_PATH` for the compose service |
-| `docs/api.md` | +44 lines | Dashboard section: serving, CSP table, data layer, panel table, key handling |
-| `tests/api/test_api_dashboard.py` | new (28 tests) | Serving, headers, ETag/304, CSP content, startup refusals |
+| `docs/api.md` | +44 lines at Step 3 (+45 final) | Dashboard section: serving, CSP table, data layer, panel table, key handling |
+| `tests/api/test_api_dashboard.py` | new (28 tests at Step 1; 72 after vendoring) | Serving, headers, ETag/304, CSP content, startup refusals, vendored-script checks |
 | `tests/dashboard/data_layer.test.mjs` | new (104 tests) | The data layer, extracted from the page and run in Node against a fake `fetch` |
 | `tests/dashboard/panel_models.test.mjs` | new (53 tests) | Panel models and page-level checks (no mock data, no unsafe sinks, every element id exists) |
 | `tests/dashboard/fixtures/*.json` (14) | new | Trimmed real API responses |
 | `tests/test_dashboard_data_layer.py` | new (1 test) | Runs the Node tests under `pytest` (skips if Node is missing) |
 | `PHASE_5_PLAN.md`, `PHASE_5_REPORT.md` | new | Plan and this report |
+| `vendor/chart.umd.js`, `vendor/LICENSE-chartjs.md`, `vendor/README.md` | new (`fcc4f43`) | Vendored Chart.js 4.4.1, its MIT license and provenance (§19) |
+| `.gitattributes` | +3 (`fcc4f43`) | `vendor/** -text`: Git never converts the vendored bytes |
+| `tests/browser/browserlib.py`, `conftest.py`, `test_dashboard_browser.py` | new (`2e0fe75`) | The Playwright browser suite, 42 tests (§20) |
+| `requirements/browser.txt`, `requirements/constraints-py311.txt`, `pyproject.toml` | new / +2 / +1 (`2e0fe75`) | Optional Playwright dependency, its pins, and a `browser` marker |
+| `README.md`, `docs/architecture.md` | updated (`abee9e1`, `2e0fe75`) | Describe the dashboard, the vendored Chart.js and the browser suite |
 
 **Not changed:** `pipeline/`, `dbt_project/`, `analytics/`, `experimentation/`, `docs/openapi.json`, the warehouse, and the cache, ETag, authentication and endpoint code.
 
@@ -90,6 +101,7 @@ base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 - Line endings are normalized to LF before hashing and serving, so Windows and Linux checkouts give the same policy.
 - The route is public and outside the OpenAPI contract; `/api/*` keeps `default-src 'none'; frame-ancestors 'none'`. `X-Frame-Options`, `nosniff` and `no-referrer` apply to the page too.
 - **Evolution:** Step 1 shipped `style-src-attr 'unsafe-hashes'` for 16 static style attributes. Step 3 rebuilt the markup with CSS classes, so the exception is gone.
+- **The policy block above is as of Step 3.** Chart.js vendoring (`fcc4f43`) replaced the CDN script source with `'self'` (the final policy is in §19), and the loader now also serves a page-relative, integrity-checked script and refuses any remote script.
 
 ## 5. Data layer architecture
 
@@ -99,7 +111,7 @@ One client (`createApiClient`) between `DATA LAYER: BEGIN/END` markers; it touch
 - **ETag/304:** per-URL `If-None-Match` from a bounded in-memory cache; a `304` reuses the stored response, returned as a private copy; a `304` with nothing stored is retried once and a second one is a protocol error.
 - **Errors:** `ApiError` with a kind (`network`, `timeout`, `aborted`, `auth`, `validation`, `not-found`, `unavailable`, `server-timeout`, `server`, `parse`, `protocol`, `config`), the problem type, request id and `Retry-After`. A non-JSON error body is never echoed. The 10 s budget covers reading the body; an already-aborted request makes no request.
 - **Empty data:** a successful response with nothing to draw is flagged `empty` by a structural per-endpoint check.
-- **Panels:** `createPanelLoader` gives loading/ready/empty/error with a stale-response guard; `definePanel` adds the state box, Retry button, request id and the API's caveats. 13 panels plus the top bar; the Overview loads at start and every other tab on first open, so one failing endpoint never blanks another panel.
+- **Panels:** `createPanelLoader` gives loading/ready/empty/error with a stale-response guard; `definePanel` adds the state box, Retry button, request id and the API's caveats. **12 panels** (12 `definePanel` calls) plus the top-bar loader (an earlier version of this report said 13, which counted the function's own definition line); the Overview loads at start and every other tab on first open, so one failing endpoint never blanks another panel.
 
 ## 6. Authentication behavior
 
@@ -121,7 +133,7 @@ Run on the committed tree at `ad8c73b` (clean working tree):
 | `ruff check .` | All checks passed |
 | `python -m api.openapi --check` | Snapshot matches (16 paths); `docs/openapi.json` unchanged |
 
-Suite size by step: 264 (Phase 4D) → 292 (Step 1) → 293 (Step 2) → 293 (Step 3; the new Node tests run inside the one wrapper).
+Suite size by step: 264 (Phase 4D) → 292 (Step 1) → 293 (Step 2) → 293 (Step 3; the new Node tests run inside the one wrapper). Later runs: 337 + 2 skipped after Chart.js vendoring (§19) and **379 + 2 skipped with the browser suite (§20, final)**.
 
 ## 8. Live API validation (committed page, running container)
 
@@ -169,8 +181,10 @@ A scratch copy of the page plus a driver script was served by a throwaway contai
 | The AI tab makes no request and holds no canned answers | **Met** |
 | `openapi.json` unchanged; suite and Ruff green; fingerprint identical | **Met** |
 | Secret scan clean | **Met** |
-| **Browser tests pass (Playwright)** | **Met afterwards (§20).** At the time of this report it was not met: it was substituted by an uncommitted Edge driver because Docker storage was still on C:. It is now a committed Playwright/Chromium suite that passes |
-| This report lists deviations, skipped tests and limitations | Met |
+| **Browser tests pass (Playwright)** | **Met** (commit `2e0fe75`, §20): 42 Playwright/Chromium tests in `tests/browser` pass, and the full suite is 379 passed, 2 skipped. At the time of the first version of this report it was **not** met: it was substituted by an uncommitted Edge driver because Docker storage was still on C:. That history is kept in §9 |
+| This report lists deviations, skipped tests and limitations | Met (§15, §16) |
+
+Status is against `PHASE_5_PLAN.md` §13. Plan items outside §13 that were not delivered, such as the second-dataset sensitivity check in plan §8, are listed in §16.
 
 ## 12. Warehouse fingerprint
 
@@ -186,59 +200,70 @@ A scratch copy of the page plus a driver script was served by a throwaway contai
 
 ## 14. Environment
 
-The API and Postgres containers are healthy and `/api/health/ready` is `ready`. C: has about 5.6 GB free and D: about 37 GB. **Docker storage is still on C:**: Docker has no custom data folder, and the C: `docker_data.vhdx` (49.1 GB) is the one in use. Two more 49.1 GB `docker_data.vhdx` files sit on D: (`D:\Docker\DockerDesktopWSL` and `D:\DockerDesktopWSL`, last modified 2026-10-05 evening); they look like earlier move attempts. I did not touch them. This is why the Playwright gate was closed; it was later resolved without moving Docker, by using a Chromium that was already on disk (§20).
+The API and Postgres containers are healthy and `/api/health/ready` is `ready`. C: has about 5.6 GB free and D: about 37 GB. **Docker storage is still on C:**: Docker has no custom data folder, and the C: `docker_data.vhdx` (49.1 GB) is the one in use. Two more 49.1 GB `docker_data.vhdx` files sit on D: (`D:\Docker\DockerDesktopWSL` and `D:\DockerDesktopWSL`, last modified 2026-10-05 evening); they look like earlier move attempts. I did not touch them. This is why the Playwright gate was closed; it was later resolved without moving Docker, by using a Chromium that was already on disk (§20). At the final commit C: had about 5 GB free (4.99 GB after the browser work) and Docker storage was unchanged.
 
-## 15. Known limitations
+## 15. Remaining limitations (at the final commit `2e0fe75`)
 
-1. **~~No committed browser test.~~** *Resolved afterwards: `tests/browser` is a committed Playwright/Chromium suite (§20).*
-2. **Only one browser engine was exercised** (Chromium-based Edge, headless). Firefox and Safari are untested. No mobile-layout or accessibility audit was done.
-3. **Chart.js loaded from cdnjs at the time of this report.** *Resolved afterwards: Chart.js is now vendored and served from the same origin (§19).* The guard for a missing `Chart` global (panels show an error state rather than the script halting) is still not exercised in a browser.
-4. **Fonts still load from Google Fonts** (`fonts.googleapis.com`, `fonts.gstatic.com`).
-5. **The Node tests are skipped if Node is missing**, silently, as one skipped-by-condition test.
-6. **Small dataset, and the page shows it as it is.** 10K users: DAU 671, MRR $61,870, 30% of workspaces Critical. Not exercised at larger scale.
-7. **Two NPS values on one page:** the KPI card is the last 90 days, the Voice-of-Customer card is trailing 12 months. Both are labelled.
-8. **The A/A experiment currently reads SHIP** (+13.7%, p=0.019): a designed false positive. The page labels it as an A/A check and shows the API's no-correction caveat.
-9. **Heatmap is 26 rows** (the API default) and scrolls; the DAU chart's first month is partial and starred.
-10. **`/api/retention` has a client method but no panel.**
-11. **Phase 4 limitations carry over:** a rebuild without a validated run can serve cached responses for up to 5 minutes; per-worker caches; benchmarks at 10K users only.
-12. **~~Documentation not yet updated.~~** *Resolved afterwards: `README.md` and `docs/architecture.md` were updated (commit `abee9e1`) and again for the browser suite (§20).*
-13. **Pre-existing, not created by this phase:** a `v3.0` tag and an `origin` remote exist; `phase-5` has no upstream. `FALL 2026 FEE PAYMENT.pdf` is untracked in the repo folder and should be moved out.
+1. **Browser coverage.** The browser suite covers Chromium only (not Firefox or Safari); it runs locally, not in CI; and it needs the local PostgreSQL warehouse, like the other integration tests. No mobile-layout or accessibility audit was done.
+2. **Not exercised in a browser:** the guard for a missing `Chart` global (panels show an error state rather than the script halting, but no test removes Chart.js), and `unsafe-eval`, which is asserted on the CSP header only because Playwright's `page.evaluate` is exempt from CSP's `eval` rule.
+3. **External hosts that remain.** The dashboard still loads its fonts from Google Fonts (`fonts.googleapis.com`, `fonts.gstatic.com`). Separately, the Swagger/ReDoc pages (`/api/docs`, `/api/redoc`) allow `cdn.jsdelivr.net` in their own CSP (`api/middleware.py`, Phase 4B); that is unrelated to the dashboard.
+4. **Tests skip rather than fail** when a prerequisite is missing: the Node tests when Node is missing, the browser tests when Playwright, Chromium or PostgreSQL is missing (verified). The two Airflow/Spark tests are skipped as before.
+5. **Small dataset, shown as it is.** 10K users: DAU 671, MRR $61,870, 30% of workspaces Critical. Not exercised at larger scale.
+6. **Two NPS values on one page:** the KPI card is the last 90 days, the Voice-of-Customer card is trailing 12 months. Both are labelled.
+7. **The A/A experiment currently reads SHIP** (+13.7%, p=0.019): a designed false positive. The page labels it as an A/A check and shows the API's no-correction caveat.
+8. **Presentation.** The heatmap is 26 rows (the API default) and scrolls; the DAU chart's first month is partial and starred; `/api/retention` has a client method but no panel.
+9. **Phase 4 limitations carry over:** a rebuild without a validated run can serve cached responses for up to 5 minutes; per-worker caches; benchmarks at 10K users only.
+10. **Docker storage is still on C:** (about 5 GB free), with three 49 GB `docker_data.vhdx` files (one on C:, two older ones on D:). They were never touched.
+11. **Repository housekeeping, not created by this phase:** a `v3.0` tag and an `origin` remote exist; `phase-5` has no upstream and GitHub was never contacted; `FALL 2026 FEE PAYMENT.pdf` is untracked in the repository folder and should be moved out; the subject line of `1962fba` carries an invisible byte-order mark (history was not rewritten); `PROJECT_AUDIT.md` still describes the pre-Phase-4 state.
 
-## 16. Deviations from the plan
+*Resolved since the first version of this report (no longer limitations):* no committed browser test (§20); Chart.js loaded from a CDN (§19); `README.md` and `docs/architecture.md` not updated (`abee9e1`, `2e0fe75`).
 
-1. **Plan steps 3–8 were done as one step** (one commit), as the Step 3 brief asked.
-2. **No `?api=` alternative-host override** (plan §3). You asked for same-origin, and an overridable base would let a crafted link capture a typed key.
-3. **The key dialog came in Step 2**, not the plan's hardening step.
-4. **CSP is stricter than planned:** no `unsafe-hashes` at all (§4).
-5. **Number formatters live in the panel models** (Step 3), not the data layer; they follow the API `unit`.
-6. **`PHASE_5_PLAN.md` panel mapping changes:** `/api/retention` is not used; the Voice-of-Customer cards are individual panels so an NPS failure and a support failure show separately; all 7 adoption curves are shown (the mock showed 4); `observed_rate` is plotted; the page adds the API caveats under each panel.
-7. **Footer link removed**, not set to the real repository URL (the repo does have a remote; I did not publish your URL without your say-so).
-8. **The browser validation in this report used installed Edge with scratch drivers**, not Playwright (§9, §11). *Superseded: it is now a committed Playwright suite (§20).*
-9. **Four implementation commits plus this report**, rather than the single commit you first described; each followed a step you approved.
+## 16. Deviations from the plan (at the final commit `2e0fe75`)
+
+**Plan items not delivered**
+1. **The second-dataset sensitivity check (`PHASE_5_PLAN.md` §8) was not done.** The plan said to run the pipeline with a second dataset and confirm the rendered page changes. No Phase 5 test does this (the Phase 4 API-level sensitivity test, `tests/api/test_api_sensitivity.py`, is unchanged). The browser suite proves each displayed value equals the API's response for the same request, but not that the page changes when the underlying data changes.
+2. **The browser suite does not run against the built container image** (plan §12 step 11). The committed tests start the app in-process on the local warehouse. The container and its served page were verified separately, by scripts in Steps 1–3 and in §19, which were not committed.
+
+**Done differently from the plan**
+3. **No `?api=` alternative-host override** (plan §3). You asked for same-origin, and an overridable base would let a crafted link capture a typed key.
+4. **No `FIELD_MAP` contract test** (plan §8, step 2). It was replaced by a test that cross-checks every endpoint path and query parameter against `docs/openapi.json`, plus trimmed real-response fixtures and the browser tests against the live API. There is no field-level map of the paths the page reads.
+5. **JavaScript unit tests use Node's built-in test runner**, not the browser harness the plan described (an optional dependency on Node, not a new JS test library).
+6. **Playwright specifics** (plan §8): the plain `playwright` package rather than `pytest-playwright`, listed in the optional `requirements/browser.txt` (with pins in the constraints file), not the dev requirements; it reuses a Chromium already on the machine.
+7. **Chart.js location and build** (plan §6.2): `vendor/chart.umd.js`, the registry-verified npm build with its final `sourceMappingURL` line removed, instead of the plan's `static/vendor/chart.umd.min.js`; the page carries an integrity hash that the server also verifies at startup.
+8. **`API_DASHBOARD_PATH` production gating** (plan §6.1: "not mounted in `API_ENV=production` unless explicitly enabled"): there is no separate `API_ENV` check; setting the variable is the only opt-in.
+9. **Plan steps 3–8 were done as one step** (one commit), as the Step 3 brief asked, and the key dialog came in Step 2 rather than the plan's hardening step.
+10. **CSP is stricter than planned:** no `unsafe-hashes` at all (§4), and no remote script host.
+11. **Number formatters live in the panel models** (Step 3), not the data layer; they follow the API `unit`.
+12. **Panel mapping changes:** `/api/retention` is not used; the Voice-of-Customer cards are individual panels so an NPS failure and a support failure show separately; all 7 adoption curves are shown (the mock showed 4); `observed_rate` is plotted; the page adds the API caveats under each panel.
+13. **Footer link removed**, not set to the real repository URL (the repo does have a remote; I did not publish your URL without your say-so).
+14. **Eight commits** (the plan, three steps, the first report, Chart.js vendoring, the docs, the Playwright suite), rather than the single commit first described; each followed a step you approved.
+
+*Resolved since the first version of this report:* the browser validation used installed Edge with scratch drivers rather than Playwright (§9, §11); it is now a committed Playwright suite (§20).
 
 ## 17. Reproduce
 
 ```powershell
 # environment: load .env into the process (PowerShell), then
-docker compose up -d postgres api-init api         # API + dashboard on http://127.0.0.1:8002/ (port from API_PORT)
-.\.venv\Scripts\python.exe -m pytest -q            # 293 passed, 2 skipped
+docker compose up -d postgres api-init api         # API + dashboard on http://127.0.0.1:${API_PORT} (8002 on the development machine)
+.\.venv\Scripts\python.exe -m pytest -q            # 379 passed, 2 skipped (this includes the browser tests when Playwright is installed)
+.\.venv\Scripts\python.exe -m pytest tests/browser -q   # 42 Playwright tests; needs: pip install -r requirements/browser.txt -c requirements/constraints-py311.txt
 .\.venv\Scripts\python.exe -m ruff check .
 .\.venv\Scripts\python.exe -m api.openapi --check
 .\.venv\Scripts\python.exe -m pipeline fingerprint --compare <baseline.json>   # warehouse unchanged
-node --test tests/dashboard                        # 157 Node tests (also run by pytest)
+node --test tests/dashboard                        # 158 Node tests (also run by pytest)
 ```
 
-## 18. Next steps (not started)
+(The first version of this section said 293 passed and 157 Node tests: the figures at `ad8c73b`, kept in §7.)
 
-1. ~~Install Playwright and turn the §9 driver into a committed suite~~ (done, §20, without moving Docker). Moving Docker storage off C: is still your decision (the three `docker_data.vhdx` files).
-2. ~~Vendor Chart.js~~ (done, §19). Optionally vendor the fonts too and drop the Google hosts from the CSP.
-3. ~~Update `README.md` and `docs/architecture.md`~~ (done).
-4. Phase 6: the grounded AI analyst.
-5. Your call: merging `phase-4`/`phase-5`, and what to do about the `origin` remote.
+## 18. Next steps (none started)
+
+1. **Phase 6:** the grounded AI analyst (a server-side endpoint that keeps its key out of the browser). Not started.
+2. **Your decisions:** merging `phase-4` and `phase-5`; what to do about the `origin` remote; moving `FALL 2026 FEE PAYMENT.pdf` out of the repository folder; moving Docker storage off C:.
+3. **Optional hardening:** the second-dataset sensitivity check (§16); running the browser suite against the built image and in CI; vendoring the fonts and dropping the Google hosts from the CSP; dropping `cdn.jsdelivr.net` from the API docs pages' CSP.
 
 ---
 
-## 19. Addendum: Chart.js vendored (after commit `1962fba`)
+## 19. Addendum: Chart.js vendored (commit `fcc4f43`, after `1962fba`)
 
 Chart.js no longer loads from a CDN. It is served by the API from the same origin, so the dashboard needs no external script host.
 
@@ -253,9 +278,9 @@ Chart.js no longer loads from a CDN. It is served by the API from the same origi
 
 ---
 
-## 20. Addendum: the Playwright browser suite (acceptance criterion met)
+## 20. Addendum: the Playwright browser suite (commit `2e0fe75`; acceptance criterion met)
 
-The criterion "browser tests pass (Playwright)" in §11 was substituted at the time of this report by an uncommitted Edge script. It is now a committed Playwright/Chromium suite, and it passes.
+The criterion "browser tests pass (Playwright)" in §11 was substituted at the time of the first version of this report by an uncommitted Edge script. It is now a committed Playwright/Chromium suite of **42 tests** (`tests/browser`), and it passes.
 
 **What was added** (no application file changed: `index.html`, `vendor/`, `api/`, Docker, dbt, `pipeline/` and `analytics/` are untouched)
 
@@ -293,3 +318,31 @@ The criterion "browser tests pass (Playwright)" in §11 was substituted at the t
 | Secrets in the new and changed files | None |
 
 **Limits.** Only Chromium is covered (not Firefox or Safari), and the browser tests run locally, not in CI. They need the local PostgreSQL warehouse, like the other integration tests. Playwright's `page.evaluate` is exempt from CSP's `eval` rule, so `unsafe-eval` is asserted on the header, not by running `eval`. The unrelated `FALL 2026 FEE PAYMENT.pdf` is still untracked in the repository folder.
+
+---
+
+## 21. Reconciliation with the final committed state (`2e0fe75`)
+
+This report was first committed in `1962fba`, extended by §19 and §20, and reconciled here with the final state. The historical results above are preserved as they were recorded; only statements that had become inaccurate were corrected or marked as superseded.
+
+**Final state**
+
+| | |
+|---|---|
+| Branch and HEAD | `phase-5`, `2e0fe75` "Phase 5: add Playwright browser validation" |
+| Phase 5 commits | 8 (table at the top), no merge commits; `phase-4` is still at `193be5f` |
+| Diff against `phase-4` | 42 files, +7,301 / −519 (at `2e0fe75`) |
+| Full `pytest` (final run) | 379 passed, 2 skipped, 0 failed; no test-relevant file changed after that run |
+| Playwright browser suite | 42 passed |
+| Dashboard-serving validation | **73 tests in total: 72 serving tests** (`tests/api/test_api_dashboard.py`) **plus 1 Node wrapper test** (`tests/test_dashboard_data_layer.py`, which runs the Node tests below); all passed |
+| Node dashboard tests | 158 passed |
+| Ruff, OpenAPI snapshot, warehouse | all checks passed; snapshot unchanged (16 paths); 35 relations, 2,112,759 rows |
+| Documentation | `README.md`, `docs/architecture.md` and `docs/api.md` describe the final state |
+| Pushed, merged or tagged | No. The only tag is the pre-existing `v3.0`; `phase-5` has no upstream; GitHub itself was not contacted |
+
+**Corrected in this reconciliation**
+- The page has **12** panels, not 13: the earlier count included the function's own definition line (§5).
+- The final implementation commit, the commit table and the file totals were updated (header, §2).
+- The acceptance criterion "browser tests pass (Playwright)" is marked **met**, with the earlier "not met" history kept (§9, §11).
+- The limitations and deviations (§15, §16) now list only what remains, including that the plan's second-dataset sensitivity check was **not done**; items that were resolved are named once and removed from the lists.
+- The reproduce commands and next steps (§17, §18) show the final figures and what is left.
