@@ -44,6 +44,7 @@ MAX_ASSISTANT_CHARS = 20_000
 MAX_HISTORY_CHARS = 60_000
 MAX_ANSWER_CHARS = 8000
 MAX_TOOL_ARGUMENT_BYTES = 4096
+MAX_PROVIDER_STATE_CHARS = 16_384
 DEFAULT_TURN_TIMEOUT_S = 120.0
 
 # C0 and C1 controls except newline and tab, zero-width and bidirectional-control characters
@@ -386,8 +387,9 @@ def run_chat(messages, *, llm, engine, settings, budget=None, cancel=None, clock
             trace.append({'id': call_id, 'name': _label(name, 64), 'arguments': _recorded(call.arguments),
                           'cached': cached, 'result': result})
             entry = {'id': call_id, 'name': _label(name, 64), 'arguments': _recorded(call.arguments)}
-            if isinstance(getattr(call, 'provider_state', None), str):
-                entry['provider_state'] = call.provider_state[:2000]
+            state = getattr(call, 'provider_state', None)
+            if isinstance(state, str) and len(state) <= MAX_PROVIDER_STATE_CHARS:   # never cut: a cut value is a wrong value
+                entry['provider_state'] = state
             requested.append(entry)
             answered.append({'id': call_id, 'name': _label(name, 64),
                              'content': json.dumps(result, ensure_ascii=False, separators=(',', ':'),

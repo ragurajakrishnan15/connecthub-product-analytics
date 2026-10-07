@@ -36,8 +36,10 @@ TEMPERATURE = 0.0
 MAX_TOOL_CALLS_IN_REPLY = 16          # a reply asking for more than this is treated as malformed
 _SCHEMA_KEYS = {'description': 'description', 'enum': 'enum', 'minimum': 'minimum', 'maximum': 'maximum',
                 'maxLength': 'max_length', 'maxItems': 'max_items', 'pattern': 'pattern'}
-# How a Gemini finish reason that carries no usable answer is reported (the engine shows fixed text).
-_REFUSED = {'SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'LANGUAGE', 'OTHER'}
+# A reply that ended for one of these reasons is never an answer, whatever text came with it: a
+# filtered reply may be partial or altered, so it is refused (the engine shows fixed text).
+_REFUSED = {'SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'LANGUAGE', 'OTHER',
+            'IMAGE_SAFETY', 'IMAGE_PROHIBITED_CONTENT', 'IMAGE_RECITATION', 'IMAGE_OTHER', 'NO_IMAGE'}
 _MALFORMED = {'MALFORMED_FUNCTION_CALL', 'UNEXPECTED_TOOL_CALL', 'TOO_MANY_TOOL_CALLS'}
 
 
@@ -164,6 +166,10 @@ def _parse(response):
         raise LlmError('bad_response', 'the reply has no candidate')
     candidate = candidates[0]
     reason = _name(getattr(candidate, 'finish_reason', None)).rsplit('.', 1)[-1]
+    if reason in _REFUSED:
+        raise LlmError('refused', 'the model declined to answer')
+    if reason in _MALFORMED:
+        raise LlmError('bad_response', 'the reply is a malformed tool call')
     parts = list(getattr(getattr(candidate, 'content', None), 'parts', None) or [])
     calls, texts = [], []
     for part in parts:
@@ -180,11 +186,7 @@ def _parse(response):
         raise LlmError('bad_response', 'the reply asks for too many tools')
     if calls:
         return LlmResponse(tool_calls=tuple(calls), usage=usage)
-    if reason in _MALFORMED:
-        raise LlmError('bad_response', 'the reply is a malformed tool call')
     text = ''.join(texts).strip()
-    if not text and reason in _REFUSED:
-        raise LlmError('refused', 'the model declined to answer')
     return LlmResponse(text=text or None, usage=usage)
 
 
@@ -258,7 +260,12 @@ class GeminiClient:
             log.warning('analyst_gemini_error', extra={'fields': {
                 'kind': error.kind, 'status': _status(exc), 'exception': type(exc).__name__}})
             raise error from None
-        return _parse(response)
+        try:
+            return _parse(response)
+        except LlmError:
+            raise
+        except Exception:                      # a reply of an unexpected shape: no detail, no cause
+            raise LlmError('bad_response', 'the reply could not be read') from None
 
 
 def build_client(settings):
