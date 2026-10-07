@@ -99,7 +99,8 @@ def test_engine_uses_the_api_role_and_a_read_only_session(monkeypatch):
 
 
 def test_startup_fails_cleanly_without_configuration():
-    env = {k: v for k, v in os.environ.items() if not k.upper().startswith('API_')}
+    env = {k: v for k, v in os.environ.items()
+           if not k.upper().startswith(('API_', 'ANALYST_', 'GEMINI_'))}
     env['POSTGRES_PASSWORD'] = 'owner-secret-value-xyz'
     env['API_CORS_ORIGINS'] = '*'
     result = subprocess.run([sys.executable, '-m', 'api'], cwd=config.PROJECT_ROOT, env=env,

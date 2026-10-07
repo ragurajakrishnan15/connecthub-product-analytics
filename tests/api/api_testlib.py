@@ -18,14 +18,17 @@ DEAD_DB = {'POSTGRES_HOST': '127.0.0.1', 'POSTGRES_PORT': 1, 'api_db_connect_tim
 
 @pytest.fixture
 def clean_env(monkeypatch):
-    """Unit tests must not depend on the developer's API_* environment."""
+    """Unit tests must not depend on the developer's API_*, ANALYST_* or GEMINI_* environment
+    (a real GEMINI_API_KEY in the shell must never reach a test)."""
     for key in list(os.environ):
-        if key.upper().startswith('API_'):
+        if key.upper().startswith(('API_', 'ANALYST_', 'GEMINI_')):
             monkeypatch.delenv(key, raising=False)
 
 
 def make_settings(**overrides):
-    values = {'api_db_password': FAKE_PASSWORD, **DEAD_DB}
+    # The analyst fields are pinned so a developer's real GEMINI_API_KEY never reaches a test.
+    values = {'api_db_password': FAKE_PASSWORD, **DEAD_DB,
+              'analyst_enabled': False, 'gemini_api_key': None, 'analyst_model': None}
     values.update(overrides)
     return Settings(**values)
 
@@ -61,4 +64,4 @@ def warehouse_settings():
     """Settings for the real local warehouse, or skip when it is not configured."""
     if not os.environ.get('POSTGRES_PASSWORD') or not os.environ.get('API_DB_PASSWORD'):
         pytest.skip('POSTGRES_PASSWORD / API_DB_PASSWORD not set; no PostgreSQL configured')
-    return Settings()
+    return Settings(analyst_enabled=False, gemini_api_key=None, analyst_model=None)
