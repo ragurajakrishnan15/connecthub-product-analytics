@@ -711,10 +711,12 @@ def test_mutation_policy_ignores_the_report(monkeypatch, ):
     result = run_chat([U('MRR?')], llm=ScriptedLlm(say('MRR is $99,999.')), engine=FakeEngine(),
                       settings=make_settings())
     assert apply_policy(result).result.status == 'ungrounded'
+    real_ground_answer = grounding.ground_answer
     monkeypatch.setattr(grounding.GroundingReport, 'accepted', True, raising=False)
     monkeypatch.setattr(grounding, 'ground_answer',
                         lambda answer, trace: grounding.GroundingReport(True, [], [], [], [], [], [], []))
     assert apply_policy(result).result.status == 'answered'          # the broken variant lets it through
-    # the real checker is what makes the first assertion true: restore and check again
-    monkeypatch.undo()
+    # the real checker is what makes the first assertion true: restore it and check again
+    # (explicitly: monkeypatch.undo() would also drop the suite's Google-host guard)
+    monkeypatch.setattr(grounding, 'ground_answer', real_ground_answer)
     assert apply_policy(result).result.status == 'ungrounded'

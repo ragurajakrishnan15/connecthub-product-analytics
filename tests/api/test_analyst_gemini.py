@@ -590,8 +590,12 @@ def scenarios():
             check('malformed call is an error', False)
         except LlmError:
             check('malformed call is an error', True)
-        client, _ = client_with(say('x', finish='SAFETY'), reply({'text': 'secret thinking', 'thought': True}, {'text': 'Answer'}))
-        check('a blocked reply is not an answer', client.generate(request()).text == 'x')
+        client, _ = client_with(say('partial text', finish='SAFETY'), reply({'text': 'secret thinking', 'thought': True}, {'text': 'Answer'}))
+        try:
+            client.generate(request())
+            check('a filtered reply is not an answer, even with text', False)
+        except LlmError as error:
+            check('a filtered reply is not an answer, even with text', error.kind == 'refused')
         check('thought text is dropped', client.generate(request()).text == 'Answer')
         client, _ = client_with(ask_for(('get_overview', {}, b'sig')))
         check('thought signature kept as state', client.generate(request()).tool_calls[0].provider_state is not None)
@@ -646,11 +650,12 @@ def test_mutation_thinking_tokens_are_not_counted(monkeypatch):
 
 
 def test_mutation_blocked_replies_are_returned_as_answers(monkeypatch):
+    real = gemini._REFUSED
     monkeypatch.setattr(gemini, '_REFUSED', set())
-    client, _ = client_with(say('', finish='SAFETY'))
-    assert client.generate(request()).text is None        # without the refusal check a blocked reply looks merely empty
-    monkeypatch.undo()
-    client, _ = client_with(say('', finish='SAFETY'))
+    client, _ = client_with(say('partial', finish='SAFETY'))
+    assert client.generate(request()).text == 'partial'   # without the refusal check a filtered reply is an answer
+    monkeypatch.setattr(gemini, '_REFUSED', real)         # (restored explicitly: a blanket undo would drop the Google guard)
+    client, _ = client_with(say('partial', finish='SAFETY'))
     with pytest.raises(LlmError):
         client.generate(request())
 

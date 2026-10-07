@@ -6,7 +6,15 @@ import generate_synthetic_data as gen
 
 matplotlib.use('Agg')  # cohort_engine plots; never open a window in tests
 
-GOOGLE_SUFFIXES = ('googleapis.com', 'google.com', 'gstatic.com', 'ai.google.dev')
+# Every host the Gemini / Google generative-AI APIs, their auth and their asset hosts use, and any
+# name under the .google top-level domain.
+GOOGLE_SUFFIXES = ('googleapis.com', 'google.com', 'gstatic.com', 'googleusercontent.com', 'google.dev',
+                   'google', 'withgoogle.com', 'cloud.google.com')
+
+
+def is_google_host(host):
+    name = host.decode() if isinstance(host, bytes) else str(host or '')
+    return name.lower().rstrip('.').endswith(GOOGLE_SUFFIXES)
 
 
 @pytest.fixture(autouse=True)
@@ -14,14 +22,15 @@ def never_resolve_a_google_host(monkeypatch):
     """No test may reach Google, whatever it builds (Phase 6: the live Gemini evaluation is a separate,
     approved step). Resolving such a name fails the test; every other name resolves as before."""
     import socket
-    real = socket.getaddrinfo
 
-    def guarded(host, *args, **kwargs):
-        name = host.decode() if isinstance(host, bytes) else str(host or '')
-        if name.lower().rstrip('.').endswith(GOOGLE_SUFFIXES):
-            raise AssertionError(f'a test tried to reach {name}')
-        return real(host, *args, **kwargs)
-    monkeypatch.setattr(socket, 'getaddrinfo', guarded)
+    def guard(real):
+        def guarded(host, *args, **kwargs):
+            if is_google_host(host):
+                raise AssertionError(f'a test tried to reach {host!r}')
+            return real(host, *args, **kwargs)
+        return guarded
+    for name in ('getaddrinfo', 'gethostbyname', 'gethostbyname_ex'):
+        monkeypatch.setattr(socket, name, guard(getattr(socket, name)))
 
 
 SAMPLE_USERS = 4000
