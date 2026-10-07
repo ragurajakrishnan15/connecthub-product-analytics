@@ -340,13 +340,13 @@ def test_tier_cards_histogram_and_table_equal_the_api(dash):
     assert scores == sorted(scores)
 
 
-# ================================================================ the AI Analyst is a placeholder
-def test_the_ai_tab_is_a_placeholder_that_asks_nothing(dash):
+# ================================================================ the Analyst tab (its own tests: test_analyst_browser.py)
+def test_the_analyst_tab_is_a_chat_that_asks_nothing_until_a_question_is_sent(dash):
     load_overview(dash)
     before = len(dash.watch.api_paths())
     dash.tab('ai')
-    expect(dash.page.locator('#tab-ai')).to_contain_text('coming in Phase 6')
-    assert dash.page.locator('#tab-ai input, #tab-ai button, #tab-ai textarea, #tab-ai select').count() == 0
+    expect(dash.page.locator('#tab-ai')).to_contain_text('checked against')
+    assert dash.page.locator('#ai-input').is_visible() and dash.page.locator('#ai-send').is_visible()
     dash.page.wait_for_timeout(300)
     assert len(dash.watch.api_paths()) == before
 

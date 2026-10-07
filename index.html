@@ -447,10 +447,42 @@ body {
 .exp-verdict.revert { background: var(--red-bg); color: var(--red); }
 .exp-verdict.unknown { background: var(--surface-3); color: var(--text-2); }
 
-/* AI Analyst placeholder */
-.ai-placeholder { padding: 40px 24px; text-align: center; }
-.ai-placeholder-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-.ai-placeholder p { font-size: 13px; color: var(--text-2); max-width: 560px; margin: 0 auto; line-height: 1.6; }
+/* AI Analyst tab */
+.ai-intro { padding: 14px 20px 4px; font-size: 13px; color: var(--text-2); line-height: 1.6; }
+.ai-intro p { margin-bottom: 8px; }
+.ai-intro-note { color: var(--text-3); font-size: 12px; }
+.ai-empty { color: var(--text-3); font-size: 13px; text-align: center; padding: 18px 0; }
+.ai-header .ai-chip { margin-left: 8px; }
+.ai-header-sub { margin-left: auto; }
+.ai-turn { display: flex; flex-direction: column; gap: 6px; align-self: flex-start; max-width: 85%; }
+.ai-turn .ai-msg { max-width: 100%; }
+.ai-msg.ai.withheld { border: 1px solid var(--red); color: var(--text-2); }
+.ai-badge { font-size: 12px; padding: 4px 10px; border-radius: 8px; align-self: flex-start; }
+.ai-badge.good { background: var(--green-bg); color: var(--green); }
+.ai-badge.bad { background: var(--red-bg); color: var(--red); }
+.ai-badge.neutral { background: var(--surface-3); color: var(--text-2); }
+.ai-notes { font-size: 12px; color: var(--orange); padding-left: 18px; }
+.ai-sources { font-size: 12px; color: var(--text-2); }
+.ai-sources summary { cursor: pointer; color: var(--accent-light); }
+.ai-sources ul { list-style: none; margin-top: 6px; display: flex; flex-direction: column; gap: 8px; }
+.ai-sources li { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; overflow-wrap: anywhere; }
+.ai-source-title { color: var(--text); font-weight: 600; }
+.ai-source-line { color: var(--text-3); }
+.ai-source-caveat { color: var(--orange); }
+.ai-notice { margin: 0 16px 8px; padding: 10px 14px; border-radius: 10px; font-size: 13px; background: var(--red-bg); color: var(--red); }
+.ai-notice[hidden] { display: none; }
+.ai-notice .state-title { font-weight: 600; }
+.ai-notice .state-id { font-size: 11px; color: var(--text-3); }
+.ai-section[data-state="unavailable"] .ai-notice { background: var(--orange-bg); color: var(--orange); }
+.ai-input { resize: vertical; min-height: 44px; max-height: 160px; }
+.ai-input:disabled, .ai-input[readonly] { opacity: 0.6; }
+@media (max-width: 600px) {
+  .ai-turn { max-width: 100%; }
+  .ai-input-row { flex-direction: column; }
+  .ai-send { width: 100%; }
+  .ai-header { flex-wrap: wrap; }
+  .ai-header-sub { margin-left: 0; width: 100%; }
+}
 
 @media (max-width: 768px) {
   .kpi-row.cols-4 { grid-template-columns: repeat(2, 1fr); }
@@ -670,14 +702,26 @@ body {
 
 <!-- ===== AI ANALYST TAB ===== -->
 <div class="tab-content" id="tab-ai">
-  <div class="ai-section">
+  <div class="ai-section" id="panel-analyst" data-state="idle">
     <div class="ai-header">
-      <span class="ai-header-text">ConnectHub AI Analyst</span>
+      <span class="ai-dot"></span>
+      <span class="ai-header-text">Analyst</span>
+      <span class="ai-header-sub" id="ai-dataset">Grounded in dashboard data</span>
+      <button type="button" class="ai-chip" id="ai-new" hidden>New conversation</button>
     </div>
-    <div class="ai-placeholder">
-      <div class="ai-placeholder-title">AI Analyst coming in Phase 6</div>
-      <p>The analyst will answer questions from the same API data shown on this dashboard, through a server-side endpoint that keeps its key out of the browser. Until then this tab shows no answers, so nothing here can be mistaken for real analysis.</p>
+    <div class="ai-intro">
+      <p>Ask a question about the data on this dashboard. The analyst looks the figures up through the same API and every number in an answer is checked against what it found. An answer with a figure that cannot be matched is withheld.</p>
+      <p>Each answer lists its sources: the data it came from, the filters used and the data version.</p>
+      <p class="ai-intro-note">The analyst may be unavailable: it is switched off unless the server is set up for it. Your conversation stays in this tab and is not saved.</p>
     </div>
+    <div class="ai-messages" id="ai-messages" role="log" aria-label="Conversation">
+      <div class="ai-empty" id="ai-empty">No questions yet. Ask about revenue, retention, activation, experiments or customer health.</div>
+    </div>
+    <div class="ai-notice" id="ai-notice" role="alert" hidden></div>
+    <form class="ai-input-row" id="ai-form" autocomplete="off">
+      <textarea class="ai-input" id="ai-input" rows="2" maxlength="2000" aria-label="Ask the analyst" placeholder="Ask about the dashboard data (Enter to send, Shift+Enter for a new line)"></textarea>
+      <button type="submit" class="ai-send" id="ai-send">Send</button>
+    </form>
   </div>
 </div>
 
@@ -696,11 +740,12 @@ body {
 const API_PREFIX = '/api';
 const KEY_STORAGE = 'connecthub.apiKey';
 const DEFAULT_TIMEOUT_MS = 10000;
+const CHAT_TIMEOUT_MS = 75000;            // a little over the server's 60 s turn limit
 const MAX_CACHED_RESPONSES = 64;
 
 class ApiError extends Error {
   // kind: network | timeout | aborted | auth | validation | not-found | unavailable |
-  //       server-timeout | server | client | parse | protocol | config
+  //       server-timeout | server | client | parse | protocol | config | forbidden | rate-limit
   constructor(kind, message, extra = {}) {
     super(message);
     this.name = 'ApiError';
@@ -784,6 +829,8 @@ function buildUrl(origin, name, params = {}, pathId) {
 
 function kindForStatus(status) {
   if (status === 401) return 'auth';
+  if (status === 403) return 'forbidden';
+  if (status === 429) return 'rate-limit';
   if (status === 400 || status === 422) return 'validation';
   if (status === 404) return 'not-found';
   if (status === 504) return 'server-timeout';
@@ -810,8 +857,59 @@ async function problemFromResponse(res) {
   });
 }
 
+// The chat request and response, kept apart from the GET machinery above.
+const CHAT_PATH = '/analyst/chat';
+const CHAT_ROLES = ['user', 'assistant'];
+const MAX_CHAT_MESSAGES = 50;
+const MAX_CHAT_SOURCES = 20;
+const isPlainObject = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+function chatBody(messages) {
+  if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_CHAT_MESSAGES) {
+    throw new TypeError('messages must be a short, non-empty list');
+  }
+  return JSON.stringify({ messages: messages.map(m => {
+    if (!isPlainObject(m) || !CHAT_ROLES.includes(m.role) || typeof m.content !== 'string') {
+      throw new TypeError('a message must be {role: "user" | "assistant", content: text}');
+    }
+    return { role: m.role, content: m.content };
+  }) });
+}
+
+// Reads the API's answer into a fixed shape; anything else (unknown fields, wrong types) is dropped
+// or refused, so the page never draws a value the contract does not promise.
+function readChatResponse(body, requestId, status) {
+  const bad = why => new ApiError('parse', 'The analyst response was not understood (' + why + ').', { status, requestId });
+  if (!isPlainObject(body) || !['answered', 'withheld'].includes(body.status)) throw bad('status');
+  if (body.status === 'answered' ? typeof body.answer !== 'string' || !body.answer : body.answer !== null) throw bad('answer');
+  const g = body.grounding;
+  if (!isPlainObject(g) || !['verified', 'rejected', 'not_checked'].includes(g.status)) throw bad('grounding');
+  if (!Array.isArray(body.sources)) throw bad('sources');
+  const text = v => (typeof v === 'string' ? v : '');
+  const count = v => (Number.isInteger(v) && v >= 0 ? v : 0);
+  const texts = v => (Array.isArray(v) ? v.filter(t => typeof t === 'string') : []);
+  const usage = isPlainObject(body.usage) ? body.usage : {};
+  return {
+    status: body.status, answer: body.answer,
+    reason: typeof body.reason === 'string' ? body.reason : null,
+    notice: typeof body.notice === 'string' ? body.notice : null,
+    grounding: { status: g.status, claimsChecked: count(g.claims_checked), claimsDerived: count(g.claims_derived),
+                 unverifiedCount: count(g.unverified_count), caveats: texts(g.caveats),
+                 datesNotInEvidence: texts(g.dates_not_in_evidence) },
+    sources: body.sources.slice(0, MAX_CHAT_SOURCES).filter(isPlainObject).map(s => ({
+      id: text(s.id), tool: text(s.tool), endpoint: text(s.endpoint),
+      arguments: isPlainObject(s.arguments) ? s.arguments : {},
+      dataVersion: typeof s.data_version === 'string' ? s.data_version : null,
+      asOf: typeof s.as_of === 'string' ? s.as_of : null,
+      relations: texts(s.relations), caveats: texts(s.caveats),
+      truncated: s.truncated === true, supportedClaims: count(s.supported_claims) })),
+    usage: { requests: count(usage.requests), toolCalls: count(usage.tool_calls), totalTokens: count(usage.total_tokens) },
+    dataset: text(body.dataset), requestId: typeof body.request_id === 'string' ? body.request_id : requestId,
+  };
+}
+
 function createApiClient(options) {
-  const o = { timeoutMs: DEFAULT_TIMEOUT_MS, maxCached: MAX_CACHED_RESPONSES, ...options };
+  const o = { timeoutMs: DEFAULT_TIMEOUT_MS, chatTimeoutMs: CHAT_TIMEOUT_MS, maxCached: MAX_CACHED_RESPONSES, ...options };
   const origin = parseBase(o.baseUrl);
   const cache = new Map();         // url -> {etag, envelope, requestId}; insertion order = recency
   const inflight = new Map();      // url -> Promise (identical concurrent requests share one)
@@ -922,6 +1020,67 @@ function createApiClient(options) {
     }
   }
 
+  // ----- POST /api/analyst/chat: the only request that sends a body. The body is rebuilt from
+  // {role, content} pairs, so nothing else a caller holds (extra fields, tool or system text) can
+  // be sent, and the answer is read back into a fixed shape.
+  async function sendChat(body, { signal: callerSignal } = {}) {
+    const headers = { Accept: 'application/json', 'Content-Type': 'application/json' };
+    const key = readKey();
+    if (key) headers['X-API-Key'] = key;
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; controller.abort(); }, o.chatTimeoutMs);
+    const onCallerAbort = () => controller.abort();
+    if (callerSignal) {
+      if (callerSignal.aborted) controller.abort();
+      else callerSignal.addEventListener('abort', onCallerAbort, { once: true });
+    }
+    try {
+      if (controller.signal.aborted) throw new ApiError('aborted', 'The request was cancelled.');
+      const res = await o.fetch(origin + API_PREFIX + CHAT_PATH, {
+        method: 'POST', headers, body, signal: controller.signal,
+        credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer', cache: 'no-store',
+      });
+      const requestId = res.headers.get('X-Request-ID');
+      if (!res.ok) {
+        const err = await problemFromResponse(res);
+        if (err.kind === 'auth' && key) { clearApiKey(); err.keyRejected = true; }
+        throw err;
+      }
+      if (!(res.headers.get('Content-Type') || '').includes('json')) {
+        throw new ApiError('parse', 'The API returned a response that is not JSON.', { status: res.status, requestId });
+      }
+      let parsed;
+      try { parsed = JSON.parse(await res.text()); } catch (e) {
+        if (controller.signal.aborted) throw e;
+        throw new ApiError('parse', 'The API returned invalid JSON.', { status: res.status, requestId });
+      }
+      return readChatResponse(parsed, requestId, res.status);
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      if (controller.signal.aborted) {
+        throw timedOut
+          ? new ApiError('timeout', 'The analyst did not respond within ' + Math.round(o.chatTimeoutMs / 1000) + ' seconds.')
+          : new ApiError('aborted', 'The request was cancelled.');
+      }
+      throw new ApiError('network', 'The API could not be reached.');
+    } finally {
+      clearTimeout(timer);
+      if (callerSignal) callerSignal.removeEventListener('abort', onCallerAbort);
+    }
+  }
+  async function chat(messages, opts = {}) {
+    const body = chatBody(messages);                      // throws TypeError before anything is sent
+    try {
+      return await sendChat(body, opts);
+    } catch (err) {
+      if (err.kind !== 'auth' || !o.onAuthRequired) throw err;
+      const entered = await promptOnce({ reason: err.keyRejected ? 'invalid' : 'missing', requestId: err.requestId });
+      if (!entered) throw err;
+      return await sendChat(body, opts);
+    }
+  }
+
   // Returns {data, meta, status, source, etag, requestId, empty}; `data` is a private copy.
   async function get(name, params = {}, opts = {}) {
     const spec = ENDPOINTS[name];
@@ -941,7 +1100,7 @@ function createApiClient(options) {
              etag: r.etag, requestId: r.requestId, empty: spec.isEmpty(envelope.data) };
   }
 
-  const client = { get, setApiKey, clearApiKey, hasApiKey: () => !!readKey(), origin,
+  const client = { get, chat, setApiKey, clearApiKey, hasApiKey: () => !!readKey(), origin,
                    clearCache: () => cache.clear() };
   for (const name of Object.keys(ENDPOINTS)) {
     client[name] = name === 'experiment'
@@ -963,6 +1122,13 @@ function describeError(err) {
     'warehouse-busy': ['Warehouse updating', 'The warehouse is being rebuilt. Retry in a few seconds.'],
     'query-timeout': ['Query timed out', 'The query took too long. Try a narrower range.'],
     'experiment-not-found': ['Experiment not found', 'This experiment does not exist.'],
+    'analyst-not-configured': ['Analyst not configured', 'The AI analyst is switched off or not set up on this server. The rest of the dashboard is not affected.'],
+    'rate-limited': ['Too many questions', 'Wait a moment, then ask again.'],
+    'budget-exhausted': ['Daily analyst limit reached', 'The analyst has used its allowance for today. It starts again at 00:00 UTC.'],
+    'forbidden-origin': ['Request refused', "This page's address is not on the server's list of allowed origins (API_CORS_ORIGINS)."],
+    'analyst-timeout': ['The analyst took too long', 'Try a narrower question.'],
+    'analyst-upstream-error': ['The analyst could not answer', 'The language model is unavailable right now. Try again shortly.'],
+    'payload-too-large': ['Message too long', 'Shorten the question, or start a new conversation.'],
   };
   if (slug && by[slug]) return { ...base, title: by[slug][0], message: by[slug][1] };
   const byKind = {
@@ -977,6 +1143,8 @@ function describeError(err) {
     parse: ['Unexpected response', err.message],
     protocol: ['Unexpected response', err.message],
     config: ['Cannot load data', err.message],
+    forbidden: ['Request refused', 'The server refused this request.'],
+    'rate-limit': ['Too many requests', 'Wait a moment, then try again.'],
   };
   const [title, message] = byKind[err.kind] || ['Something went wrong', err.message || 'Unknown error'];
   return { ...base, title, message };
@@ -1375,6 +1543,66 @@ function workspaceRows(page) {
     ai: w.used_ai_feature_30d ? 'Active' + (isNum(w.pct_ai_calls_automated) ? ' · ' + percent(w.pct_ai_calls_automated, 0) + ' automated' : '') : 'None',
     status: w.risk_tier, statusClass: TIER_CLASS[w.risk_tier] || 'unknown', barColor: TIER_VAR[w.risk_tier] || 'var(--text-3)',
   }));
+}
+// ----- analyst chat: what is sent back with a question, and how an answer is described
+const CHAT_HISTORY_MESSAGES = 8;     // earlier answered messages sent with a new question (the API takes 10 in all)
+const GROUNDING_NOTES = {
+  'truncated-evidence': 'Some source data was shortened to fit size limits, so totals over it were not used.',
+  'dates-not-in-evidence': 'A date in the answer was not found in the sources.',
+  'conflicting-evidence': 'Two lookups of the same data disagreed, so neither was used.',
+  'mixed-data-versions': 'The sources come from different data versions.',
+  'derived-values-capped': 'Not every computed value could be checked.',
+};
+const countOf = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+
+// The messages to send: the last answered turns plus the new question, as fresh {role, content}
+// objects. `history` only ever holds what the user typed and answers the API returned as answered.
+function chatWindow(history, text) {
+  const question = typeof text === 'string' ? text.trim() : '';
+  if (!question) throw new TypeError('the question is empty');
+  const earlier = history.slice(-CHAT_HISTORY_MESSAGES);
+  return [...earlier.map(m => ({ role: m.role, content: m.content })), { role: 'user', content: question }];
+}
+
+function argumentsText(args) {
+  const entries = Object.keys(args || {}).sort().map(k => k + ' = ' + (Array.isArray(args[k]) ? args[k].join(', ') : String(args[k])));
+  return entries.length ? entries.join('; ') : 'no filters';
+}
+
+function chatSourceModel(s) {
+  const version = [s.dataVersion ? 'data version ' + s.dataVersion : null, s.asOf ? 'as of ' + s.asOf : null].filter(Boolean);
+  return {
+    title: s.tool, endpoint: s.endpoint, filters: argumentsText(s.arguments),
+    version: version.join(' · '), relations: s.relations.length ? 'Tables: ' + s.relations.join(', ') : '',
+    caveats: s.caveats, truncated: s.truncated ? 'Some rows were left out of this result to fit a size limit.' : '',
+    supports: s.supportedClaims > 0 ? 'Supports ' + countOf(s.supportedClaims, 'figure', 'figures') + ' in the answer' : 'Consulted',
+  };
+}
+
+// The API's grounding status in words; nothing is added to it.
+function groundingBadge(g) {
+  if (g.status === 'verified') {
+    if (g.claimsChecked === 0) return { tone: 'good', text: 'Checked: the answer contains no figures to verify' };
+    const derived = g.claimsDerived > 0 ? ' (' + g.claimsDerived + ' computed from them)' : '';
+    return { tone: 'good', text: 'Verified: ' + countOf(g.claimsChecked, 'figure', 'figures') + ' matched to the sources' + derived };
+  }
+  if (g.status === 'rejected') {
+    return { tone: 'bad', text: 'Withheld: ' + countOf(g.unverifiedCount, 'figure', 'figures') + ' could not be matched to the data' };
+  }
+  return { tone: 'neutral', text: 'Not checked: no answer was produced' };
+}
+
+function chatAnswerModel(r) {
+  const answered = r.status === 'answered';
+  const notes = [...r.grounding.caveats.map(c => GROUNDING_NOTES[c] || c),
+                 ...(r.grounding.datesNotInEvidence.length ? ['Not found in the sources: ' + r.grounding.datesNotInEvidence.join(', ') + '.'] : [])]
+    .filter((n, i, all) => all.indexOf(n) === i);
+  return {
+    kind: r.status, text: answered ? r.answer : (r.notice || 'The answer was withheld.'),
+    badge: groundingBadge(r.grounding), notes, sources: r.sources.map(chatSourceModel),
+    sourcesLabel: r.sources.length ? 'Sources (' + r.sources.length + ')' : 'Sources: no data was looked up',
+    dataset: r.dataset, requestId: r.requestId,
+  };
 }
 // ===== PANEL MODELS: END =====
 
@@ -1783,6 +2011,143 @@ const workspacePanel = definePanel({
     });
   },
 });
+
+// ----- the analyst tab: the conversation lives in this page's memory only, one question at a time.
+// Text from the API is always inserted with textContent: no HTML, no Markdown.
+const analyst = (() => {
+  const el = {
+    panel: byId('panel-analyst'), messages: byId('ai-messages'), empty: byId('ai-empty'), notice: byId('ai-notice'),
+    form: byId('ai-form'), input: byId('ai-input'), send: byId('ai-send'), reset: byId('ai-new'), dataset: byId('ai-dataset'),
+  };
+  let history = [];                    // answered turns as {role, content}: the only context ever sent back
+  let controller = null;
+  let token = 0;
+  let unavailable = false;
+
+  function setState(state) {
+    el.panel.setAttribute('data-state', state);
+    const busy = state === 'loading';
+    el.panel.setAttribute('aria-busy', busy ? 'true' : 'false');
+    el.input.readOnly = busy;
+    el.send.disabled = busy || unavailable;
+    el.input.disabled = unavailable;
+  }
+  function showNotice(message, extra) {
+    clearNode(el.notice);
+    if (!message) { el.notice.hidden = true; return; }
+    el.notice.appendChild(node('div', 'state-title', message.title));
+    el.notice.appendChild(node('div', '', message.message));
+    if (extra) el.notice.appendChild(node('div', '', extra));
+    if (message.requestId) el.notice.appendChild(node('div', 'state-id', 'request ' + message.requestId));
+    el.notice.hidden = false;
+  }
+  function scrollDown() { el.messages.scrollTop = el.messages.scrollHeight; }
+  function addUser(text) {
+    el.empty.hidden = true;
+    const bubble = node('div', 'ai-msg user', text);
+    el.messages.appendChild(bubble);
+    el.reset.hidden = false;
+    scrollDown();
+    return bubble;
+  }
+  function addThinking() {
+    const bubble = node('div', 'ai-msg ai thinking', 'Looking up the data and checking the answer…');
+    bubble.setAttribute('role', 'status');
+    el.messages.appendChild(bubble);
+    scrollDown();
+    return bubble;
+  }
+  function addAnswer(model) {
+    const turn = node('div', 'ai-turn');
+    turn.appendChild(node('div', 'ai-msg ai' + (model.kind === 'withheld' ? ' withheld' : ''), model.text));
+    turn.appendChild(node('div', 'ai-badge ' + model.badge.tone, model.badge.text));
+    if (model.notes.length) {
+      const notes = node('ul', 'ai-notes');
+      model.notes.forEach(n => notes.appendChild(node('li', '', n)));
+      turn.appendChild(notes);
+    }
+    const details = node('details', 'ai-sources');
+    details.appendChild(node('summary', '', model.sourcesLabel));
+    if (model.sources.length) {
+      const list = node('ul');
+      model.sources.forEach(src => {
+        const item = node('li');
+        item.appendChild(node('div', 'ai-source-title', src.title));
+        item.appendChild(node('div', 'ai-source-line', src.endpoint + ' · ' + src.filters));
+        if (src.version) item.appendChild(node('div', 'ai-source-line', src.version));
+        if (src.relations) item.appendChild(node('div', 'ai-source-line', src.relations));
+        item.appendChild(node('div', 'ai-source-line', src.supports));
+        if (src.truncated) item.appendChild(node('div', 'ai-source-caveat', src.truncated));
+        src.caveats.forEach(c => item.appendChild(node('div', 'ai-source-caveat', c)));
+        list.appendChild(item);
+      });
+      details.appendChild(list);
+    }
+    turn.appendChild(details);
+    el.messages.appendChild(turn);
+    if (model.dataset) el.dataset.textContent = 'Dataset: ' + model.dataset;
+    scrollDown();
+  }
+
+  async function ask(text) {
+    const mine = ++token;
+    let messages;
+    try { messages = chatWindow(history, text); } catch (e) { return; }
+    showNotice(null);
+    const bubble = addUser(text.trim());
+    const thinking = addThinking();
+    el.input.value = '';                                        // restored if the question could not be answered
+    setState('loading');
+    controller = new AbortController();
+    try {
+      const response = await needApi().chat(messages, { signal: controller.signal });
+      if (mine !== token) return;                              // a newer conversation started
+      thinking.remove();
+      const model = chatAnswerModel(response);
+      addAnswer(model);
+      if (response.status === 'answered') history.push({ role: 'user', content: messages[messages.length - 1].content }, { role: 'assistant', content: response.answer });
+      setState('ready');
+    } catch (err) {
+      if (mine !== token || err.kind === 'aborted') return;
+      thinking.remove();
+      bubble.remove();                                          // nothing was answered: the question goes back in the box
+      el.input.value = text;
+      const message = err instanceof ApiError ? describeError(err) : { title: 'Cannot send the question', message: err.message, requestId: null };
+      unavailable = err.type === 'analyst-not-configured';
+      const started = !!el.messages.querySelector('.ai-msg');
+      el.empty.hidden = started;
+      el.reset.hidden = !(started || unavailable);   // after "not configured" the button is how to check again
+      showNotice(message, err.retryAfterS ? 'You can try again in ' + err.retryAfterS + ' seconds.' : null);
+      setState(unavailable ? 'unavailable' : 'error');
+    }
+  }
+
+  function reset() {
+    token += 1;
+    if (controller) controller.abort();
+    history = [];
+    unavailable = false;
+    Array.from(el.messages.children).forEach(c => { if (c !== el.empty) c.remove(); });
+    el.empty.hidden = false;
+    el.reset.hidden = true;
+    el.input.value = '';
+    el.dataset.textContent = 'Grounded in dashboard data';
+    showNotice(null);
+    setState('idle');
+  }
+
+  el.form.addEventListener('submit', event => {
+    event.preventDefault();
+    if (el.send.disabled || el.input.readOnly) return;
+    const text = el.input.value.trim();
+    if (text) ask(text);
+  });
+  el.input.addEventListener('keydown', event => {            // Enter sends, Shift+Enter adds a line
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); el.form.requestSubmit(); }
+  });
+  el.reset.addEventListener('click', reset);
+  return { ask, reset };
+})();
 
 // ----- tabs: the overview loads at start, every other tab the first time it is opened
 const TAB_PANELS = {
