@@ -8,11 +8,11 @@ database: it can only ask for the tools named in request.tools.
 
 Messages handed to a client are plain dicts with one of three shapes:
     {"role": "user" | "assistant", "text": str}
-    {"role": "assistant", "text": None, "tool_calls": [{"id", "name", "arguments"}]}
+    {"role": "assistant", "text": None, "tool_calls": [{"id", "name", "arguments", "provider_state"?}]}
     {"role": "tool", "results": [{"id", "name", "content": <JSON text of a tool result>}]}
 There is no "system" message in the list: the server's instructions travel only in request.system.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 
@@ -21,6 +21,9 @@ class ToolCall:
     """A tool the model asked for. Both fields are untrusted model output."""
     name: Any
     arguments: Any
+    # Opaque text a provider needs back with this call on the next request (a thought
+    # signature). The engine copies it into the transcript untouched, never into a result.
+    provider_state: Any = field(default=None, compare=False, repr=False)
 
 
 @dataclass(frozen=True)
@@ -53,7 +56,7 @@ class LlmRequest:
 class LlmError(Exception):
     """A failure the client already understands. `kind` is one of the KINDS below; the message is
     for logs only and is never shown to the user or the model."""
-    KINDS = ('timeout', 'rate_limited', 'unavailable', 'bad_response', 'refused')
+    KINDS = ('timeout', 'rate_limited', 'unavailable', 'bad_response', 'refused', 'auth')
 
     def __init__(self, kind, message=''):
         super().__init__(message or kind)

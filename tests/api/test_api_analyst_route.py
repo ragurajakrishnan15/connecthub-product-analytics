@@ -270,8 +270,9 @@ def test_each_missing_requirement_is_a_503_with_no_model_call(overrides):
         assert api.llm.calls == 0 and FAKE_KEY not in r.text
 
 
-def test_enabled_without_a_model_client_is_a_503():
-    app = create_app(settings_for())                      # no adapter exists yet
+def test_enabled_without_a_model_client_is_a_503(monkeypatch):
+    monkeypatch.setattr('api.analyst.gemini.sdk_available', lambda: False)    # no client can be built
+    app = create_app(settings_for())
     with TestClient(app, raise_server_exceptions=False) as client:
         assert_problem(client.post('/api/analyst/chat', json={'messages': [U('hi')]}), 503,
                        'analyst-not-configured')

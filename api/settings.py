@@ -141,6 +141,11 @@ class Settings(BaseSettings):
         less is "not configured" (the endpoint answers 503); it never stops the API starting."""
         return self.analyst_enabled and self.analyst_key_present and self.analyst_model is not None
 
+    def analyst_credential(self):
+        """The Gemini key as plain text for the provider, or None. The only accessor: it exists so
+        the key is read in this module and nowhere else in the API package."""
+        return self.gemini_api_key.get_secret_value() if self.gemini_api_key is not None else None
+
     def summary(self) -> dict:
         """Settings safe to log: secrets masked. The Gemini key shows only as present or absent."""
         out = self.model_dump(mode='json')

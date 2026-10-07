@@ -126,7 +126,12 @@ def _tracked_text_files():
     skip = {'.venv', '.git', 'node_modules', '__pycache__', '.pytest_cache', 'data', 'vendor'}
     suffixes = {'.py', '.md', '.txt', '.yml', '.yaml', '.html', '.mjs', '.json', '.toml', '.cfg',
                 '.example', '.sql', '.ini', ''}
-    for path in ROOT.rglob('*'):
+    # Files git tracks or would add. A developer's own git-ignored .env is local, never committed and
+    # kept out of the image by .dockerignore (tested below); it is not repository content.
+    listed = subprocess.run(['git', 'ls-files', '--cached', '--others', '--exclude-standard'], cwd=ROOT,
+                            capture_output=True, text=True)
+    paths = [ROOT / name for name in listed.stdout.splitlines()] if listed.returncode == 0         else list(ROOT.rglob('*'))
+    for path in paths:
         if path.is_file() and not (set(path.relative_to(ROOT).parts) & skip) \
                 and path.suffix in suffixes and path.stat().st_size < 2_000_000:
             yield path

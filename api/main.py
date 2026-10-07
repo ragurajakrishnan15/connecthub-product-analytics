@@ -27,6 +27,7 @@ from api.cache import CacheMiddleware, DataVersion, ResponseCache
 from api.dashboard import dashboard_router, load_dashboard
 from api.db import create_engine
 from api.middleware import RequestContextMiddleware
+from api.analyst import gemini
 from api.analyst.limits import DailyBudget, RateLimiter
 from api.routers import analyst, analytics, health, meta
 from api.settings import Settings
@@ -60,7 +61,9 @@ Successful data responses carry a weak `ETag`; send it back in `If-None-Match` t
 
 def create_app(settings: Settings | None = None, analyst_llm=None) -> FastAPI:
     """`analyst_llm` is the analyst's language-model client (api.analyst.llm.LlmClient). Tests pass a
-    scripted fake; no real client exists yet, so the analyst route answers 503 without one."""
+    scripted fake. When it is None and the analyst is enabled, configured and the SDK is installed,
+    the Gemini client is built from the settings (no request is made until a question is asked);
+    otherwise the analyst route answers 503."""
     settings = settings or Settings()
     log = api_logging.configure(settings.api_log_level)
 
@@ -91,7 +94,7 @@ def create_app(settings: Settings | None = None, analyst_llm=None) -> FastAPI:
                                              settings.api_cache_max_entries,
                                              settings.api_cache_max_bytes)
     app.state.data_version = DataVersion(settings.api_data_version_ttl_s)
-    app.state.analyst_llm = analyst_llm
+    app.state.analyst_llm = analyst_llm if analyst_llm is not None else gemini.build_client(settings)
     app.state.analyst_limiter = RateLimiter(settings.analyst_rate_limit_per_min)
     app.state.analyst_budget = DailyBudget(settings.analyst_daily_token_budget)
 
