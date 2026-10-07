@@ -13,7 +13,7 @@ End-to-end product analytics for a B2B SaaS communications platform — from det
 | Activation | 14-day activation funnel and time to each milestone |
 | Experiments | A selector over the registered experiments, with lift, Bayesian probability, SRM and guardrail checks, the verdict and the conversion curve (the A/A check is labelled as one) |
 | Customer Health | Health tier counts, score distribution and the lowest-scoring workspaces |
-| AI Analyst | A placeholder. The analyst is not implemented; the tab says so and shows no answers |
+| AI Analyst | A chat over `POST /api/analyst/chat`: answers come only from the dashboard's own API data, every number is checked against the data it came from (an answer with a figure that cannot be matched is withheld), and each answer lists its sources. Off by default; the tab says "not configured" until it is set up (see [AI analyst](#ai-analyst)) |
 
 The data is synthetic (the page says so), and the numbers are small by design: the default dataset is 10,000 users.
 See [docs/api.md](docs/api.md#dashboard-page-get-) for how the page is served and what each panel reads.
@@ -31,8 +31,26 @@ See [docs/api.md](docs/api.md#dashboard-page-get-) for how the page is served an
 
 The API (`api/`) is documented in [docs/api.md](docs/api.md); the dashboard is part of the same service.
 
-Not implemented: Kafka/Kinesis/S3 ingestion, Apache Iceberg and the AI analyst (the dashboard tab is a placeholder).
+Not implemented: Kafka/Kinesis/S3 ingestion and Apache Iceberg.
 See [docs/architecture.md](docs/architecture.md).
+
+## AI analyst
+
+**Status: the implementation is complete; the real Gemini live evaluation is incomplete** (provider quota/rate limiting stopped it). The server-side code, the tab and every keyless and mocked test are done; what was *not* proven is the analyst's behaviour on the full set of live Gemini questions. Details, numbers and the exact gap are in [PHASE_6_REPORT.md](PHASE_6_REPORT.md).
+
+The browser never sees a model key. `POST /api/analyst/chat` runs the question through a server-side engine that may call only 14 read-only tools (thin wrappers over the existing API services, on the read-only database role), then checks every number in the answer against what those tools returned. Off by default: nothing is sent anywhere unless all of the following are set **in the process environment** of the API (a `.env` file is never read by the API):
+
+```powershell
+$env:ANALYST_ENABLED = 'true'
+$env:ANALYST_MODEL   = '<a current Gemini model id>'   # no default; chosen by you
+$env:GEMINI_API_KEY  = '...'                            # never put it in a file, an image or the page
+pip install -r requirements/analyst.txt -c requirements/constraints-py311.txt   # the optional SDK
+python -m api
+```
+
+The page's address must be in `API_CORS_ORIGINS` (default `127.0.0.1:8000` and `localhost:8000`) because the route refuses cross-origin requests. Limits, errors and the response shape are in [docs/api.md](docs/api.md#post-apianalystchat). The Docker image does not include the SDK and `docker-compose.yml` does not pass the analyst settings, so the analyst answers "not configured" in the container (a documented gap, see the report).
+
+The live harness `scripts/analyst_live_eval.py` is the only code that may call Gemini; it refuses to run without `--approve-live`, and no test can contact Google (`tests/conftest.py`).
 
 ## Architecture
 

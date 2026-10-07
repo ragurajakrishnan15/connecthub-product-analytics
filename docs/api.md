@@ -1,6 +1,6 @@
 # Analytics API Reference
 
-The read-only HTTP API over the analytics warehouse (`api/`). The design is in
+The HTTP API over the analytics warehouse (`api/`): read-only except for `POST /api/analyst/chat`, which writes nothing. The design is in
 `PHASE_4_PLAN.md`; metric definitions are in [metric-definitions.md](metric-definitions.md).
 Interactive docs at `/api/docs` (Swagger) and `/api/redoc` when `API_DOCS_ENABLED`.
 
@@ -123,7 +123,7 @@ Not part of the API contract (not in `docs/openapi.json`). With `API_DASHBOARD_P
 | Activation | Funnel, time to milestone | `/api/activation` |
 | Experiments | Selector, evaluation cards, verdict, activation curve | `/api/experiments`, `/api/experiments/{id}` |
 | Customer Health | Tier cards, score distribution, lowest-scoring workspaces | `/api/customer-health`, `/api/customer-health/workspaces` |
-| AI Analyst | Placeholder ("coming in Phase 6"); no analyst yet | none |
+| AI Analyst | Chat box, answers with a grounding badge and a Sources list; "not configured" while the analyst is off | `POST /api/analyst/chat` (the only POST) |
 
 The Overview loads at start; every other tab loads the first time it is opened. Each panel shows its own loading, empty or error state (with the request id and a Retry button), so one failing endpoint never blanks another panel. The API's `meta.caveats` are shown under each panel. All API text is written to the page as text (never as HTML).
 
@@ -354,3 +354,30 @@ Paginated workspace list.
 **Ordering:** the sort column, nulls last, then `workspace_id`, so pages are stable.
 
 **Response:** `total`, `limit`, `offset`, `next_offset` (null on the last page) and `items[]`. An offset past the end returns `items: []`.
+
+
+### `POST /api/analyst/chat`
+
+The only non-GET route (17 paths in `docs/openapi.json`). It writes nothing and stores no conversation: the browser sends the history each time. Design and limits: `PHASE_6_PLAN.md`; what was and was not verified live: `PHASE_6_REPORT.md`.
+
+**Request:** `Content-Type: application/json`, body exactly `{"messages": [{"role": "user" | "assistant", "content": "..."}]}`. Messages alternate, start and end with a user message, at most `ANALYST_MAX_HISTORY_TURNS` (10) messages, `ANALYST_MAX_MESSAGE_CHARS` (2000) per user message. System, developer, tool and function roles, extra fields and any other body field are refused (422), never ignored. No query parameters.
+
+**Response 200:** `status` (`answered` or `withheld`), `answer` (plain text, `null` when withheld), `format` (`text/plain`), `reason`, `notice`, `grounding` (`status`: `verified`, `rejected` or `not_checked`, with `claims_checked`, `claims_derived`, `unverified_count`, `caveats`, `dates_not_in_evidence`), `sources[]` (`id`, `tool`, `endpoint`, `arguments`, `data_version`, `as_of`, `relations`, `caveats`, `truncated`, `supported_claims`), `usage`, `dataset` and `request_id`. An answer containing a number no tool result supports is **withheld**: the response never repeats the unsupported figure, only how many there were.
+
+**Errors** (problem documents with `request_id`; never an exception message, SQL, credential or stack trace):
+
+| Status | Slug | When |
+|---|---|---|
+| 400 | `invalid-parameter` | malformed JSON, a query string |
+| 401 | `unauthorized` | `API_AUTH_MODE=api_key` and no valid key (the existing rule) |
+| 403 | `forbidden-origin` | an `Origin` that is not in `API_CORS_ORIGINS`, or a `Host` that does not match one |
+| 413 | `payload-too-large` | body over `ANALYST_MAX_REQUEST_BYTES` (262144), message or conversation too long |
+| 415 | `unsupported-media-type` | not `application/json` |
+| 422 | `validation-error` | wrong body shape, forbidden role, empty or non-text content |
+| 429 | `rate-limited`, `budget-exhausted` | per-client rate limit (`ANALYST_RATE_LIMIT_PER_MIN`, 10), or the daily token budget (`ANALYST_DAILY_TOKEN_BUDGET`, 200000, resets 00:00 UTC), both with `Retry-After` |
+| 500 | `internal-error` | an unexpected failure or a grounding error |
+| 502 | `analyst-upstream-error` | the model failed, was rate-limited, refused, or returned an unusable reply |
+| 503 | `analyst-not-configured` | not enabled, no key, no model, or the SDK is not installed |
+| 504 | `analyst-timeout` | the model or the turn (`ANALYST_TURN_TIMEOUT_S`, 60) timed out |
+
+**Controls:** a model may call only the 14 allowlisted tools (at most `ANALYST_MAX_TOOL_CALLS`, 6, per question), whose arguments are validated as strictly as the REST routes and whose results are size-capped (`ANALYST_MAX_TOOL_RESULT_BYTES`); responses are capped (`ANALYST_MAX_RESPONSE_BYTES`); a tag-shaped `<` in an answer is neutralised; answers are cached nowhere (`Cache-Control: no-store`). Per-client and daily limits are in process memory, per worker. Settings are listed in `.env.example`; the key is read only from the process environment and is masked everywhere.
