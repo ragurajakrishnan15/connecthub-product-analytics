@@ -218,8 +218,10 @@ def test_openapi_documents_exactly_the_implemented_endpoints(client):
         '/api/overview', '/api/engagement', '/api/activation', '/api/retention',  # Phase 4C
         '/api/cohorts', '/api/revenue', '/api/feature-adoption', '/api/experiments',
         '/api/experiments/{experiment_id}', '/api/nps', '/api/support', '/api/customer-health',
-        '/api/customer-health/workspaces'}
-    assert all(set(ops) == {'get'} for ops in spec['paths'].values())     # read-only surface
+        '/api/customer-health/workspaces',
+        '/api/analyst/chat'}                                                    # Phase 6
+    assert {p for p, ops in spec['paths'].items() if set(ops) != {'get'}} == {'/api/analyst/chat'}
+    assert set(spec['paths']['/api/analyst/chat']) == {'post'}       # the only non-GET route
     for path, ops in spec['paths'].items():
         for op in ops.values():
             assert op['tags'] and op['summary'], path

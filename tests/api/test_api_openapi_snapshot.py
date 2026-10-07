@@ -46,7 +46,9 @@ def test_snapshot_covers_the_whole_contract():
     """Guard against a hollow snapshot: every route, method, parameter and schema is in it."""
     snapshot = read_snapshot()
     paths = snapshot['paths']
-    assert len(paths) == 16 and all(set(ops) == {'get'} for ops in paths.values())
+    assert len(paths) == 17
+    assert {p for p, ops in paths.items() if set(ops) != {'get'}} == {'/api/analyst/chat'}
+    assert set(paths['/api/analyst/chat']) == {'post'}      # Phase 6 adds this one route, nothing else
     params = {p['name'] for p in paths['/api/customer-health/workspaces']['get']['parameters']}
     assert params == {'tier', 'plan_tier', 'sort', 'order', 'limit', 'offset'}
     sort = next(p for p in paths['/api/customer-health/workspaces']['get']['parameters']
