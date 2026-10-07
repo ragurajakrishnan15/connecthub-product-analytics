@@ -5,7 +5,7 @@
 3. **Starting commit:** `193be5f` (Phase 4D). Phases 4A–4D (`0a35c91`, `3fa11e3`, `307ed88`, `193be5f`) are all in the history.
 4. **Final commit:** the commit that contains this report (`git log -1`; a file cannot contain its own commit's hash). The implementation is complete at `ad8c73b`; this report is the only change after it.
 5. **Result:** `index.html` now renders **only data returned by the Phase 4 API**. No analytics number is a literal in the page. The AI Analyst is deferred to Phase 6.
-6. **Not done:** pushing, merging, tagging, rewriting history, installing Playwright/Chromium (see §11), vendoring Chart.js (done afterwards, see §19), the AI analyst.
+6. **Not done:** pushing, merging, tagging, rewriting history, installing Playwright/Chromium (done afterwards, see §20), vendoring Chart.js (done afterwards, see §19), the AI analyst.
 
 | Commit | Step |
 |---|---|
@@ -142,7 +142,7 @@ A scratch copy of the page plus a driver script was served by a throwaway contai
 - Screenshots of all five data tabs were reviewed by eye.
 - **The key dialog** was verified separately in a real DOM: modal, focused, password field, invalid key refused, submit, Cancel and Escape, and the full 401 → dialog → retry flow.
 
-**Important:** this is **not** the planned Playwright suite. The driver is a scratch script and is **not committed**, and nothing in CI runs it. See §11.
+**Superseded:** when this report was written, this run was a scratch script (installed Edge), not the planned Playwright suite, and was not committed. Its checks are now a committed Playwright/Chromium suite (`tests/browser`, §20).
 
 ## 10. Data-integrity and security validation
 
@@ -169,7 +169,7 @@ A scratch copy of the page plus a driver script was served by a throwaway contai
 | The AI tab makes no request and holds no canned answers | **Met** |
 | `openapi.json` unchanged; suite and Ruff green; fingerprint identical | **Met** |
 | Secret scan clean | **Met** |
-| **Browser tests pass (Playwright)** | **Not met as specified.** Substituted by the uncommitted Edge driver above. Playwright/Chromium was not installed because Docker storage is still on C: (§14) |
+| **Browser tests pass (Playwright)** | **Met afterwards (§20).** At the time of this report it was not met: it was substituted by an uncommitted Edge driver because Docker storage was still on C:. It is now a committed Playwright/Chromium suite that passes |
 | This report lists deviations, skipped tests and limitations | Met |
 
 ## 12. Warehouse fingerprint
@@ -186,11 +186,11 @@ A scratch copy of the page plus a driver script was served by a throwaway contai
 
 ## 14. Environment
 
-The API and Postgres containers are healthy and `/api/health/ready` is `ready`. C: has about 5.6 GB free and D: about 37 GB. **Docker storage is still on C:**: Docker has no custom data folder, and the C: `docker_data.vhdx` (49.1 GB) is the one in use. Two more 49.1 GB `docker_data.vhdx` files sit on D: (`D:\Docker\DockerDesktopWSL` and `D:\DockerDesktopWSL`, last modified 2026-10-05 evening); they look like earlier move attempts. I did not touch them. This is why the Playwright gate stays closed.
+The API and Postgres containers are healthy and `/api/health/ready` is `ready`. C: has about 5.6 GB free and D: about 37 GB. **Docker storage is still on C:**: Docker has no custom data folder, and the C: `docker_data.vhdx` (49.1 GB) is the one in use. Two more 49.1 GB `docker_data.vhdx` files sit on D: (`D:\Docker\DockerDesktopWSL` and `D:\DockerDesktopWSL`, last modified 2026-10-05 evening); they look like earlier move attempts. I did not touch them. This is why the Playwright gate was closed; it was later resolved without moving Docker, by using a Chromium that was already on disk (§20).
 
 ## 15. Known limitations
 
-1. **No committed browser test.** The 54-check browser run and the dialog check are scratch scripts. The Node tests prove the logic and the page's static properties, not rendering. A Playwright suite is the follow-up once storage is sorted.
+1. **~~No committed browser test.~~** *Resolved afterwards: `tests/browser` is a committed Playwright/Chromium suite (§20).*
 2. **Only one browser engine was exercised** (Chromium-based Edge, headless). Firefox and Safari are untested. No mobile-layout or accessibility audit was done.
 3. **Chart.js loaded from cdnjs at the time of this report.** *Resolved afterwards: Chart.js is now vendored and served from the same origin (§19).* The guard for a missing `Chart` global (panels show an error state rather than the script halting) is still not exercised in a browser.
 4. **Fonts still load from Google Fonts** (`fonts.googleapis.com`, `fonts.gstatic.com`).
@@ -201,7 +201,7 @@ The API and Postgres containers are healthy and `/api/health/ready` is `ready`. 
 9. **Heatmap is 26 rows** (the API default) and scrolls; the DAU chart's first month is partial and starred.
 10. **`/api/retention` has a client method but no panel.**
 11. **Phase 4 limitations carry over:** a rebuild without a validated run can serve cached responses for up to 5 minutes; per-worker caches; benchmarks at 10K users only.
-12. **Documentation not yet updated:** `README.md` and `docs/architecture.md` still describe the dashboard as a static prototype (`docs/api.md` is current).
+12. **~~Documentation not yet updated.~~** *Resolved afterwards: `README.md` and `docs/architecture.md` were updated (commit `abee9e1`) and again for the browser suite (§20).*
 13. **Pre-existing, not created by this phase:** a `v3.0` tag and an `origin` remote exist; `phase-5` has no upstream. `FALL 2026 FEE PAYMENT.pdf` is untracked in the repo folder and should be moved out.
 
 ## 16. Deviations from the plan
@@ -213,7 +213,7 @@ The API and Postgres containers are healthy and `/api/health/ready` is `ready`. 
 5. **Number formatters live in the panel models** (Step 3), not the data layer; they follow the API `unit`.
 6. **`PHASE_5_PLAN.md` panel mapping changes:** `/api/retention` is not used; the Voice-of-Customer cards are individual panels so an NPS failure and a support failure show separately; all 7 adoption curves are shown (the mock showed 4); `observed_rate` is plotted; the page adds the API caveats under each panel.
 7. **Footer link removed**, not set to the real repository URL (the repo does have a remote; I did not publish your URL without your say-so).
-8. **The browser validation used installed Edge with scratch drivers**, not Playwright (§9, §11).
+8. **The browser validation in this report used installed Edge with scratch drivers**, not Playwright (§9, §11). *Superseded: it is now a committed Playwright suite (§20).*
 9. **Four implementation commits plus this report**, rather than the single commit you first described; each followed a step you approved.
 
 ## 17. Reproduce
@@ -230,9 +230,9 @@ node --test tests/dashboard                        # 157 Node tests (also run by
 
 ## 18. Next steps (not started)
 
-1. Move Docker storage off C: (your decision on the three `docker_data.vhdx` files), then install Playwright (Chromium only) and turn the §9 driver into a committed suite.
+1. ~~Install Playwright and turn the §9 driver into a committed suite~~ (done, §20, without moving Docker). Moving Docker storage off C: is still your decision (the three `docker_data.vhdx` files).
 2. ~~Vendor Chart.js~~ (done, §19). Optionally vendor the fonts too and drop the Google hosts from the CSP.
-3. Update `README.md` and `docs/architecture.md`.
+3. ~~Update `README.md` and `docs/architecture.md`~~ (done).
 4. Phase 6: the grounded AI analyst.
 5. Your call: merging `phase-4`/`phase-5`, and what to do about the `origin` remote.
 
@@ -250,3 +250,46 @@ Chart.js no longer loads from a CDN. It is served by the API from the same origi
 - **Browser (headless Edge, real CSP):** 54/54 end-to-end checks, 0 CSP violations, 0 JS errors, 0 integrity or source-map warnings; all overview charts drawn from the vendored file; `Chart.version` is `4.4.1`. The browser's own Resource Timing list shows only Google Fonts, `/vendor/chart.umd.js` and API calls: no CDN, no `.map`.
 - **Phase 4 and warehouse:** untouched. The warehouse fingerprint is identical to Step 0 after the full suite (35 relations, 2,112,759 rows); 15 live endpoint calls are identical to the baseline with the same ETags. The only Phase 4 code touched is the dashboard loader added in Step 1 (`api/dashboard.py`).
 - **Still external:** Google Fonts (`fonts.googleapis.com`, `fonts.gstatic.com`). Vendoring the fonts is optional follow-up work.
+
+---
+
+## 20. Addendum: the Playwright browser suite (acceptance criterion met)
+
+The criterion "browser tests pass (Playwright)" in §11 was substituted at the time of this report by an uncommitted Edge script. It is now a committed Playwright/Chromium suite, and it passes.
+
+**What was added** (no application file changed: `index.html`, `vendor/`, `api/`, Docker, dbt, `pipeline/` and `analytics/` are untouched)
+
+| File | Purpose |
+|---|---|
+| `tests/browser/test_dashboard_browser.py` | 42 browser tests |
+| `tests/browser/browserlib.py`, `conftest.py` | An in-process app server on the local warehouse, the Playwright fixtures, and expected-value formatting that does not reuse the page's code |
+| `requirements/browser.txt` | Optional dependency (`playwright==1.58.0`) with install notes; `requirements/constraints-py311.txt` pins `playwright` and `pyee` |
+| `pyproject.toml` | A `browser` marker |
+| `README.md`, `docs/architecture.md`, `docs/api.md` | Describe the suite and drop the "no automated browser tests" statements |
+
+**How it avoids the storage problem.** Docker storage is still on C: and was not touched (the three `docker_data.vhdx` files are unchanged). No browser was downloaded: this machine already had Chromium revision 1208 in `%LOCALAPPDATA%\ms-playwright` (from another project's Playwright 1.58.0), and the pinned Playwright 1.58.0 uses exactly that revision. Only the Playwright Python package was installed, into the project venv, about 100 MB on C:. The browsers folder is still 655 MB. If the browser is missing, `requirements/browser.txt` explains how to download only Chromium and keep it on another drive (`PLAYWRIGHT_BROWSERS_PATH`).
+
+**What the 42 tests check** (every value is compared with the API's response for the same request, read independently of the page)
+- The 54 checks of the earlier Edge driver, now named tests: all overview panels ready; the top bar; 6 KPI values and tooltip; the DAU, adoption, revenue, AI-resolution and NPS charts; the Voice of Customer cards; the API caveats; lazy tab loading; the heatmap (rows, gaps, values, DOM-applied colors, no week-1 panel); the funnel and milestones; the experiment selector, default, verdict and class, cards, guardrails, curve, A/A banner and switching; tier cards, histogram colors and the table; the AI tab placeholder.
+- The states, with routed stubs: loading, error (title, request id, Retry that recovers), empty, an unreachable API, a malformed response, one failing panel not blanking the others, and API strings staying text.
+- New beyond the old driver: the API-key dialog end to end against a second app with `API_AUTH_MODE=api_key` (one dialog for many failing panels, a wrong key forgotten and not retried in a loop, `sessionStorage` only, the key never in a URL or the page, a rejected stored key, Cancel and Escape); the page opened as a file; that Chromium actually refuses an injected inline script, inline handler and style attribute; Chart.js 4.4.1 served from this origin; and that the page asks only its own origin and Google Fonts.
+- Every test also fails on an uncaught page error, a CSP violation, or a request to any other host.
+
+**Does it catch bugs?** Eight deliberate breaks of the page were each caught: percentages ten times too small, API text through `innerHTML`, no request id on an error, the key put in the URL, a single-color histogram, tabs loading eagerly (all by the browser suite), the superseded request not cancelled (the browser suite, after the stale-response test was strengthened because the first version did not detect a removed stale-result check), and that stale-result check removed (the Node suite; it is masked in the browser because the request is aborted first).
+
+**Results (final tree)**
+
+| Check | Result |
+|---|---|
+| Browser suite alone | **42 passed** in about 25 s |
+| Full `pytest` (browser tests included, one session) | **379 passed, 2 skipped, 0 failed** in 471 s (was 337 + 2; the skips are the Airflow and Spark tests, as before) |
+| Skips when a prerequisite is missing | Playwright not installed: skipped; Chromium not found: skipped; no database: skipped (verified for each; never a failure) |
+| Node dashboard tests | 158 passed |
+| `tests/api` | 214 passed |
+| Ruff | All checks passed |
+| OpenAPI snapshot | Unchanged (16 paths) |
+| Warehouse fingerprint | Identical to Step 0 (35 relations, 2,112,759 rows) |
+| Live API through the data layer | 15 endpoint calls (200 then 304), identical to the Step 0 baseline |
+| Secrets in the new and changed files | None |
+
+**Limits.** Only Chromium is covered (not Firefox or Safari), and the browser tests run locally, not in CI. They need the local PostgreSQL warehouse, like the other integration tests. Playwright's `page.evaluate` is exempt from CSP's `eval` rule, so `unsafe-eval` is asserted on the header, not by running `eval`. The unrelated `FALL 2026 FEE PAYMENT.pdf` is still untracked in the repository folder.

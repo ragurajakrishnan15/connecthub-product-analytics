@@ -157,11 +157,26 @@ shows comes from an API response; there are no hard-coded or placeholder values.
 |---|---|---|
 | Data layer | The only code that calls the API: same-origin, credential-less `GET`s; per-URL ETag revalidation (`If-None-Match`, a 304 reuses the stored response); problem+json errors mapped to a small set of kinds; timeouts and cancellation; empty-response detection; an API-key dialog | `tests/dashboard/data_layer.test.mjs` (Node, fake `fetch`; also cross-checks every endpoint and parameter against `docs/openapi.json`) |
 | Panel models | Pure functions from an API response to what is displayed: unit-aware formatting, chart datasets, table rows, the experiment verdict | `tests/dashboard/panel_models.test.mjs` (trimmed real responses as fixtures) |
-| Panels | DOM and Chart.js. Each panel owns its loading, empty and error state (request id and a Retry button), drops a response that arrives after a newer request, and loads lazily (the Overview at start, other tabs when first opened) | the page-level checks in the same file, plus a manual browser run |
+| Panels | DOM and Chart.js. Each panel owns its loading, empty and error state (request id and a Retry button), drops a response that arrives after a newer request, and loads lazily (the Overview at start, other tabs when first opened) | the page-level checks in the same file, and the browser tests below |
 
 The Node tests extract the data layer and the models straight out of
 `index.html`, so they run exactly what ships. A single failing endpoint never
 blanks another panel.
+
+**Browser tests** (`tests/browser`, Playwright driving Chromium). They start the
+app in-process on the local warehouse (so they need no running container), open
+the real page under its real CSP, and compare what is displayed with what the API
+returns for the same request, read independently of the page and formatted in
+Python. They cover every tab, the loading/empty/error/Retry states (using routed
+stubs), text-not-markup rendering, lazy tab loading, the API-key dialog against a
+second app with `API_AUTH_MODE=api_key`, opening the page as a file, and that the
+browser actually refuses injected inline script, handlers and style attributes.
+Every test also fails on an uncaught page error, a CSP violation, or a request to
+any host other than the app and Google Fonts. The suite was checked by breaking
+the page on purpose (wrong unit, `innerHTML`, a missing request id, the key in a
+URL, no request cancellation, eager tab loading, one-color histogram) and
+confirming each break is caught. It is skipped, not failed, when Playwright or
+Chromium is not installed (`requirements/browser.txt`).
 
 **Serving and the Content-Security-Policy** (`api/dashboard.py`). The page is
 read once at startup and its CSP is derived from it: the SHA-256 of the inline
@@ -195,8 +210,7 @@ defaults, which are relative to the last loaded day.
 Kafka / Kinesis / S3 ingestion, Apache Iceberg and the AI analyst. The dashboard
 has an "AI Analyst" tab, but it is a placeholder: a grounded analyst would be a
 server-side endpoint that keeps its key out of the browser, and does not exist
-yet. There is also no automated browser test suite for the dashboard (the Node
-tests cover the logic and the page's static properties; rendering was verified
-by running the page in a real browser, manually), no hosted deployment, and no
+yet. There is also no hosted deployment, no browser test in CI (the browser
+tests run locally; only Chromium is covered, not Firefox or Safari), and no
 sign-in beyond the optional API key. LookML and Hex files are illustrative and
 unvalidated.

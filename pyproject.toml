@@ -12,6 +12,7 @@ pythonpath = [".", "scripts"]
 testpaths = ["tests"]
 markers = [
     "integration: needs a reachable PostgreSQL (set POSTGRES_* in the environment)",
+    "browser: drives the dashboard in Chromium with Playwright (requirements/browser.txt); skipped if it is not installed",
 ]
 filterwarnings = [
     # Third-party deprecation noise (matplotlib/pyparsing, great_expectations).
