@@ -49,7 +49,7 @@ DEFAULT_TURN_TIMEOUT_S = 120.0
 # C0 and C1 controls except newline and tab, zero-width and bidirectional-control characters
 _HIDDEN = re.compile('[\x00-\x08\x0b-\x1f\x7f-\x9f​-‏‪-‮⁠-⁩﻿]')
 
-STATUSES = ('answered', 'rejected', 'tool_limit', 'budget_exhausted', 'timeout', 'cancelled',
+STATUSES = ('answered', 'ungrounded', 'rejected', 'tool_limit', 'budget_exhausted', 'timeout', 'cancelled',
             'upstream_error', 'empty_response')
 
 
