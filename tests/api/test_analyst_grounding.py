@@ -720,3 +720,66 @@ def test_mutation_policy_ignores_the_report(monkeypatch, ):
     # (explicitly: monkeypatch.undo() would also drop the suite's Google-host guard)
     monkeypatch.setattr(grounding, 'ground_answer', real_ground_answer)
     assert apply_policy(result).result.status == 'ungrounded'
+
+
+# --- 8. numeric labels in metric names (found by the live evaluation) -----------------------------------------------------
+# "The week-4 retention rate is 39.4%" was withheld because nothing in the data equals 4: the 4 is part of the
+# metric's name. A small whole number written as a week, day, month or year label is supported when the
+# tool results use the same label (a field name or the services' own text).
+
+RETENTION = {'kpis': {'week4_retention_rate': {'value': 0.39431, 'previous_value': 0.396203, 'unit': 'fraction',
+                                                'definition': 'Share of signups active in week 4 after signup',
+                                                'period': {'start': '2025-01-02', 'end': '2025-12-31'}},
+                      'activation_14d_rate': {'value': 0.5, 'definition': 'Signups that activated within 14 days'}}}
+
+
+def retention_trace():
+    return [entry('call-1', 'get_overview', RETENTION)]
+
+
+@pytest.mark.parametrize('answer', [
+    'The week-4 retention rate is 39.4%.', 'Week 4 retention is 39.4%.', 'The 4-week retention rate is 39.4%.',
+    'Retention in week 4 was 39.4%, down from 39.6%.', 'The 14-day activation rate is 50%.', 'Activation within 14 days is 50.0%.'])
+def test_a_label_the_tool_results_use_is_not_an_unsupported_figure(answer):
+    report = check(answer, *retention_trace())
+    assert report.accepted, report.unverified_numbers
+    label = [c for c in report.claims if c.get('support_kind') == 'label']
+    assert label and label[0]['status'] == 'verified' and label[0]['source_ids'] == ['call-1']
+
+
+@pytest.mark.parametrize('answer', [
+    'The week-7 retention rate is 39.4%.',                 # a label the data does not use
+    'The 30-day activation rate is 50%.',
+    'There are 4 workspaces.',                              # 4 is not attached to a label
+    'Retention fell for 4 months.',                         # month 4 is not a label in the data
+    'The week-1000 retention rate is 39.4%.',               # a label is a small number
+    'Week 4.5 retention is 39.4%.',
+])
+def test_a_label_the_data_does_not_use_is_still_unsupported(answer):
+    assert check(answer, *retention_trace()).accepted is False
+
+
+def test_labels_come_only_from_tool_results_never_from_the_question_or_warehouse_strings():
+    named = entry('call-1', 'list_workspaces', {'rows': [{'name': 'Acme week 9 trial', 'mrr': 5.0}]})
+    assert check('The week-9 retention is 5.', named).accepted is False          # a warehouse string is not a label source
+    assert check('The week-4 retention is 39.4%.', entry('call-1', 'get_overview', {'x': {'rate': 0.394}})).accepted is False
+    # the user's own mention of "week-4" supports nothing: only the tool results are read
+    report = ground_answer('The week-4 retention rate is 39.4%.', [])
+    assert report.accepted is False
+
+
+def test_the_live_defect_is_gone_end_to_end(monkeypatch):
+    stub(monkeypatch, 'get_overview', RETENTION)
+    llm = ScriptedLlm(use(call('get_overview')), say('The pooled week-4 retention rate is 39.4%.'))
+    out = grounded([U('What is the pooled week-4 retention rate?')], llm)
+    assert out.result.status == 'answered' and out.report.accepted and out.report.supporting_sources == ['call-1']
+    llm = ScriptedLlm(use(call('get_overview')), say('The pooled week-9 retention rate is 39.4%.'))
+    assert grounded([U('What is week-9 retention?')], llm).result.status == 'ungrounded'
+
+
+def test_mutation_removing_label_support_is_detected(monkeypatch):
+    assert check('The week-4 retention rate is 39.4%.', *retention_trace()).accepted
+    monkeypatch.setattr(grounding, 'label_of', lambda claim: None)
+    assert check('The week-4 retention rate is 39.4%.', *retention_trace()).accepted is False
+    monkeypatch.setattr(grounding, 'label_of', lambda claim: ('week', int(claim.value)))      # every label accepted
+    assert check('The week-7 retention rate is 39.4%.', *retention_trace()).accepted is False   # (still needs evidence)

@@ -126,6 +126,30 @@ class Claim:
     zeros: int = 0                 # trailing zeros of a whole number as written ("62,000": 3)
     unit: str = ''                 # '', '%' or 'x'
     approximate: bool = False
+    before: str = ''               # a few characters of the answer on either side (to read a label such as "week-4")
+    after: str = ''
+
+
+# A small whole number written as a label ("week-4", "14-day", "4-week", "30 days") is not a measurement.
+_LABEL_BEFORE = re.compile(r'\b(week|day|month|year)s?[-_ ]?$', re.I)
+_LABEL_AFTER = re.compile(r'^[-_ ]?(week|day|month|year)s?\b', re.I)
+_LABEL_WORD_FIRST = re.compile(r'\b(week|day|month|year)s?[-_ ]?(\d{1,3})(?!\d)', re.I)
+_LABEL_NUMBER_FIRST = re.compile(r'(?<!\d)(\d{1,3})[-_ ]?(week|day|month|year)s?\b', re.I)
+
+
+def label_of(claim):
+    """(word, number) when the claim is a small whole number attached to week, day, month or year."""
+    if claim.kind != 'number' or claim.unit or claim.decimals or claim.scale != 1.0 or not 0 <= claim.value < 1000             or not float(claim.value).is_integer():
+        return None
+    word = _LABEL_BEFORE.search(claim.before) or _LABEL_AFTER.match(claim.after)
+    return (word.group(1).lower(), int(claim.value)) if word else None
+
+
+def label_pairs(text):
+    """The (word, number) labels a piece of evidence text uses: "week4_retention_rate", "within 14 days"."""
+    pairs = {(m.group(1).lower(), int(m.group(2))) for m in _LABEL_WORD_FIRST.finditer(text)}
+    pairs.update((m.group(2).lower(), int(m.group(1))) for m in _LABEL_NUMBER_FIRST.finditer(text))
+    return pairs
 
 
 def _blank(text, pattern, handler):
@@ -214,7 +238,8 @@ def extract_claims(answer):
             whole = digits.replace(',', '')
             zeros = len(whole) - len(whole.rstrip('0')) if decimals == 0 else 0
             claims.append(Claim(raw, 'number', value * scale, decimals, scale, zeros, unit,
-                                approximate))
+                                approximate, masked[max(0, match.start() - 10):match.start()],
+                                masked[match.end():match.end() + 10]))
         else:
             words, percent = match.group('words'), bool(match.group('wordunit'))
             core = re.sub(r'\s+(?:percent|per\s+cent)$', '', words, flags=re.I)
@@ -223,7 +248,8 @@ def extract_claims(answer):
             if value is None or (small and not percent):
                 continue                                   # "one of", "two": prose, not a figure
             claims.append(Claim(raw, 'number', float(value), 0, 1.0, 0, '%' if percent else '',
-                                approximate))
+                                approximate, masked[max(0, match.start() - 10):match.start()],
+                                masked[match.end():match.end() + 10]))
     return claims, dates
 
 
@@ -280,6 +306,32 @@ def _walk_strings(node):
             yield from _walk_strings(item)
 
 
+LABEL_TEXT_KEYS = {'definition', 'note', 'description', 'label', 'unit'}
+
+
+def _descriptive_strings(node):
+    """String values stored under the services' own descriptive keys (not names or free text)."""
+    if isinstance(node, dict):
+        for key, item in node.items():
+            if isinstance(item, str) and key in LABEL_TEXT_KEYS:
+                yield item
+            else:
+                yield from _descriptive_strings(item)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _descriptive_strings(item)
+
+
+def _walk_keys(node):
+    if isinstance(node, dict):
+        for key, item in node.items():
+            yield str(key)
+            yield from _walk_keys(item)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _walk_keys(item)
+
+
 def _lists(node):
     if isinstance(node, list):
         yield node
@@ -320,6 +372,7 @@ class Evidence:
     strings: set                                     # identifier-like words in the evidence text
     dates: set                                       # 'YYYY', 'YYYY-MM' and 'YYYY-MM-DD' strings
     max_list: int
+    labels: dict                                     # (word, number) -> call ids that use the label
     conflicts: list
     mixed_versions: bool
     index: list = field(default_factory=list)        # `values` sorted by magnitude
@@ -372,7 +425,7 @@ def build_evidence(tool_trace):
     usable = [(c, r) for c, r in trusted if not sources[c].conflicted]
     mixed = len({sources[c].data_version for c, _ in usable}) > 1
 
-    values, strings, dates, max_list = [], set(), set(), 0
+    values, strings, dates, max_list, labels = [], set(), set(), 0, {}
     for call_id, result in usable:
         meta = result.get('meta') or {}
         for _, value in _walk_numbers(result['source']['arguments']):
@@ -387,10 +440,16 @@ def build_evidence(tool_trace):
         for text in _walk_strings({'meta': meta, 'data': result['data'], 'args': result['source']}):
             strings.update(t.lower() for t in _IDENT_IN_TEXT.findall(text))
             _add_dates(text, dates)
+        # Labels come from field names and the services' own descriptive text (definitions, notes, caveats),
+        # never from free-text warehouse values such as names or hypotheses, which are untrusted.
+        for text in (*_walk_keys({'meta': meta, 'data': result['data']}), *_walk_strings(meta),
+                     *_descriptive_strings(result['data'])):
+            for pair in label_pairs(text):
+                labels.setdefault(pair, []).append(call_id)
         for _, value in _walk_numbers(result['data']):
             values.append((abs(value), 'data', (call_id,), 'value'))
         max_list = max([max_list, *(len(v) for v in _lists(result['data']))])
-    evidence = Evidence(sources, values, strings, dates, max_list, conflicts, mixed)
+    evidence = Evidence(sources, values, strings, dates, max_list, labels, conflicts, mixed)
     _derive(evidence, usable)
     evidence.index = sorted(evidence.values, key=lambda v: v[0])
     return evidence
@@ -591,6 +650,9 @@ def _ground(answer, tool_trace):
                 status, support = 'verified', ('rank', (), 'position within a returned list')
         elif _year_supported(claim, evidence):
             status = 'verified'
+        elif label_of(claim) in evidence.labels:
+            call_ids = tuple(dict.fromkeys(evidence.labels[label_of(claim)]))
+            status, support = 'verified', ('label', call_ids, 'a label the tool results use')
         else:
             support = match_claim(claim, evidence)
             if support:
