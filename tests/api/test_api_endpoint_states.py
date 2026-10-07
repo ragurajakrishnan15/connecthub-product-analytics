@@ -37,7 +37,7 @@ def test_every_route_is_documented_and_tagged():
     documented = set(spec['paths'])
     assert {p.replace('exp_onboarding_v2', '{experiment_id}') for p in DATA_ENDPOINTS} <= documented
     for path in documented:
-        op = spec['paths'][path]['get']
+        op = spec['paths'][path].get('get') or spec['paths'][path]['post']
         assert op['tags'] and op['summary'] and '200' in op['responses']
         if path not in ('/api/health', '/api/health/ready'):
             assert {'401', '503'} <= set(op['responses'])

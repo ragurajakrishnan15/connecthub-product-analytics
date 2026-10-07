@@ -437,6 +437,262 @@
         "title": "CallTypePerformance",
         "type": "object"
       },
+      "ChatGrounding": {
+        "properties": {
+          "caveats": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Caveats",
+            "type": "array"
+          },
+          "claims_checked": {
+            "title": "Claims Checked",
+            "type": "integer"
+          },
+          "claims_derived": {
+            "description": "Numbers computed from tool results (a change, a total)",
+            "title": "Claims Derived",
+            "type": "integer"
+          },
+          "dates_not_in_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Dates Not In Evidence",
+            "type": "array"
+          },
+          "status": {
+            "description": "verified: every number in the answer matched a tool result. rejected: some number did not, and the answer was withheld. not_checked: no answer to check.",
+            "enum": [
+              "verified",
+              "rejected",
+              "not_checked"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "unverified_count": {
+            "title": "Unverified Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "status",
+          "claims_checked",
+          "claims_derived",
+          "unverified_count",
+          "caveats",
+          "dates_not_in_evidence"
+        ],
+        "title": "ChatGrounding",
+        "type": "object"
+      },
+      "ChatResponse": {
+        "properties": {
+          "answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Plain text, never HTML. Null when withheld.",
+            "title": "Answer"
+          },
+          "dataset": {
+            "title": "Dataset",
+            "type": "string"
+          },
+          "format": {
+            "const": "text/plain",
+            "default": "text/plain",
+            "title": "Format",
+            "type": "string"
+          },
+          "grounding": {
+            "$ref": "#/components/schemas/ChatGrounding"
+          },
+          "notice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notice"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ungrounded",
+                  "tool-limit"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the answer was withheld",
+            "title": "Reason"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/ChatSource"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "answered",
+              "withheld"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/ChatUsage"
+          }
+        },
+        "required": [
+          "status",
+          "answer",
+          "grounding",
+          "sources",
+          "usage",
+          "dataset",
+          "request_id"
+        ],
+        "title": "ChatResponse",
+        "type": "object"
+      },
+      "ChatSource": {
+        "description": "One tool result the answer was checked against.",
+        "properties": {
+          "arguments": {
+            "additionalProperties": true,
+            "description": "The arguments the tool ran with, after defaults",
+            "title": "Arguments",
+            "type": "object"
+          },
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "caveats": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Caveats",
+            "type": "array"
+          },
+          "data_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Version"
+          },
+          "endpoint": {
+            "description": "The dashboard endpoint the same data comes from",
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "id": {
+            "description": "Identifies the tool call within this response",
+            "title": "Id",
+            "type": "string"
+          },
+          "relations": {
+            "description": "Warehouse relations the result was built from",
+            "items": {
+              "type": "string"
+            },
+            "title": "Relations",
+            "type": "array"
+          },
+          "supported_claims": {
+            "description": "Numbers in the answer that this result supports",
+            "title": "Supported Claims",
+            "type": "integer"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          },
+          "truncated": {
+            "description": "A list in the result was cut to fit the size limit",
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "tool",
+          "endpoint",
+          "arguments",
+          "data_version",
+          "as_of",
+          "relations",
+          "caveats",
+          "truncated",
+          "supported_claims"
+        ],
+        "title": "ChatSource",
+        "type": "object"
+      },
+      "ChatUsage": {
+        "properties": {
+          "requests": {
+            "title": "Requests",
+            "type": "integer"
+          },
+          "tool_calls": {
+            "title": "Tool Calls",
+            "type": "integer"
+          },
+          "total_tokens": {
+            "title": "Total Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "requests",
+          "tool_calls",
+          "total_tokens"
+        ],
+        "title": "ChatUsage",
+        "type": "object"
+      },
       "CohortCell": {
         "properties": {
           "active_users": {
@@ -4165,6 +4421,195 @@
         ]
       }
     },
+    "/api/analyst/chat": {
+      "post": {
+        "description": "Answers from the dashboard's own data. The model may only call the approved read-only tools;\nevery number in the answer is then checked against what those tools returned, and an answer\nwith a number that no tool result supports is withheld (`status: withheld`).\n\nThe server is stateless: send the conversation so far (user and assistant text only) each\ntime. 503 `analyst-not-configured` until the analyst is enabled and configured; 429 when the\nper-client rate limit or the daily token budget is reached; 413 or 422 for a request that is\ntoo large or malformed. The answer is plain text.",
+        "operationId": "chat_api_analyst_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "messages": {
+                    "description": "The conversation so far, oldest first, alternating user and assistant, starting and ending with a user message. At most ANALYST_MAX_HISTORY_TURNS messages. The server stores nothing.",
+                    "items": {
+                      "properties": {
+                        "content": {
+                          "description": "Plain text. Limits: ANALYST_MAX_MESSAGE_CHARS per user message.",
+                          "title": "Content",
+                          "type": "string"
+                        },
+                        "role": {
+                          "description": "Only user and assistant are accepted. System, developer, tool and function messages are refused: the server writes its own instructions and tool results.",
+                          "enum": [
+                            "user",
+                            "assistant"
+                          ],
+                          "title": "Role",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "role",
+                        "content"
+                      ],
+                      "title": "ChatMessage",
+                      "type": "object"
+                    },
+                    "minItems": 1,
+                    "title": "Messages",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "messages"
+                ],
+                "title": "ChatRequest",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Forbidden"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Internal Server Error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Gateway Timeout"
+          }
+        },
+        "summary": "Ask the analyst a question about the dashboard data",
+        "tags": [
+          "analyst"
+        ]
+      }
+    },
     "/api/cohorts": {
       "get": {
         "description": "Complete cells only; an ended week with no activity is 0; an unfinished week is null.",
@@ -6396,6 +6841,10 @@
     {
       "description": "Workspace health scores and tiers.",
       "name": "customer-health"
+    },
+    {
+      "description": "Grounded AI analyst (off unless configured).",
+      "name": "analyst"
     }
   ]
 }

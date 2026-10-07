@@ -78,6 +78,9 @@ class Settings(BaseSettings):
     analyst_max_tool_result_bytes: int = Field(48_000, ge=2000, le=500_000)
     analyst_max_output_tokens: int = Field(1024, ge=64, le=8192)
     analyst_upstream_timeout_s: float = Field(30, gt=0, le=120)
+    analyst_turn_timeout_s: float = Field(60, gt=0, le=300)         # one whole answer, tools included
+    analyst_max_request_bytes: int = Field(262_144, ge=1024, le=1_048_576)
+    analyst_max_response_bytes: int = Field(65_536, ge=4096, le=1_048_576)
     analyst_rate_limit_per_min: int = Field(10, ge=1, le=600)
     analyst_daily_token_budget: int = Field(200_000, ge=1000)
     analyst_log_content: bool = False             # prompts and answers are logged only when true
