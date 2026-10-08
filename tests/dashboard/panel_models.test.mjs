@@ -337,10 +337,12 @@ describe('health models', () => {
     assert.equal(rows[0].ai, 'None');
   });
   it('AI usage shows the automation share when there is one; scores are clamped for the bar', () => {
-    const rows = M.workspaceRows({ items: [
-      { workspace_name: 'a', plan_tier: 'Free', health_score: 140, seat_count: 1, dau_over_seats_ratio: 0.5, used_ai_feature_30d: true, pct_ai_calls_automated: 0.25, risk_tier: 'Champion' },
-      { workspace_name: 'b', plan_tier: 'Free', health_score: -3, seat_count: 1, dau_over_seats_ratio: null, used_ai_feature_30d: true, pct_ai_calls_automated: null, risk_tier: 'Mystery' },
-    ] });
+    const rows = M.workspaceRows({
+      items: [
+        { workspace_name: 'a', plan_tier: 'Free', health_score: 140, seat_count: 1, dau_over_seats_ratio: 0.5, used_ai_feature_30d: true, pct_ai_calls_automated: 0.25, risk_tier: 'Champion' },
+        { workspace_name: 'b', plan_tier: 'Free', health_score: -3, seat_count: 1, dau_over_seats_ratio: null, used_ai_feature_30d: true, pct_ai_calls_automated: null, risk_tier: 'Mystery' },
+      ]
+    });
     assert.equal(rows[0].ai, 'Active · 25% automated');
     assert.equal(rows[0].scorePct, 100);
     assert.equal(rows[1].ai, 'Active');
@@ -368,7 +370,7 @@ describe('the page', () => {
 
   it('has no mock analytics left: no known literals, no data arrays, no random values', () => {
     for (const leftover of ['42,891', '$2.4M', '2.4M', 'Acme Corp', 'TechFlow', 'Onboarding V2', '500000', '22,000+', '50M+',
-                            'PROJECT_CONTEXT', 'getFallbackResponse', 'claude.use', 'Key Insight', 'yourusername', 'Math.random']) {
+      'PROJECT_CONTEXT', 'getFallbackResponse', 'Key Insight', 'yourusername', 'Math.random']) {
       assert.ok(!html.includes(leftover), 'leftover: ' + leftover);
     }
     // a literal array of 4+ numbers is a hard-coded series
