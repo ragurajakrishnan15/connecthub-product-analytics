@@ -3,7 +3,7 @@ name = "connecthub-product-analytics"
 version = "0.1.0"
 description = "Product analytics pipeline for ConnectHub: synthetic data, PostgreSQL warehouse, dbt, experimentation."
 # dbt-core 1.7 and Airflow 2.8 do not support Python 3.12+.
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.11"
 
 [tool.pytest.ini_options]
 # Make `analytics`, `experimentation` and `scripts` importable when running
