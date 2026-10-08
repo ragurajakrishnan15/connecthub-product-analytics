@@ -2,9 +2,15 @@
 
 End-to-end product analytics for a B2B SaaS communications platform — from deterministic synthetic event data through a PostgreSQL warehouse and incremental dbt models to a read-only analytics API and an interactive dashboard.
 
+## Live Demo
+
+**https://connecthub-product-analytics.vercel.app**
+
+The dashboard and API run as a Vercel serverless function reading a Supabase PostgreSQL warehouse that was built by this repository's own pipeline (2,000 synthetic users, 200 workspaces, about 148,000 events). It is public and read-only, and every number on the page comes from the API. The AI Analyst tab is switched off in the hosted demo and says so; the rest of the dashboard is fully live. The data is synthetic.
+
 ## The Dashboard
 
-`index.html` is a single-page dashboard that the analytics API serves from its own origin. **Every number on it comes from the API**, which reads the warehouse: nothing is hard-coded, and each panel shows its own loading, empty or error state. It needs a built warehouse and a running API (see [Quick Start](#quick-start)), so there is no hosted demo: a static host such as GitHub Pages cannot serve it.
+`index.html` is a single-page dashboard that the analytics API serves from its own origin. **Every number on it comes from the API**, which reads the warehouse: nothing is hard-coded, and each panel shows its own loading, empty or error state. It needs a built warehouse and a running API (see [Quick Start](#quick-start)), so a static host such as GitHub Pages cannot serve it; the [live demo](#live-demo) runs it on Vercel serverless functions.
 
 | Tab | What it shows |
 |---|---|
