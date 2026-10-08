@@ -8,7 +8,7 @@
     "routes": [
         {
             "src": "/(.*)",
-            "dest": "api/vercel.py"
+            "dest": "/api/vercel.py"
         }
     ],
     "env": {
