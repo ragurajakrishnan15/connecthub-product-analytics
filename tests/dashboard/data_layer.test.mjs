@@ -8,7 +8,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const html = readFileSync(resolve(root, 'index.html'), 'utf8');
+const html = readFileSync(resolve(root, 'index.html'), 'utf8').replace(/\r\n/g, '\n');   // Windows autocrlf checks the page out with CRLF
 const BEGIN = '// ===== DATA LAYER: BEGIN =====';
 const END = '// ===== DATA LAYER: END =====';
 const source = html.slice(html.indexOf(BEGIN), html.indexOf(END));
