@@ -20,6 +20,8 @@
     "env": {
         "API_DASHBOARD_PATH": "index.html",
         "API_ENV": "development",
-        "API_AUTH_MODE": "none"
+        "API_AUTH_MODE": "none",
+        "API_DB_POOL_SIZE": "1",
+        "API_DB_MAX_OVERFLOW": "0"
     }
 }
