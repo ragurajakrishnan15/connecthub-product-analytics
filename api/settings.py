@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     postgres_host: str = Field('127.0.0.1', validation_alias='POSTGRES_HOST')
     postgres_port: int = Field(5432, ge=1, le=65535, validation_alias='POSTGRES_PORT')
     postgres_db: str = Field('connecthub_analytics', min_length=1, validation_alias='POSTGRES_DB')
-    api_db_user: str = Field('connecthub_api', pattern=r'^[a-z_][a-z0-9_]{0,62}$')
+    api_db_user: str = Field('connecthub_api', pattern=r'^[a-z_][a-z0-9_.]{0,126}$')  # '.' allows the Supavisor form role.project_ref
     api_db_password: SecretStr = Field(min_length=8)
 
     # --- server

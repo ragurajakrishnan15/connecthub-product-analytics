@@ -13,4 +13,6 @@ connecthub:
       # Base schema only; every model sets its own schema (staging /
       # intermediate / gold / semantic) via macros/generate_schema_name.sql.
       schema: public
-      threads: 4
+      # DBT_THREADS lowers this on hosted poolers with a small client limit
+      # (Supabase allows 15 clients in total, shared with the pipeline).
+      threads: "{{ env_var('DBT_THREADS', '4') | int }}"

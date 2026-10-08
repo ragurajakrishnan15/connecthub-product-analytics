@@ -42,8 +42,9 @@ def provision(engine, api_user, api_password, statement_timeout_ms=5000):
                                {'u': api_user}).first() is not None
         role = sql.Identifier(api_user)
         statements = [
-            sql.SQL('{} ROLE {} WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION '
-                    'NOBYPASSRLS PASSWORD {}').format(
+            # NOSUPERUSER / NOREPLICATION / NOBYPASSRLS are the defaults and are left out:
+            # naming them is refused to a non-superuser owner (Supabase's postgres).
+            sql.SQL('{} ROLE {} WITH LOGIN NOCREATEDB NOCREATEROLE PASSWORD {}').format(
                 sql.SQL('ALTER' if existed else 'CREATE'), role, sql.Literal(api_password)),
             sql.SQL('ALTER ROLE {} SET default_transaction_read_only = on').format(role),
             sql.SQL('ALTER ROLE {} SET statement_timeout = {}').format(
