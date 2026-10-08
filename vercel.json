@@ -1,0 +1,19 @@
+{
+    "builds": [
+        {
+            "src": "api/vercel.py",
+            "use": "@vercel/python"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "api/vercel.py"
+        }
+    ],
+    "env": {
+        "API_DASHBOARD_PATH": "index.html",
+        "API_ENV": "production",
+        "API_AUTH_MODE": "api_key"
+    }
+}
